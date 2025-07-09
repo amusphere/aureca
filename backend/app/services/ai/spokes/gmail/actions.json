@@ -1,0 +1,186 @@
+{
+  "spoke_name": "gmail",
+  "display_name": "Gmail",
+  "description": "Gmail integration for managing email operations",
+  "actions": [
+    {
+      "action_type": "get_emails",
+      "display_name": "Get Emails",
+      "description": "Retrieve email list from Gmail",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": false,
+          "description": "Gmail search query (Gmail search syntax)",
+          "default": ""
+        },
+        "max_results": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum number of emails to retrieve (max: 100)",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    {
+      "action_type": "get_email_content",
+      "display_name": "Get Email Content",
+      "description": "Get specific email content including body",
+      "parameters": {
+        "email_id": {
+          "type": "string",
+          "required": true,
+          "description": "Email ID to retrieve content for"
+        }
+      }
+    },
+    {
+      "action_type": "send_email",
+      "display_name": "Send Email",
+      "description": "Send a new email",
+      "parameters": {
+        "to": {
+          "type": "string",
+          "required": true,
+          "description": "Recipient email address"
+        },
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Email subject"
+        },
+        "body": {
+          "type": "string",
+          "required": true,
+          "description": "Email body content"
+        },
+        "cc": {
+          "type": "string",
+          "required": false,
+          "description": "CC email address (optional)"
+        },
+        "bcc": {
+          "type": "string",
+          "required": false,
+          "description": "BCC email address (optional)"
+        }
+      }
+    },
+    {
+      "action_type": "create_draft",
+      "display_name": "Create Draft",
+      "description": "Create an email draft",
+      "parameters": {
+        "to": {
+          "type": "string",
+          "required": true,
+          "description": "Recipient email address"
+        },
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Email subject"
+        },
+        "body": {
+          "type": "string",
+          "required": true,
+          "description": "Email body content"
+        },
+        "cc": {
+          "type": "string",
+          "required": false,
+          "description": "CC email address (optional)"
+        },
+        "bcc": {
+          "type": "string",
+          "required": false,
+          "description": "BCC email address (optional)"
+        }
+      }
+    },
+    {
+      "action_type": "mark_as_read",
+      "display_name": "Mark as Read",
+      "description": "Mark an email as read",
+      "parameters": {
+        "email_id": {
+          "type": "string",
+          "required": true,
+          "description": "Email ID to mark as read"
+        }
+      }
+    },
+    {
+      "action_type": "mark_as_unread",
+      "display_name": "Mark as Unread",
+      "description": "Mark an email as unread",
+      "parameters": {
+        "email_id": {
+          "type": "string",
+          "required": true,
+          "description": "Email ID to mark as unread"
+        }
+      }
+    },
+    {
+      "action_type": "search_emails",
+      "display_name": "Search Emails",
+      "description": "Search emails with specific criteria",
+      "parameters": {
+        "search_query": {
+          "type": "string",
+          "required": false,
+          "description": "General search query",
+          "default": ""
+        },
+        "from_email": {
+          "type": "string",
+          "required": false,
+          "description": "Filter by sender email address"
+        },
+        "to_email": {
+          "type": "string",
+          "required": false,
+          "description": "Filter by recipient email address"
+        },
+        "subject": {
+          "type": "string",
+          "required": false,
+          "description": "Filter by subject"
+        },
+        "has_attachment": {
+          "type": "boolean",
+          "required": false,
+          "description": "Filter emails with attachments",
+          "default": false
+        },
+        "is_unread": {
+          "type": "boolean",
+          "required": false,
+          "description": "Filter unread emails only",
+          "default": false
+        },
+        "after_date": {
+          "type": "string",
+          "required": false,
+          "description": "Filter emails after this date (YYYY/MM/DD format)"
+        },
+        "before_date": {
+          "type": "string",
+          "required": false,
+          "description": "Filter emails before this date (YYYY/MM/DD format)"
+        },
+        "max_results": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum number of emails to retrieve (max: 100)",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    }
+  ]
+}
