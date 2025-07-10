@@ -490,3 +490,55 @@ class GmailSpoke(BaseSpoke):
                 error=f"Failed to retrieve unread emails: {str(e)}",
                 data={"error_type": "general_error"},
             )
+
+    async def action_get_new_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+        """Get new emails (unread and not archived) action"""
+        try:
+            # Validate user authentication
+            if not self._validate_user_authentication():
+                return self._get_authentication_error_response()
+
+            # Extract parameters
+            max_results = parameters.get("max_results", 10)
+
+            # Validate max_results
+            if max_results > 100:
+                max_results = 100
+
+            # Build Gmail query for new emails (unread and not archived)
+            gmail_query = "is:unread -is:archived"
+
+            # Get Gmail service and retrieve new emails
+            async with get_authenticated_gmail_service(
+                self.current_user, self.session
+            ) as gmail_service:
+                emails = await gmail_service.get_emails(
+                    query=gmail_query, max_results=max_results
+                )
+
+            return SpokeResponse(
+                success=True,
+                data={"emails": emails, "count": len(emails)},
+                metadata={
+                    "message": f"Successfully retrieved {len(emails)} new emails"
+                },
+            )
+
+        except GmailAuthenticationError as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail authentication error: {str(e)}",
+                data={"error_type": "authentication_error"},
+            )
+        except GmailAPIError as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail API error: {str(e)}",
+                data={"error_type": "api_error"},
+            )
+        except Exception as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Failed to retrieve new emails: {str(e)}",
+                data={"error_type": "general_error"},
+            )
