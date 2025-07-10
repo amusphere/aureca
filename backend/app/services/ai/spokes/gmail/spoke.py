@@ -36,7 +36,7 @@ class GmailSpoke(BaseSpoke):
 
         return SpokeResponse(
             success=False,
-            message="User authentication required. Please ensure you are logged in.",
+            error="User authentication required. Please ensure you are logged in.",
             data={"error_type": "authentication_required", "debug": error_details},
         )
 
@@ -69,26 +69,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message=f"Successfully retrieved {len(emails)} emails",
                 data={"emails": emails, "count": len(emails)},
+                metadata={"message": f"Successfully retrieved {len(emails)} emails"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to retrieve emails: {str(e)}",
+                error=f"Failed to retrieve emails: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
@@ -106,7 +106,7 @@ class GmailSpoke(BaseSpoke):
             if not email_id:
                 return SpokeResponse(
                     success=False,
-                    message="Email ID is required",
+                    error="Email ID is required",
                     data={"error_type": "parameter_error"},
                 )
 
@@ -118,26 +118,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message="Successfully retrieved email content",
                 data={"email": email_content},
+                metadata={"message": "Successfully retrieved email content"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to retrieve email content: {str(e)}",
+                error=f"Failed to retrieve email content: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
@@ -156,7 +156,7 @@ class GmailSpoke(BaseSpoke):
             if not all([to, subject, body]):
                 return SpokeResponse(
                     success=False,
-                    message="Required parameters are missing: to, subject, body",
+                    error="Required parameters are missing: to, subject, body",
                     data={"error_type": "parameter_error"},
                 )
 
@@ -174,26 +174,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message="Email sent successfully",
                 data={"result": result},
+                metadata={"message": "Email sent successfully"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to send email: {str(e)}",
+                error=f"Failed to send email: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
@@ -212,7 +212,7 @@ class GmailSpoke(BaseSpoke):
             if not all([to, subject, body]):
                 return SpokeResponse(
                     success=False,
-                    message="Required parameters are missing: to, subject, body",
+                    error="Required parameters are missing: to, subject, body",
                     data={"error_type": "parameter_error"},
                 )
 
@@ -230,26 +230,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message="Draft created successfully",
                 data={"result": result},
+                metadata={"message": "Draft created successfully"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to create draft: {str(e)}",
+                error=f"Failed to create draft: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
@@ -265,7 +265,7 @@ class GmailSpoke(BaseSpoke):
             if not email_id:
                 return SpokeResponse(
                     success=False,
-                    message="Email ID is required",
+                    error="Email ID is required",
                     data={"error_type": "parameter_error"},
                 )
 
@@ -277,26 +277,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message="Email marked as read successfully",
                 data={"result": result},
+                metadata={"message": "Email marked as read successfully"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to mark email as read: {str(e)}",
+                error=f"Failed to mark email as read: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
@@ -312,7 +312,7 @@ class GmailSpoke(BaseSpoke):
             if not email_id:
                 return SpokeResponse(
                     success=False,
-                    message="Email ID is required",
+                    error="Email ID is required",
                     data={"error_type": "parameter_error"},
                 )
 
@@ -324,26 +324,26 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message="Email marked as unread successfully",
                 data={"result": result},
+                metadata={"message": "Email marked as unread successfully"},
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to mark email as unread: {str(e)}",
+                error=f"Failed to mark email as unread: {str(e)}",
                 data={"error_type": "general_error"},
             )
 
