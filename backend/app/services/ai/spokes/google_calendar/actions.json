@@ -8,11 +8,6 @@
       "display_name": "Get Calendar Events",
       "description": "カレンダーの予定を取得",
       "parameters": {
-        "user_id": {
-          "type": "integer",
-          "required": true,
-          "description": "ユーザーID"
-        },
         "start_date": {
           "type": "string",
           "format": "datetime",
@@ -34,11 +29,6 @@
       "display_name": "Create Calendar Event",
       "description": "カレンダーに新しい予定を作成",
       "parameters": {
-        "user_id": {
-          "type": "integer",
-          "required": true,
-          "description": "ユーザーID"
-        },
         "summary": {
           "type": "string",
           "required": true,
@@ -73,11 +63,6 @@
       "display_name": "Update Calendar Event",
       "description": "既存の予定を更新",
       "parameters": {
-        "user_id": {
-          "type": "integer",
-          "required": true,
-          "description": "ユーザーID"
-        },
         "event_id": {
           "type": "string",
           "required": true,
@@ -117,11 +102,6 @@
       "display_name": "Delete Calendar Event",
       "description": "予定を削除",
       "parameters": {
-        "user_id": {
-          "type": "integer",
-          "required": true,
-          "description": "ユーザーID"
-        },
         "event_id": {
           "type": "string",
           "required": true,
