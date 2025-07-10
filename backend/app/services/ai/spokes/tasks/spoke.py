@@ -20,32 +20,6 @@ class TaskSpoke(BaseSpoke):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-    def _validate_user_authentication(self) -> bool:
-        """Validate that user is authenticated and session is available"""
-        if not self.current_user:
-            self.logger.debug(f"current_user is None: {self.current_user}")
-            return False
-        if not self.session:
-            self.logger.debug(f"session is None: {self.session}")
-            return False
-        self.logger.debug(f"Authentication OK - user_id: {self.current_user.id}")
-        return True
-
-    def _create_authentication_error_response(self) -> SpokeResponse:
-        """Create standard authentication error response"""
-        error_details = {
-            "current_user_available": self.current_user is not None,
-            "session_available": self.session is not None,
-        }
-        if self.current_user:
-            error_details["user_id"] = self.current_user.id
-
-        return SpokeResponse(
-            success=False,
-            error="User authentication required. Please ensure you are logged in.",
-            data={"error_type": "authentication_required", "debug": error_details},
-        )
-
     def _create_success_response(self, data: Any, message: str) -> SpokeResponse:
         """Create a standardized success response"""
         return SpokeResponse(
@@ -121,9 +95,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Get all incomplete tasks for the current user"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_data = await self._get_user_tasks(completed=False)
             return self._create_success_response(
@@ -140,9 +111,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Get all completed tasks for the current user"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_data = await self._get_user_tasks(completed=True)
             return self._create_success_response(
@@ -159,9 +127,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Search tasks that expire after a specified timestamp"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             self._validate_required_parameters(parameters, ["expires_at"])
             expires_at = parameters["expires_at"]
@@ -181,9 +146,6 @@ class TaskSpoke(BaseSpoke):
 
     async def action_add_task(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Add a new task for the current user"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             self._validate_required_parameters(parameters, ["title"])
 
@@ -209,9 +171,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Mark a task as completed"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_id = self._validate_task_id(parameters)
 
@@ -231,9 +190,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Mark a task as incomplete"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_id = self._validate_task_id(parameters)
 
@@ -255,9 +211,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Update an existing task"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_id = self._validate_task_id(parameters)
 
@@ -283,9 +236,6 @@ class TaskSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Delete a task"""
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         try:
             task_id = self._validate_task_id(parameters)
 

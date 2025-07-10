@@ -29,8 +29,8 @@ class BaseSpoke(ABC):
 
     def __init__(
         self,
-        session: Session | None = None,
-        current_user: User | None = None,
+        session: Session,
+        current_user: User,
     ):
         self.session = session
         self.current_user = current_user

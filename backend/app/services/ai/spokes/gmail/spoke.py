@@ -20,32 +20,6 @@ class GmailSpoke(BaseSpoke):
         self.MAX_EMAIL_RESULTS = 100
         self.DEFAULT_EMAIL_RESULTS = 10
 
-    def _validate_user_authentication(self) -> bool:
-        """Validate that user is authenticated and available"""
-        if not self.current_user:
-            self.logger.debug(f"current_user is None or empty: {self.current_user}")
-            return False
-        if not self.session:
-            self.logger.debug(f"session is None or empty: {self.session}")
-            return False
-        self.logger.debug(f"Authentication OK - user_id: {self.current_user.id}")
-        return True
-
-    def _create_authentication_error_response(self) -> SpokeResponse:
-        """Create standard authentication error response"""
-        error_details = {
-            "current_user_available": self.current_user is not None,
-            "session_available": self.session is not None,
-        }
-        if self.current_user:
-            error_details["user_id"] = self.current_user.id
-
-        return SpokeResponse(
-            success=False,
-            error="User authentication required. Please ensure you are logged in.",
-            data={"error_type": "authentication_required", "debug": error_details},
-        )
-
     def _validate_max_results(self, max_results: int) -> int:
         """Validate and normalize max_results parameter"""
         if max_results is None:
@@ -171,10 +145,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_get_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Get email list action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         # Extract and validate parameters
         query = parameters.get("query", "")
         max_results = self._validate_max_results(
@@ -216,10 +186,6 @@ class GmailSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Get specific email content action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
-
         # Validate required parameters
         email_id = parameters.get("email_id")
         if not email_id:
@@ -263,9 +229,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_send_email(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Send email action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         try:
             # Validate email parameters
@@ -313,9 +276,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_create_draft(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Create email draft action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         try:
             # Validate email parameters
@@ -363,9 +323,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_mark_as_read(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Mark email as read action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         try:
             # Validate email ID
@@ -406,9 +363,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_mark_as_unread(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Mark email as unread action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         try:
             # Validate email ID
@@ -487,9 +441,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_search_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Search emails with specific criteria action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         # Extract and validate parameters
         max_results = self._validate_max_results(
@@ -536,9 +487,6 @@ class GmailSpoke(BaseSpoke):
         self, parameters: Dict[str, Any]
     ) -> SpokeResponse:
         """Get unread emails action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         # Extract and validate parameters
         max_results = self._validate_max_results(
@@ -581,9 +529,6 @@ class GmailSpoke(BaseSpoke):
 
     async def action_get_new_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
         """Get new emails (unread and not archived) action"""
-        # Validate user authentication
-        if not self._validate_user_authentication():
-            return self._create_authentication_error_response()
 
         # Extract and validate parameters
         max_results = self._validate_max_results(
