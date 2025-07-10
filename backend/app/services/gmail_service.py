@@ -1,8 +1,14 @@
 """
 Gmail Integration Service
 
-Service that provides email operations using Gmail API directly
-Includes authentication, email sending/receiving, and label management features
+Provides comprehensive Gmail API integration including:
+- Authentication management
+- Email operations (send, receive, search)
+- Label management
+- Draft operations
+
+This service uses Google OAuth2 for authentication and provides
+both context manager and direct access patterns.
 """
 
 import base64
@@ -19,16 +25,33 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from sqlmodel import Session
 
+# Configure module logger
 logger = logging.getLogger(__name__)
 
-# Gmail API related constants
-GMAIL_SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/gmail.modify",
-]
-METADATA_HEADERS = ["From", "To", "Subject", "Date", "Cc", "Bcc"]
-EMAIL_MIME_TYPES = ["text/plain", "text/html"]
+
+# Gmail API Configuration
+class GmailConfig:
+    """Gmail API configuration constants and limits"""
+
+    # OAuth Scopes required for Gmail operations
+    SCOPES = [
+        "https://www.googleapis.com/auth/gmail.readonly",  # Read emails
+        "https://www.googleapis.com/auth/gmail.send",  # Send emails
+        "https://www.googleapis.com/auth/gmail.modify",  # Modify labels
+    ]
+
+    # Email headers to retrieve for metadata
+    METADATA_HEADERS = ["From", "To", "Subject", "Date", "Cc", "Bcc"]
+
+    # Supported MIME types for email body extraction
+    SUPPORTED_MIME_TYPES = ["text/plain", "text/html"]
+
+    # API request limits
+    MAX_RESULTS_LIMIT = 500  # Gmail API maximum
+    DEFAULT_MAX_RESULTS = 10  # Default page size
+
+    # OAuth configuration
+    OAUTH_TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
 class GmailServiceError(Exception):
@@ -49,12 +72,17 @@ class GmailAPIError(GmailServiceError):
     pass
 
 
-class IntegratedGmailService:
+class GmailService:
     """
-    Integrated service that uses Gmail API directly
+    Gmail API integration service
 
-    Provides features like email list retrieval, sending, label management
-    Can be used as a context manager
+    Provides comprehensive Gmail operations including:
+    - Email retrieval and search
+    - Email sending and draft creation
+    - Label management (read/unread status)
+    - OAuth2 authentication handling
+
+    Can be used as a context manager for automatic connection management.
     """
 
     def __init__(self, user: Optional[User] = None, session: Optional[Session] = None):
@@ -116,10 +144,10 @@ class IntegratedGmailService:
             self._credentials = OAuth2Credentials(
                 token=credentials.token,
                 refresh_token=credentials.refresh_token,
-                token_uri="https://oauth2.googleapis.com/token",
+                token_uri=GmailConfig.OAUTH_TOKEN_URI,
                 client_id=os.getenv("GOOGLE_CLIENT_ID"),
                 client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-                scopes=GMAIL_SCOPES,
+                scopes=GmailConfig.SCOPES,
             )
 
             logger.debug("Google OAuth credentials have been set")
@@ -136,28 +164,58 @@ class IntegratedGmailService:
         logger.debug("Disconnected from Gmail API")
 
     def _ensure_connected(self) -> None:
-        """Check connection status and raise exception if not connected"""
+        """Ensure Gmail service is connected and raise exception if not"""
         if not self.is_connected:
             raise GmailServiceError("Not connected to Gmail service")
+
+    def _handle_gmail_api_error(self, operation: str, error: Exception) -> None:
+        """Handle Gmail API errors consistently"""
+        if isinstance(error, HttpError):
+            logger.error(f"Gmail API error during {operation}: {error}")
+            raise GmailAPIError(f"Failed to {operation}: {error}")
+        else:
+            logger.error(f"Error during {operation}: {error}")
+            raise GmailServiceError(f"Failed to {operation}: {error}")
+
+    def _extract_headers_to_dict(self, headers: List[Dict[str, str]]) -> Dict[str, str]:
+        """Extract relevant headers into a dictionary"""
+        result = {}
+        for header in headers:
+            name = header["name"].lower()
+            if name in ["from", "to", "subject", "date", "cc", "bcc"]:
+                result[name] = header["value"]
+        return result
+
+    def _validate_email_parameters(self, to: str, subject: str, body: str) -> None:
+        """Validate email parameters"""
+        if not to:
+            raise GmailServiceError("Recipient email address is required")
+        if not subject:
+            raise GmailServiceError("Email subject is required")
+        if not body:
+            raise GmailServiceError("Email body is required")
 
     # Gmail operation methods
 
     async def get_emails(
-        self, query: str = "", max_results: int = 10
+        self, query: str = "", max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
     ) -> List[Dict[str, Any]]:
         """
-        Retrieve email list
+        Retrieve email list with Gmail search syntax
 
         Args:
             query: Search query (Gmail search syntax)
             max_results: Maximum number of emails to retrieve
 
         Returns:
-            Email list (including metadata)
+            List of email metadata dictionaries
         """
         self._ensure_connected()
 
         try:
+            # Validate and limit max_results
+            max_results = min(max_results, GmailConfig.MAX_RESULTS_LIMIT)
+
             # Get message list
             result = (
                 self.gmail_service.users()
@@ -170,23 +228,20 @@ class IntegratedGmailService:
             if not messages:
                 return []
 
-            # Get details for each message in parallel
+            # Get details for each message
             email_list = []
             for message in messages:
                 email_data = await self._get_message_metadata(message["id"])
                 email_list.append(email_data)
 
+            logger.info(f"Retrieved {len(email_list)} emails")
             return email_list
 
-        except HttpError as e:
-            logger.error(f"Gmail API error: {e}")
-            raise GmailAPIError(f"Failed to retrieve emails: {e}")
         except Exception as e:
-            logger.error(f"Email retrieval error: {e}")
-            raise GmailServiceError(f"Failed to retrieve emails: {e}")
+            self._handle_gmail_api_error("retrieve emails", e)
 
     async def _get_message_metadata(self, message_id: str) -> Dict[str, Any]:
-        """Get message metadata"""
+        """Get email message metadata efficiently"""
         msg = (
             self.gmail_service.users()
             .messages()
@@ -194,7 +249,7 @@ class IntegratedGmailService:
                 userId="me",
                 id=message_id,
                 format="metadata",
-                metadataHeaders=METADATA_HEADERS,
+                metadataHeaders=GmailConfig.METADATA_HEADERS,
             )
             .execute()
         )
@@ -207,23 +262,19 @@ class IntegratedGmailService:
             "snippet": msg.get("snippet", ""),
         }
 
-        # Extract header information
-        for header in headers:
-            name = header["name"].lower()
-            if name in ["from", "to", "subject", "date", "cc", "bcc"]:
-                email_data[name] = header["value"]
-
+        # Extract and merge header information
+        email_data.update(self._extract_headers_to_dict(headers))
         return email_data
 
     async def get_email_content(self, email_id: str) -> Dict[str, Any]:
         """
-        Get specific email content
+        Get specific email content including body
 
         Args:
-            email_id: Email ID
+            email_id: Gmail message ID
 
         Returns:
-            Email content (including body)
+            Dictionary containing email content and metadata
         """
         self._ensure_connected()
 
@@ -247,39 +298,39 @@ class IntegratedGmailService:
                 "snippet": msg.get("snippet", ""),
             }
 
-            # Parse header information
-            for header in headers:
-                name = header["name"].lower()
-                if name in ["from", "to", "subject", "date", "cc", "bcc"]:
-                    email_data[name] = header["value"]
+            # Merge header information
+            email_data.update(self._extract_headers_to_dict(headers))
 
+            logger.debug(f"Retrieved content for email {email_id}")
             return email_data
 
-        except HttpError as e:
-            logger.error(f"Gmail API error: {e}")
-            raise GmailAPIError(f"Failed to get email content: {e}")
         except Exception as e:
-            logger.error(f"Email content retrieval error: {e}")
-            raise GmailServiceError(f"Failed to get email content: {e}")
+            self._handle_gmail_api_error("get email content", e)
 
     def _extract_message_body(self, payload: Dict[str, Any]) -> str:
         """
-        Extract message body from message payload
+        Extract message body from email payload
 
-        Prioritizes plain text, uses HTML as fallback
+        Prioritizes plain text content, falls back to HTML
+
+        Args:
+            payload: Gmail message payload
+
+        Returns:
+            Decoded message body text
         """
         body = ""
 
         def decode_data(data: str) -> str:
-            """Decode Base64 data"""
+            """Safely decode Base64 URL-safe data"""
             try:
                 return base64.urlsafe_b64decode(data).decode("utf-8", errors="ignore")
             except Exception as e:
-                logger.warning(f"Message decode error: {e}")
+                logger.warning(f"Failed to decode message data: {e}")
                 return ""
 
         if "parts" in payload:
-            # For multipart messages
+            # Handle multipart messages
             for part in payload["parts"]:
                 mime_type = part.get("mimeType", "")
                 data = part["body"].get("data")
@@ -291,9 +342,9 @@ class IntegratedGmailService:
                     elif mime_type == "text/html" and not body:
                         body = decode_data(data)
         else:
-            # For simple messages
+            # Handle simple messages
             mime_type = payload.get("mimeType", "")
-            if mime_type in EMAIL_MIME_TYPES:
+            if mime_type in GmailConfig.SUPPORTED_MIME_TYPES:
                 data = payload["body"].get("data")
                 if data:
                     body = decode_data(data)
@@ -309,19 +360,20 @@ class IntegratedGmailService:
         bcc: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Send email
+        Send an email message
 
         Args:
-            to: Destination email address
-            subject: Subject
-            body: Message body
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
             cc: CC email address (optional)
             bcc: BCC email address (optional)
 
         Returns:
-            Send result
+            Dictionary with send result
         """
         self._ensure_connected()
+        self._validate_email_parameters(to, subject, body)
 
         try:
             raw_message = self._create_message(to, subject, body, cc, bcc)
@@ -334,18 +386,15 @@ class IntegratedGmailService:
                 .execute()
             )
 
+            logger.info(f"Email sent successfully to {to}")
             return {
                 "id": result["id"],
                 "threadId": result["threadId"],
                 "status": "sent",
             }
 
-        except HttpError as e:
-            logger.error(f"Gmail API error: {e}")
-            raise GmailAPIError(f"Failed to send email: {e}")
         except Exception as e:
-            logger.error(f"Email sending error: {e}")
-            raise GmailServiceError(f"Failed to send email: {e}")
+            self._handle_gmail_api_error("send email", e)
 
     async def create_draft(
         self,
@@ -356,19 +405,20 @@ class IntegratedGmailService:
         bcc: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Create draft
+        Create an email draft
 
         Args:
-            to: Destination email address
-            subject: Subject
-            body: Message body
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
             cc: CC email address (optional)
             bcc: BCC email address (optional)
 
         Returns:
-            Draft creation result
+            Dictionary with draft creation result
         """
         self._ensure_connected()
+        self._validate_email_parameters(to, subject, body)
 
         try:
             raw_message = self._create_message(to, subject, body, cc, bcc)
@@ -381,18 +431,15 @@ class IntegratedGmailService:
                 .execute()
             )
 
+            logger.info(f"Draft created successfully for {to}")
             return {
                 "id": result["id"],
                 "message": result["message"],
                 "status": "draft_created",
             }
 
-        except HttpError as e:
-            logger.error(f"Gmail API error: {e}")
-            raise GmailAPIError(f"Failed to create draft: {e}")
         except Exception as e:
-            logger.error(f"Draft creation error: {e}")
-            raise GmailServiceError(f"Failed to create draft: {e}")
+            self._handle_gmail_api_error("create draft", e)
 
     def _create_message(
         self,
@@ -405,8 +452,15 @@ class IntegratedGmailService:
         """
         Create email message and encode it to Base64
 
+        Args:
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
+            cc: CC email address (optional)
+            bcc: BCC email address (optional)
+
         Returns:
-            Base64 encoded message
+            Base64 URL-safe encoded message
         """
         message = email.mime.text.MIMEText(body, "plain", "utf-8")
         message["to"] = to
@@ -417,7 +471,7 @@ class IntegratedGmailService:
         if bcc:
             message["bcc"] = bcc
 
-        # Base64 encoding
+        # Base64 URL-safe encoding
         return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
 
     # Label operation methods
@@ -427,10 +481,10 @@ class IntegratedGmailService:
         Mark email as read
 
         Args:
-            email_id: Email ID
+            email_id: Gmail message ID
 
         Returns:
-            Operation result
+            Operation result dictionary
         """
         return await self._modify_labels(email_id, remove_labels=["UNREAD"])
 
@@ -439,10 +493,10 @@ class IntegratedGmailService:
         Mark email as unread
 
         Args:
-            email_id: Email ID
+            email_id: Gmail message ID
 
         Returns:
-            Operation result
+            Operation result dictionary
         """
         return await self._modify_labels(email_id, add_labels=["UNREAD"])
 
@@ -453,17 +507,20 @@ class IntegratedGmailService:
         remove_labels: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        Modify email labels
+        Modify email labels efficiently
 
         Args:
-            email_id: Email ID
-            add_labels: List of labels to add
-            remove_labels: List of labels to remove
+            email_id: Gmail message ID
+            add_labels: List of label IDs to add
+            remove_labels: List of label IDs to remove
 
         Returns:
-            Operation result
+            Operation result dictionary
         """
         self._ensure_connected()
+
+        if not add_labels and not remove_labels:
+            raise GmailServiceError("At least one label operation must be specified")
 
         try:
             body = {}
@@ -479,41 +536,88 @@ class IntegratedGmailService:
                 .execute()
             )
 
-            # Determine operation content
+            # Determine operation status
             status = "labels_modified"
             if remove_labels and "UNREAD" in remove_labels:
                 status = "marked_as_read"
             elif add_labels and "UNREAD" in add_labels:
                 status = "marked_as_unread"
 
+            logger.debug(f"Modified labels for email {email_id}: {status}")
             return {"id": result["id"], "status": status}
 
-        except HttpError as e:
-            logger.error(f"Gmail API error: {e}")
-            raise GmailAPIError(f"Failed to modify labels: {e}")
         except Exception as e:
-            logger.error(f"Label operation error: {e}")
-            raise GmailServiceError(f"Failed to modify labels: {e}")
+            self._handle_gmail_api_error("modify labels", e)
+
+    # Convenience methods for common email operations
+
+    async def get_unread_emails(
+        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
+    ) -> List[Dict[str, Any]]:
+        """
+        Get unread emails
+
+        Args:
+            max_results: Maximum number of emails to retrieve
+
+        Returns:
+            List of unread email metadata
+        """
+        return await self.get_emails(query="is:unread", max_results=max_results)
+
+    async def get_new_emails(
+        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
+    ) -> List[Dict[str, Any]]:
+        """
+        Get new emails (unread and not archived)
+
+        Args:
+            max_results: Maximum number of emails to retrieve
+
+        Returns:
+            List of new email metadata
+        """
+        return await self.get_emails(
+            query="is:unread -label:archived", max_results=max_results
+        )
+
+    async def search_emails(
+        self, query: str, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
+    ) -> List[Dict[str, Any]]:
+        """
+        Search emails with Gmail query syntax
+
+        Args:
+            query: Gmail search query
+            max_results: Maximum number of emails to retrieve
+
+        Returns:
+            List of matching email metadata
+        """
+        return await self.get_emails(query=query, max_results=max_results)
 
 
-# Factory functions and helper functions
+# Factory functions and utilities
 
 
 @asynccontextmanager
-async def get_integrated_gmail_service(
+async def get_gmail_service(
     user: Optional[User] = None, session: Optional[Session] = None
 ):
     """
-    IntegratedGmailService context manager
+    Create and manage GmailService as a context manager
 
     Args:
-        user: User information (required if authentication is needed)
-        session: Database session
+        user: User information (required for authenticated operations)
+        session: Database session (required for authenticated operations)
 
     Yields:
-        IntegratedGmailService: Gmail service instance
+        GmailService: Configured Gmail service instance
+
+    Raises:
+        GmailServiceError: If service creation or connection fails
     """
-    service = IntegratedGmailService(user=user, session=session)
+    service = GmailService(user=user, session=session)
     try:
         async with service:
             yield service
@@ -525,19 +629,23 @@ async def get_integrated_gmail_service(
 @asynccontextmanager
 async def get_authenticated_gmail_service(user: User, session: Session):
     """
-    Authenticated IntegratedGmailService context manager
+    Create authenticated GmailService context manager
 
     Args:
         user: User information (required)
         session: Database session (required)
 
     Yields:
-        IntegratedGmailService: Authenticated Gmail service instance
+        GmailService: Authenticated Gmail service instance
+
+    Raises:
+        GmailAuthenticationError: If user or session is missing
+        GmailServiceError: If service creation fails
     """
     if not user:
         raise GmailAuthenticationError("User information is required")
     if not session:
         raise GmailServiceError("Database session is required")
 
-    async with get_integrated_gmail_service(user=user, session=session) as service:
+    async with get_gmail_service(user=user, session=session) as service:
         yield service

@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from app.services.ai.models import SpokeResponse
 from app.services.ai.spokes.spoke_interface import BaseSpoke
-from app.services.gmail_integrated import (
+from app.services.gmail_service import (
     GmailAPIError,
     GmailAuthenticationError,
     get_authenticated_gmail_service,
