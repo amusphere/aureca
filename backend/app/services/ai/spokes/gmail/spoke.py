@@ -408,29 +408,85 @@ class GmailSpoke(BaseSpoke):
 
             return SpokeResponse(
                 success=True,
-                message=f"Successfully found {len(emails)} emails matching criteria",
                 data={
                     "emails": emails,
                     "count": len(emails),
                     "search_query": gmail_query,
+                },
+                metadata={
+                    "message": f"Successfully found {len(emails)} emails matching criteria"
                 },
             )
 
         except GmailAuthenticationError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail authentication error: {str(e)}",
+                error=f"Gmail authentication error: {str(e)}",
                 data={"error_type": "authentication_error"},
             )
         except GmailAPIError as e:
             return SpokeResponse(
                 success=False,
-                message=f"Gmail API error: {str(e)}",
+                error=f"Gmail API error: {str(e)}",
                 data={"error_type": "api_error"},
             )
         except Exception as e:
             return SpokeResponse(
                 success=False,
-                message=f"Failed to search emails: {str(e)}",
+                error=f"Failed to search emails: {str(e)}",
+                data={"error_type": "general_error"},
+            )
+
+    async def action_get_unread_emails(
+        self, parameters: Dict[str, Any]
+    ) -> SpokeResponse:
+        """Get unread emails action"""
+        try:
+            # Validate user authentication
+            if not self._validate_user_authentication():
+                return self._get_authentication_error_response()
+
+            # Extract parameters
+            max_results = parameters.get("max_results", 10)
+
+            # Validate max_results
+            if max_results > 100:
+                max_results = 100
+
+            # Build Gmail query for unread emails
+            gmail_query = "is:unread"
+
+            # Get Gmail service and retrieve unread emails
+            async with get_authenticated_gmail_service(
+                self.current_user, self.session
+            ) as gmail_service:
+                emails = await gmail_service.get_emails(
+                    query=gmail_query, max_results=max_results
+                )
+
+            return SpokeResponse(
+                success=True,
+                data={"emails": emails, "count": len(emails)},
+                metadata={
+                    "message": f"Successfully retrieved {len(emails)} unread emails"
+                },
+            )
+
+        except GmailAuthenticationError as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail authentication error: {str(e)}",
+                data={"error_type": "authentication_error"},
+            )
+        except GmailAPIError as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail API error: {str(e)}",
+                data={"error_type": "api_error"},
+            )
+        except Exception as e:
+            return SpokeResponse(
+                success=False,
+                error=f"Failed to retrieve unread emails: {str(e)}",
                 data={"error_type": "general_error"},
             )
