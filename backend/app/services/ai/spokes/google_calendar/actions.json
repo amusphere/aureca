@@ -6,20 +6,20 @@
     {
       "action_type": "get_calendar_events",
       "display_name": "Get Calendar Events",
-      "description": "カレンダーの予定を取得",
+      "description": "Retrieve calendar events",
       "parameters": {
         "start_date": {
           "type": "string",
           "format": "datetime",
           "required": false,
-          "description": "検索開始日時（ISO8601形式）",
+          "description": "Search start date and time (ISO8601 format)",
           "default": "today"
         },
         "end_date": {
           "type": "string",
           "format": "datetime",
           "required": false,
-          "description": "検索終了日時（ISO8601形式）",
+          "description": "Search end date and time (ISO8601 format)",
           "default": "one_week_later"
         }
       }
@@ -27,85 +27,85 @@
     {
       "action_type": "create_calendar_event",
       "display_name": "Create Calendar Event",
-      "description": "カレンダーに新しい予定を作成",
+      "description": "Create a new calendar event",
       "parameters": {
         "summary": {
           "type": "string",
           "required": true,
-          "description": "予定のタイトル"
+          "description": "Event title"
         },
         "start_time": {
           "type": "string",
           "format": "datetime",
           "required": true,
-          "description": "開始日時（ISO8601形式）"
+          "description": "Start date and time (ISO8601 format)"
         },
         "end_time": {
           "type": "string",
           "format": "datetime",
           "required": true,
-          "description": "終了日時（ISO8601形式）"
+          "description": "End date and time (ISO8601 format)"
         },
         "description": {
           "type": "string",
           "required": false,
-          "description": "予定の詳細説明"
+          "description": "Event description"
         },
         "location": {
           "type": "string",
           "required": false,
-          "description": "場所"
+          "description": "Event location"
         }
       }
     },
     {
       "action_type": "update_calendar_event",
       "display_name": "Update Calendar Event",
-      "description": "既存の予定を更新",
+      "description": "Update an existing calendar event",
       "parameters": {
         "event_id": {
           "type": "string",
           "required": true,
-          "description": "更新する予定のID"
+          "description": "Event ID to update"
         },
         "summary": {
           "type": "string",
           "required": false,
-          "description": "予定のタイトル"
+          "description": "Event title"
         },
         "start_time": {
           "type": "string",
           "format": "datetime",
           "required": false,
-          "description": "開始日時（ISO8601形式）"
+          "description": "Start date and time (ISO8601 format)"
         },
         "end_time": {
           "type": "string",
           "format": "datetime",
           "required": false,
-          "description": "終了日時（ISO8601形式）"
+          "description": "End date and time (ISO8601 format)"
         },
         "description": {
           "type": "string",
           "required": false,
-          "description": "予定の詳細説明"
+          "description": "Event description"
         },
         "location": {
           "type": "string",
           "required": false,
-          "description": "場所"
+          "description": "Event location"
         }
       }
     },
     {
       "action_type": "delete_calendar_event",
       "display_name": "Delete Calendar Event",
-      "description": "予定を削除",
+      "description": "Delete a calendar event",
       "parameters": {
         "event_id": {
           "type": "string",
           "required": true,
-          "description": "削除する予定のID"
+          "description": "Event ID to delete"
         }
       }
     }
