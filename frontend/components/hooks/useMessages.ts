@@ -1,6 +1,11 @@
 import { useState } from "react";
 import type { AIResponse, Message } from "../../types/chat";
-import { CHAT_CONSTANTS } from "../constants/chatConstants";
+
+const CHAT_CONSTANTS = {
+  completionMessage: "処理が完了しました。",
+  apiErrorMessage: "APIエラーが発生しました。",
+  fallbackErrorMessage: "予期しないエラーが発生しました。",
+} as const;
 
 export function useMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
