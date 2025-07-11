@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
+import { Card, CardContent } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -90,98 +90,87 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>タスク管理</CardTitle>
-            <CardDescription>
-              タスクを管理し、進捗を追跡できます
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
+    <div className="w-full">
+      {/* ヘッダー */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">タスク</h2>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchTasks}
+            aria-label="更新"
+          >
+            <RefreshCwIcon className="w-4 h-4" />
+          </Button>
+          {onCreateTask && (
             <Button
-              variant="outline"
+              onClick={onCreateTask}
               size="sm"
-              onClick={fetchTasks}
-              className="flex items-center gap-2"
+              aria-label="新規作成"
             >
-              <RefreshCwIcon className="w-4 h-4" />
-              更新
+              <PlusIcon className="w-4 h-4" />
             </Button>
-            {onCreateTask && (
-              <Button
-                onClick={onCreateTask}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <PlusIcon className="w-4 h-4" />
-                新規作成
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* タブボタン */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-            <Button
-              variant={activeTab === "active" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("active")}
-              className="flex-1"
-            >
-              アクティブ ({activeTasks.length})
-            </Button>
-            <Button
-              variant={activeTab === "completed" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setActiveTab("completed")}
-              className="flex-1"
-            >
-              完了済み ({completedTasks.length})
-            </Button>
-          </div>
+      </div>
 
-          {/* タスクコンテンツ */}
-          <div className="space-y-4">
-            {activeTab === "active" ? (
-              activeTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  アクティブなタスクはありません
-                </div>
-              ) : (
-                activeTasks.map((task) => (
-                  <TaskCard
-                    key={task.uuid}
-                    task={task}
-                    onToggleComplete={handleToggleComplete}
-                    onEdit={onEditTask}
-                    onDelete={onDeleteTask}
-                  />
-                ))
-              )
-            ) : (
-              completedTasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  完了済みのタスクはありません
-                </div>
-              ) : (
-                completedTasks.map((task) => (
-                  <TaskCard
-                    key={task.uuid}
-                    task={task}
-                    onToggleComplete={handleToggleComplete}
-                    onEdit={onEditTask}
-                    onDelete={onDeleteTask}
-                  />
-                ))
-              )
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      {/* タブボタン */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-3">
+        <Button
+          variant={activeTab === "active" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("active")}
+          className="flex-1"
+        >
+          アクティブ ({activeTasks.length})
+        </Button>
+        <Button
+          variant={activeTab === "completed" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("completed")}
+          className="flex-1"
+        >
+          完了済み ({completedTasks.length})
+        </Button>
+      </div>
+
+      {/* タスクコンテンツ */}
+      <div className="space-y-3">
+        {activeTab === "active" ? (
+          activeTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              📝 タスクがありません
+            </div>
+          ) : (
+            activeTasks.map((task) => (
+              <TaskCard
+                key={task.uuid}
+                task={task}
+                onToggleComplete={handleToggleComplete}
+                onEdit={onEditTask}
+                onDelete={onDeleteTask}
+              />
+            ))
+          )
+        ) : (
+          completedTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              ✅ 完了したタスクがありません
+            </div>
+          ) : (
+            completedTasks.map((task) => (
+              <TaskCard
+                key={task.uuid}
+                task={task}
+                onToggleComplete={handleToggleComplete}
+                onEdit={onEditTask}
+                onDelete={onDeleteTask}
+              />
+            ))
+          )
+        )}
+      </div>
+    </div>
   );
 }

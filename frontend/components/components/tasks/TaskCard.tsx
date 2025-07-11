@@ -21,7 +21,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
 
   return (
     <Card className={`transition-all duration-200 ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''}`}>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
             <Button
@@ -33,7 +33,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
               {task.completed && <CheckIcon className="w-4 h-4" />}
             </Button>
             <div className="flex-1">
-              <CardTitle className={`text-lg ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+              <CardTitle className={`text-base ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
                 {task.title}
               </CardTitle>
               {task.description && (
@@ -59,7 +59,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
       </CardHeader>
 
       {(expiryDate || onEdit || onDelete) && (
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 pb-3">
           <div className="flex items-center justify-between">
             {expiryDate && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -69,7 +69,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
                   <CalendarIcon className="w-4 h-4" />
                 )}
                 <span className={isExpired && !task.completed ? 'text-red-600' : ''}>
-                  期限: {format(expiryDate, 'yyyy年MM月dd日 HH:mm', { locale: ja })}
+                  {format(expiryDate, 'MM/dd HH:mm', { locale: ja })}
                 </span>
               </div>
             )}
