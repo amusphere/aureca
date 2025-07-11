@@ -13,7 +13,7 @@ from app.services.ai.models import SpokeResponse
 from app.services.ai.spokes.spoke_interface import BaseSpoke
 
 
-class TaskSpoke(BaseSpoke):
+class TasksSpoke(BaseSpoke):
     """Task management spoke for creating, updating, and managing user tasks"""
 
     def __init__(self, *args, **kwargs):
