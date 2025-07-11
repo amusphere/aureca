@@ -17,7 +17,7 @@ from sqlmodel import Session
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
-@router.get("/", response_model=list[TaskModel])
+@router.get("", response_model=list[TaskModel])
 async def get_tasks_endpoint(
     completed: bool = False,
     expires_at: float | None = None,
@@ -84,7 +84,7 @@ async def get_task_endpoint(
         )
 
 
-@router.post("/", response_model=TaskModel)
+@router.post("", response_model=TaskModel)
 async def create_task_endpoint(
     task: TaskModel,
     session: Session = Depends(get_session),
