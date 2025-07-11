@@ -3,7 +3,6 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
-import { apiGet } from "@/utils/api";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TaskCard } from "./TaskCard";
@@ -24,15 +23,17 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
     setIsLoading(true);
     try {
       // アクティブなタスクを取得
-      const activeResponse = await apiGet<Task[]>("/tasks?completed=false");
-      if (activeResponse.data) {
-        setActiveTasks(activeResponse.data);
+      const activeResponse = await fetch("/api/tasks?completed=false");
+      if (activeResponse.ok) {
+        const activeData = await activeResponse.json();
+        setActiveTasks(activeData);
       }
 
       // 完了済みタスクを取得
-      const completedResponse = await apiGet<Task[]>("/tasks?completed=true");
-      if (completedResponse.data) {
-        setCompletedTasks(completedResponse.data);
+      const completedResponse = await fetch("/api/tasks?completed=true");
+      if (completedResponse.ok) {
+        const completedData = await completedResponse.json();
+        setCompletedTasks(completedData);
       }
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
