@@ -12,13 +12,15 @@ export default function DashboardPage() {
   const closeChat = () => setIsChatOpen(false);
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative h-full bg-background">
       {/* Main Content Area */}
-      <main className="container mx-auto px-6 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="h-full overflow-y-auto">
+        <div className="container mx-auto px-6 py-8 pb-24">
+          <div className="max-w-7xl mx-auto space-y-8">
 
-          {/* タスク管理セクション */}
-          <TaskList />
+            {/* タスク管理セクション */}
+            <TaskList />
+          </div>
         </div>
       </main>
 
