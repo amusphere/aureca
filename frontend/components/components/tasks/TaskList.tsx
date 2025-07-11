@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
-import { getTasks } from "@/utils/taskApi";
+import { apiGet } from "@/utils/api";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TaskCard } from "./TaskCard";
@@ -24,13 +24,13 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
     setIsLoading(true);
     try {
       // アクティブなタスクを取得
-      const activeResponse = await getTasks(false);
+      const activeResponse = await apiGet<Task[]>("/tasks?completed=false");
       if (activeResponse.data) {
         setActiveTasks(activeResponse.data);
       }
 
       // 完了済みタスクを取得
-      const completedResponse = await getTasks(true);
+      const completedResponse = await apiGet<Task[]>("/tasks?completed=true");
       if (completedResponse.data) {
         setCompletedTasks(completedResponse.data);
       }
