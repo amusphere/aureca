@@ -125,26 +125,30 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           )}
 
           {/* Messages Area */}
-          <ScrollArea className="flex-1 px-4">
-            {messages.length === 0 && !isLoading ? (
-              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
-                <h3 className="text-xl font-bold text-foreground mb-2">
-                  {EMPTY_STATE_MESSAGES.title}
-                </h3>
-                <p className="text-sm">{EMPTY_STATE_MESSAGES.description}</p>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="px-4">
+                {messages.length === 0 && !isLoading ? (
+                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-8 min-h-[300px]">
+                    <h3 className="text-xl font-bold text-foreground mb-2">
+                      {EMPTY_STATE_MESSAGES.title}
+                    </h3>
+                    <p className="text-sm">{EMPTY_STATE_MESSAGES.description}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 py-4 pb-6">
+                    {messages.map((message) => (
+                      <ChatMessage
+                        key={message.id}
+                        message={message}
+                      />
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-4 py-4">
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                  />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </ScrollArea>
+            </ScrollArea>
+          </div>
 
           <Separator />
 
