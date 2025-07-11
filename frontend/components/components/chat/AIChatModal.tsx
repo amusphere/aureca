@@ -17,12 +17,13 @@ interface AIChatModalProps {
 }
 
 const CHAT_MODAL_CONFIG = {
-  width: "w-96",
-  height: "h-[600px]",
-  position: "bottom-6 right-6",
+  // モバイル: フルスクリーン、デスクトップ: 固定サイズ
+  width: "w-full sm:w-96",
+  height: "h-full sm:h-[600px]",
+  position: "inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto",
   animation: {
-    enter: "animate-in slide-in-from-bottom-2 slide-in-from-right-2 duration-300",
-    exit: "animate-out slide-out-to-bottom-2 slide-out-to-right-2 duration-200",
+    enter: "animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-2 sm:slide-in-from-right-2",
+    exit: "animate-out slide-out-to-bottom duration-200 sm:slide-out-to-bottom-2 sm:slide-out-to-right-2",
   },
 } as const;
 
@@ -82,7 +83,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           CHAT_MODAL_CONFIG.width,
           CHAT_MODAL_CONFIG.height,
           CHAT_MODAL_CONFIG.position,
-          "bg-background border rounded-2xl shadow-2xl",
+          "bg-background border-0 sm:border sm:rounded-2xl shadow-2xl",
           "flex flex-col",
           isOpen ? CHAT_MODAL_CONFIG.animation.enter : CHAT_MODAL_CONFIG.animation.exit
         )}
@@ -91,7 +92,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         aria-labelledby="chat-title"
       >
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b rounded-t-2xl">
+        <header className="flex items-center justify-between p-4 sm:p-4 py-4 border-b rounded-t-none sm:rounded-t-2xl bg-background">
           <h2
             id="chat-title"
             className="text-lg font-semibold text-foreground"
@@ -102,10 +103,10 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
             onClick={onClose}
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-10 w-10 sm:h-8 sm:w-8"
             aria-label="チャットを閉じる"
           >
-            <X size={16} />
+            <X size={20} className="sm:size-4" />
           </Button>
         </header>
 
@@ -148,7 +149,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           <Separator />
 
           {/* Input Area */}
-          <div className="p-4">
+          <div className="p-4 sm:p-4 pb-6 sm:pb-4">
             <AIChatInput onSendMessage={sendMessage} isLoading={isLoading} />
           </div>
         </div>
