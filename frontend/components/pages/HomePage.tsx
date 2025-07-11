@@ -5,7 +5,7 @@ import { useState } from "react";
 import AIChatModal from "../components/chat/AIChatModal";
 import FloatingChatButton from "../components/chat/ChatButton";
 
-export default function DashboardPage() {
+export default function HomePage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const openChat = () => setIsChatOpen(true);

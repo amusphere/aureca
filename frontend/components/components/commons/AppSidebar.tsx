@@ -1,7 +1,7 @@
 "use client"
 
 import { User } from "@/types/User";
-import { LayoutDashboard, Settings } from "lucide-react";
+import { Home, Settings } from "lucide-react";
 
 import {
   Sidebar,
@@ -22,9 +22,9 @@ type Props = {
 
 const items = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: LayoutDashboard,
+    title: "Home",
+    url: "/home",
+    icon: Home,
   },
   {
     title: "Settings",

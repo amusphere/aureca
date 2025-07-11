@@ -1,7 +1,7 @@
 import AuthedLayout from "@/components/components/commons/AuthedLayout";
 import ClerkLoginPage from "@/components/pages/ClerkLoginPage";
-import DashboardPage from "@/components/pages/DashboardPage";
 import EmailPasswordLoginPage from "@/components/pages/EmailPasswordLoginPage";
+import HomePage from "@/components/pages/HomePage";
 import { User } from "@/types/User";
 import { apiGet } from "@/utils/api";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
@@ -15,7 +15,7 @@ export default async function RootPage() {
   if (authSystem === "email_password") {
     const { data } = await apiGet<User>("/users/me");
     if (data && data.uuid) {
-      redirect("/dashboard");
+      redirect("/home");
       return;
     }
 
@@ -30,7 +30,7 @@ export default async function RootPage() {
         </SignedOut>
         <SignedIn>
           <AuthedLayout>
-            <DashboardPage />
+            <HomePage />
           </AuthedLayout>
         </SignedIn>
       </>

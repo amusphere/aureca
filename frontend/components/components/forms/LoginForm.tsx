@@ -27,7 +27,7 @@ export default function LoginForm() {
 
     const { success } = await res.json();
     if (success) {
-      window.location.href = "/dashboard";
+      window.location.href = "/home";
     } else {
       toast.error("ログインに失敗しました。");
     }
