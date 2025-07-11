@@ -20,7 +20,7 @@ class User(SQLModel, table=True):
         back_populates="user"
     )
     google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user")
-    todo_lists: list["TodoList"] = Relationship(back_populates="user")
+    tasks: list["Tasks"] = Relationship(back_populates="user")
 
 
 class PasswordResetToken(SQLModel, table=True):
@@ -58,8 +58,8 @@ class GoogleOAuthToken(SQLModel, table=True):
     user: User = Relationship(back_populates="google_oauth_tokens")
 
 
-class TodoList(SQLModel, table=True):
-    __tablename__ = "todo_lists"
+class Tasks(SQLModel, table=True):
+    __tablename__ = "tasks"
     __table_args__ = {"extend_existing": True}
 
     id: int | None = Field(default=None, primary_key=True)
@@ -68,7 +68,7 @@ class TodoList(SQLModel, table=True):
     updated_at: float = Field(default_factory=lambda: datetime.now().timestamp())
 
     user_id: int = Field(foreign_key="users.id")
-    user: User = Relationship(back_populates="todo_lists")
+    user: User = Relationship(back_populates="tasks")
 
     title: str
     description: str | None = Field(nullable=True)

@@ -1,0 +1,116 @@
+{
+  "spoke_name": "tasks",
+  "display_name": "Tasks",
+  "description": "Task management for creating, updating, and managing tasks",
+  "actions": [
+    {
+      "action_type": "get_incomplete_tasks",
+      "display_name": "Get Incomplete Tasks",
+      "description": "Retrieve list of incomplete tasks",
+      "parameters": {}
+    },
+    {
+      "action_type": "get_completed_tasks",
+      "display_name": "Get Completed Tasks",
+      "description": "Retrieve list of completed tasks",
+      "parameters": {}
+    },
+    {
+      "action_type": "search_tasks_more_than_expires_at",
+      "display_name": "Search Tasks by Expiry",
+      "description": "Search tasks that expire after a specified timestamp",
+      "parameters": {
+        "expires_at": {
+          "type": "number",
+          "required": true,
+          "description": "Expiry timestamp (Unix time)"
+        }
+      }
+    },
+    {
+      "action_type": "add_task",
+      "display_name": "Add Task",
+      "description": "Add a new task",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "required": true,
+          "description": "Task title"
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Task description"
+        },
+        "expires_at": {
+          "type": "number",
+          "required": false,
+          "description": "Expiry timestamp (Unix time)"
+        }
+      }
+    },
+    {
+      "action_type": "to_complete_task",
+      "display_name": "Complete Task",
+      "description": "Mark a task as completed",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true,
+          "description": "Task ID to mark as completed"
+        }
+      }
+    },
+    {
+      "action_type": "to_incomplete_task",
+      "display_name": "Mark Task as Incomplete",
+      "description": "Mark a task as incomplete",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true,
+          "description": "Task ID to mark as incomplete"
+        }
+      }
+    },
+    {
+      "action_type": "update_user_task",
+      "display_name": "Update Task",
+      "description": "Update an existing task",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true,
+          "description": "Task ID to update"
+        },
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "Task title"
+        },
+        "description": {
+          "type": "string",
+          "required": false,
+          "description": "Task description"
+        },
+        "expires_at": {
+          "type": "number",
+          "required": false,
+          "description": "Expiry timestamp (Unix time)"
+        }
+      }
+    },
+    {
+      "action_type": "delete_user_task",
+      "display_name": "Delete Task",
+      "description": "Delete a task",
+      "parameters": {
+        "task_id": {
+          "type": "string",
+          "required": true,
+          "description": "Task ID to delete"
+        }
+      }
+    }
+  ]
+}

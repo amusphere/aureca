@@ -27,6 +27,9 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.modify",
 ]
 
 
@@ -34,7 +37,9 @@ class GoogleOauthService:
     def __init__(self, session: Session | None = None):
         # 環境変数のチェック
         if not ENCRYPTION_KEY:
-            raise ValueError("GOOGLE_OAUTH_ENCRYPTION_KEY environment variable is required")
+            raise ValueError(
+                "GOOGLE_OAUTH_ENCRYPTION_KEY environment variable is required"
+            )
         if not GOOGLE_CLIENT_ID:
             raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
         if not GOOGLE_CLIENT_SECRET:

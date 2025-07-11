@@ -1,39 +1,39 @@
+import 'github-markdown-css/github-markdown-light.css';
+import type { Message } from "../../../types/chat";
 import { cn } from "../../lib/utils";
-import { Bot, User } from 'lucide-react';
+import { MarkdownContent } from "./MarkdownContent";
+import { MessageAvatar } from "./MessageAvatar";
 
 interface ChatMessageProps {
-  message: string;
-  isUser: boolean;
-  timestamp: Date; // タイムスタンプは当面表示しないが、データとしては残す
+  message: Message;
 }
 
-export default function ChatMessage({ message, isUser }: ChatMessageProps) {
-  const Icon = isUser ? User : Bot;
-  const iconContainerBg = isUser ? "bg-gray-300" : "bg-gray-200";
-  const iconColor = isUser ? "text-gray-600" : "text-gray-500";
+const MESSAGE_STYLES = {
+  user: "bg-blue-600 text-white",
+  ai: "bg-white border border-gray-200"
+} as const;
+
+export default function ChatMessage({ message }: ChatMessageProps) {
+  const { content, isUser } = message;
 
   return (
     <div className={cn("flex items-start gap-3", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && (
-        <div className={cn("w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center", iconContainerBg)}>
-          <Icon className={cn("w-5 h-5", iconColor)} />
-        </div>
-      )}
+      {!isUser && <MessageAvatar isUser={false} />}
+
       <div
         className={cn(
           "max-w-[85%] rounded-2xl px-4 py-2.5",
-          isUser
-            ? "bg-blue-600 text-white"
-            : "bg-white border border-gray-200"
+          isUser ? MESSAGE_STYLES.user : MESSAGE_STYLES.ai
         )}
       >
-        <p className="text-sm whitespace-pre-wrap break-words">{message}</p>
+        {isUser ? (
+          <p className="text-sm whitespace-pre-wrap break-words">{content}</p>
+        ) : (
+          <MarkdownContent content={content} />
+        )}
       </div>
-      {isUser && (
-        <div className={cn("w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center", iconContainerBg)}>
-          <Icon className={cn("w-5 h-5", iconColor)} />
-        </div>
-      )}
+
+      {isUser && <MessageAvatar isUser={true} />}
     </div>
   );
 }

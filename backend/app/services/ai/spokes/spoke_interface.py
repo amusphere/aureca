@@ -29,8 +29,8 @@ class BaseSpoke(ABC):
 
     def __init__(
         self,
-        session: Session | None = None,
-        current_user: User | None = None,
+        session: Session,
+        current_user: User,
     ):
         self.session = session
         self.current_user = current_user
@@ -53,11 +53,14 @@ class BaseSpoke(ABC):
                     error=f"Unsupported action type: {action.action_type}",
                 )
 
+            # 元のパラメータを初期値として設定
+            parameters = action.get_parameters_dict()
+
             try:
                 predict_parameters = await self._predict_parameters(
                     spoke_name=action.spoke_name,
                     action_type=action.action_type,
-                    parameters=action.get_parameters_dict(),
+                    parameters=parameters,
                     action_definition=action_definition,
                 )
 
