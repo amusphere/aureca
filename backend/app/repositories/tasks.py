@@ -12,7 +12,7 @@ def find_tasks(
     stmt = select(Tasks).where(
         Tasks.user_id == user_id,
         Tasks.completed == completed,
-    )
+    ).order_by(Tasks.expires_at)
 
     if expires_at is not None:
         stmt = stmt.where(Tasks.expires_at >= expires_at)
