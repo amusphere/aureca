@@ -80,26 +80,27 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <RefreshCwIcon className="w-6 h-6 animate-spin mr-2" />
-          <span>タスクを読み込み中...</span>
+      <Card className="w-full">
+        <CardContent className="flex items-center justify-center py-6">
+          <RefreshCwIcon className="w-5 h-5 animate-spin mr-2" />
+          <span className="text-sm">読み込み中...</span>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-none">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">タスク</h2>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">タスク</h2>
+        <div className="flex gap-1">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchTasks}
             aria-label="更新"
+            className="h-8 w-8 p-0"
           >
             <RefreshCwIcon className="w-4 h-4" />
           </Button>
@@ -108,6 +109,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
               onClick={onCreateTask}
               size="sm"
               aria-label="新規作成"
+              className="h-8 w-8 p-0"
             >
               <PlusIcon className="w-4 h-4" />
             </Button>
@@ -116,12 +118,12 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
       </div>
 
       {/* タブボタン */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-3">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-2">
         <Button
           variant={activeTab === "active" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("active")}
-          className="flex-1"
+          className="flex-1 h-8 text-xs"
         >
           アクティブ ({activeTasks.length})
         </Button>
@@ -129,17 +131,17 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
           variant={activeTab === "completed" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("completed")}
-          className="flex-1"
+          className="flex-1 h-8 text-xs"
         >
           完了済み ({completedTasks.length})
         </Button>
       </div>
 
       {/* タスクコンテンツ */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {activeTab === "active" ? (
           activeTasks.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground text-sm">
               📝 タスクがありません
             </div>
           ) : (
@@ -155,7 +157,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
           )
         ) : (
           completedTasks.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground text-sm">
               ✅ 完了したタスクがありません
             </div>
           ) : (
