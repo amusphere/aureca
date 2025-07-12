@@ -44,19 +44,29 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
 
   const handleToggleComplete = async (taskUuid: string, completed: boolean) => {
     try {
-      // UUIDから実際のタスクIDを取得する必要があります
-      // 今回は簡易的に、タスクリストから該当するタスクを見つけます
+      // UUIDから実際のタスクを見つける
       const allTasks = [...activeTasks, ...completedTasks];
       const task = allTasks.find(t => t.uuid === taskUuid);
 
       if (!task) return;
 
-      // 仮のtaskIdとしてUUIDを使用（実際のAPIではIDが必要）
-      // これは後でバックエンドのAPIレスポンスにIDフィールドを追加する必要があります
-      if (completed) {
-        // await completeTask(task.id);
-      } else {
-        // await incompleteTask(task.id);
+      // APIを呼び出してタスクの完了状態を更新（update_task_by_uuidを使用）
+      const response = await fetch(`/api/tasks/${taskUuid}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uuid: task.uuid,
+          title: task.title,
+          description: task.description,
+          completed: completed,
+          expires_at: task.expires_at,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
       }
 
       // 楽観的更新
