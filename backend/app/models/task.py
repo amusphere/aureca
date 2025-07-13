@@ -7,5 +7,5 @@ class TaskModel(BaseModel):
     uuid: UUID | None = None
     title: str
     description: str | None = None
-    completed: bool
+    completed: bool = False
     expires_at: float | None = None
