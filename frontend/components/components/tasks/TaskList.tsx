@@ -29,7 +29,17 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       const activeResponse = await fetch("/api/tasks?completed=false");
       if (activeResponse.ok) {
         const activeData = await activeResponse.json();
-        setActiveTasks(activeData);
+        // 期限順でソート（期限が近いものを上に、期限がないものは最後に）
+        const sortedActiveTasks = activeData.sort((a: Task, b: Task) => {
+          // 期限がない場合は最後に
+          if (!a.expires_at && !b.expires_at) return 0;
+          if (!a.expires_at) return 1;
+          if (!b.expires_at) return -1;
+
+          // 期限が近い順（昇順）
+          return a.expires_at - b.expires_at;
+        });
+        setActiveTasks(sortedActiveTasks);
       }
 
       // 完了済みタスクを取得
@@ -85,7 +95,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         // アニメーション時間を待つ
         setTimeout(() => {
           setActiveTasks(prev => prev.filter(t => t.uuid !== taskUuid));
-          setCompletedTasks(prev => [...prev, { ...task, completed: true }]);
+          setCompletedTasks(prev => [{ ...task, completed: true }, ...prev]);
           setCompletingTasks(prev => {
             const newSet = new Set(prev);
             newSet.delete(taskUuid);
@@ -96,7 +106,21 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         // 未完了に戻すときもアニメーション後に状態を更新
         setTimeout(() => {
           setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
-          setActiveTasks(prev => [...prev, { ...task, completed: false }]);
+          setActiveTasks(prev => {
+            const updatedTask = { ...task, completed: false };
+            const newActiveTasks = [...prev, updatedTask];
+
+            // 期限順でソート（期限が近いものを上に、期限がないものは最後に）
+            return newActiveTasks.sort((a, b) => {
+              // 期限がない場合は最後に
+              if (!a.expires_at && !b.expires_at) return 0;
+              if (!a.expires_at) return 1;
+              if (!b.expires_at) return -1;
+
+              // 期限が近い順（昇順）
+              return a.expires_at - b.expires_at;
+            });
+          });
           setUncompletingTasks(prev => {
             const newSet = new Set(prev);
             newSet.delete(taskUuid);
