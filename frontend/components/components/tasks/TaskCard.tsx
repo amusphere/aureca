@@ -4,10 +4,9 @@ import { Badge } from "@/components/components/ui/badge";
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
-import { format, fromUnixTime } from "date-fns";
-import { ja } from "date-fns/locale";
 import { CalendarIcon, CheckIcon, ClockIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getTaskStatus, formatTaskExpiry } from "@/utils/taskUtils";
 
 interface TaskCardProps {
   task: Task;
@@ -21,10 +20,9 @@ interface TaskCardProps {
 export function TaskCard({ task, isCompleting = false, isUncompleting = false, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
   const router = useRouter();
 
-  // 期限切れ判定：現在時刻（秒）と期限（秒）を比較
-  const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-  const isExpired = task.expires_at ? currentTimeInSeconds > task.expires_at : false;
-  const expiryDate = task.expires_at ? fromUnixTime(task.expires_at) : null;
+  // ユーティリティ関数を使用して状態を取得
+  const { isExpired } = getTaskStatus(task);
+  const formattedExpiry = formatTaskExpiry(task, 'M/d HH:mm');
 
   // タスク詳細ページへの遷移
   const handleCardClick = (e: React.MouseEvent) => {
@@ -65,7 +63,7 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
                   {task.description}
                 </CardDescription>
               )}
-              {expiryDate && (
+              {formattedExpiry && (
                 <div className="flex items-center gap-1 mt-1">
                   {isExpired ? (
                     <ClockIcon className="w-3 h-3 text-red-500" />
@@ -73,7 +71,7 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
                     <CalendarIcon className="w-3 h-3 text-muted-foreground" />
                   )}
                   <span className={`text-xs ${isExpired && !task.completed ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
-                    {format(expiryDate, 'MM/dd HH:mm', { locale: ja })}
+                    {formattedExpiry}
                   </span>
                 </div>
               )}

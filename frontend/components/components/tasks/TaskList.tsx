@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/components/ui/card";
 import { CreateTaskRequest, Task } from "@/types/Task";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
-import { useTasks } from "../../hooks/useTasks";
+import { useTaskOperations } from "../../hooks/useTaskOperations";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
@@ -30,7 +30,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     toggleTaskComplete,
     error,
     clearError,
-  } = useTasks();
+  } = useTaskOperations();
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTask(taskData);

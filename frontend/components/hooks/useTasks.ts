@@ -2,6 +2,8 @@
 
 import { CreateTaskRequest, Task } from "@/types/Task";
 import { useCallback, useEffect, useState } from "react";
+import { sortTasksByExpiry, sortCompletedTasks } from "@/utils/taskUtils";
+import { TaskService } from "@/utils/taskService";
 
 interface UseTasksReturn {
   // State
@@ -34,38 +36,20 @@ export function useTasks(): UseTasksReturn {
   const [uncompletingTasks, setUncompletingTasks] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
-  // Sort tasks by expiry date (expired first, then by date, then no expiry)
-  const sortTasksByExpiry = useCallback((tasks: Task[]) => {
-    return tasks.sort((a, b) => {
-      // 期限がない場合は最後に
-      if (!a.expires_at && !b.expires_at) return 0;
-      if (!a.expires_at) return 1;
-      if (!b.expires_at) return -1;
-
-      // 期限が近い順（昇順）
-      return a.expires_at - b.expires_at;
-    });
-  }, []);
-
-  // Fetch tasks from API
+  // Fetch tasks from API using TaskService
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch active tasks
-      const activeResponse = await fetch("/api/tasks?completed=false");
-      if (!activeResponse.ok) throw new Error("Failed to fetch active tasks");
+      // Fetch active and completed tasks using TaskService
+      const [activeData, completedData] = await Promise.all([
+        TaskService.getTasks(false),
+        TaskService.getTasks(true)
+      ]);
 
-      const activeData = await activeResponse.json();
       const sortedActiveTasks = sortTasksByExpiry(activeData);
       setActiveTasks(sortedActiveTasks);
-
-      // Fetch completed tasks
-      const completedResponse = await fetch("/api/tasks?completed=true");
-      if (!completedResponse.ok) throw new Error("Failed to fetch completed tasks");
-
-      const completedData = await completedResponse.json();
       setCompletedTasks(completedData);
 
     } catch (err) {
@@ -75,21 +59,14 @@ export function useTasks(): UseTasksReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [sortTasksByExpiry]);
+  }, []);
 
-  // Create new task
+  // Create new task using TaskService
   const createTask = useCallback(async (taskData: CreateTaskRequest) => {
     setError(null);
 
     try {
-      const response = await fetch("/api/tasks", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData),
-      });
-
-      if (!response.ok) throw new Error('Failed to create task');
-
+      await TaskService.createTask(taskData);
       // Refresh tasks after creation
       await fetchTasks();
 
@@ -117,20 +94,8 @@ export function useTasks(): UseTasksReturn {
         setUncompletingTasks(prev => new Set([...prev, taskUuid]));
       }
 
-      // API call to update task
-      const response = await fetch(`/api/tasks/${taskUuid}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uuid: task.uuid,
-          title: task.title,
-          description: task.description,
-          completed: completed,
-          expires_at: task.expires_at,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update task');
+      // API call to update task using TaskService
+      const updatedTask = await TaskService.toggleTaskCompletion(task, completed);
 
       // Update state after animation
       setTimeout(() => {
@@ -178,7 +143,7 @@ export function useTasks(): UseTasksReturn {
       // Refresh data on error
       await fetchTasks();
     }
-  }, [activeTasks, completedTasks, sortTasksByExpiry, fetchTasks]);
+  }, [activeTasks, completedTasks, fetchTasks]);
 
   // Clear error
   const clearError = useCallback(() => {
