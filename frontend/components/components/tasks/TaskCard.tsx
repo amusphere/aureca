@@ -7,6 +7,7 @@ import { Task } from "@/types/Task";
 import { format, fromUnixTime } from "date-fns";
 import { ja } from "date-fns/locale";
 import { CalendarIcon, CheckIcon, ClockIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TaskCardProps {
   task: Task;
@@ -18,15 +19,29 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, isCompleting = false, isUncompleting = false, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
+  const router = useRouter();
+
   // 期限切れ判定：現在時刻（秒）と期限（秒）を比較
   const currentTimeInSeconds = Math.floor(Date.now() / 1000);
   const isExpired = task.expires_at ? currentTimeInSeconds > task.expires_at : false;
   const expiryDate = task.expires_at ? fromUnixTime(task.expires_at) : null;
 
+  // タスク詳細ページへの遷移
+  const handleCardClick = (e: React.MouseEvent) => {
+    // ボタンクリック時は詳細ページに遷移しない
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    router.push(`/tasks/${task.uuid}`);
+  };
+
   return (
-    <Card className={`w-full transition-all duration-700 ease-out ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''} ${isCompleting ? 'transform scale-110 opacity-0 translate-x-8 rotate-3 bg-green-100 border-green-300 shadow-lg' : ''
+    <Card
+      className={`w-full transition-all duration-700 ease-out cursor-pointer hover:shadow-md ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''} ${isCompleting ? 'transform scale-110 opacity-0 translate-x-8 rotate-3 bg-green-100 border-green-300 shadow-lg' : ''
       } ${isUncompleting ? 'transform scale-110 opacity-0 -translate-x-8 -rotate-3 bg-blue-100 border-blue-300 shadow-lg' : ''
-      }`}>
+      }`}
+      onClick={handleCardClick}
+    >
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">

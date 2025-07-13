@@ -1,5 +1,33 @@
-import { apiPatch } from '@/utils/api';
+import { apiGet, apiPatch } from '@/utils/api';
 import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { uuid: string } }
+) {
+  try {
+    const { uuid } = params;
+
+    // バックエンドのGET /tasks/{uuid}エンドポイントを使用
+    const response = await apiGet(`/tasks/${uuid}`);
+
+    if (response.error) {
+      return NextResponse.json(
+        { error: response.error.message || 'Failed to fetch task' },
+        { status: response.error.status || 500 }
+      );
+    }
+
+    return NextResponse.json(response.data);
+
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
