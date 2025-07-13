@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from app.schema import Tasks
 from sqlmodel import Session, select
 
@@ -9,9 +11,13 @@ def find_tasks(
     expires_at: float | None = None,
 ) -> list[Tasks]:
     """Find all task lists for a specific user"""
-    stmt = select(Tasks).where(
-        Tasks.user_id == user_id,
-        Tasks.completed == completed,
+    stmt = (
+        select(Tasks)
+        .where(
+            Tasks.user_id == user_id,
+            Tasks.completed == completed,
+        )
+        .order_by(Tasks.expires_at)
     )
 
     if expires_at is not None:
@@ -26,6 +32,18 @@ def get_task_by_id(
 ) -> Tasks | None:
     """Get a task by ID"""
     return session.get(Tasks, id)
+
+
+def get_task_by_uuid(
+    session: Session,
+    uuid: str | UUID,
+    user_id: int | None = None,
+) -> Tasks | None:
+    """Get a task by UUID"""
+    stmt = select(Tasks).where(Tasks.uuid == uuid)
+    if user_id is not None:
+        stmt = stmt.where(Tasks.user_id == user_id)
+    return session.exec(stmt).first()
 
 
 def create_task(
@@ -89,6 +107,66 @@ def incomplete_task(
 ) -> Tasks:
     """Mark a task as incomplete"""
     return update_task(session, id, completed=False)
+
+
+def update_task_by_uuid(
+    session: Session,
+    uuid: str | UUID,
+    user_id: int,
+    title: str | None = None,
+    description: str | None = None,
+    expires_at: float | None = None,
+    completed: bool | None = None,
+) -> Tasks:
+    """Update an existing task by UUID"""
+    task = get_task_by_uuid(session, uuid, user_id)
+    if not task:
+        raise ValueError("task not found")
+
+    if title is not None:
+        task.title = title
+    if description is not None:
+        task.description = description
+    if expires_at is not None:
+        task.expires_at = expires_at
+    if completed is not None:
+        task.completed = completed
+
+    session.commit()
+    session.refresh(task)
+    return task
+
+
+def complete_task_by_uuid(
+    session: Session,
+    uuid: str | UUID,
+    user_id: int,
+) -> Tasks:
+    """Mark a task as completed by UUID"""
+    return update_task_by_uuid(session, uuid, user_id, completed=True)
+
+
+def incomplete_task_by_uuid(
+    session: Session,
+    uuid: str | UUID,
+    user_id: int,
+) -> Tasks:
+    """Mark a task as incomplete by UUID"""
+    return update_task_by_uuid(session, uuid, user_id, completed=False)
+
+
+def delete_task_by_uuid(
+    session: Session,
+    uuid: str | UUID,
+    user_id: int,
+) -> None:
+    """Delete a task by UUID"""
+    task = get_task_by_uuid(session, uuid, user_id)
+    if not task:
+        raise ValueError("task not found")
+
+    session.delete(task)
+    session.commit()
 
 
 def delete_task(

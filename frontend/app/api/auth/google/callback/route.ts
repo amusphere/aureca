@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error("Google OAuth error:", error);
       const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL(`/dashboard?error=${encodeURIComponent(error)}`, domain);
+      const redirectUrl = new URL(`/home?error=${encodeURIComponent(error)}`, domain);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (!code || !state) {
       console.error("Missing code or state parameter");
       const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL("/dashboard?error=missing_parameters", domain);
+      const redirectUrl = new URL("/home?error=missing_parameters", domain);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
@@ -35,19 +35,19 @@ export async function GET(request: NextRequest) {
     if (apiError) {
       console.error("Backend callback error:", apiError);
       const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL(`/dashboard?error=${encodeURIComponent(apiError.message)}`, domain);
+      const redirectUrl = new URL(`/home?error=${encodeURIComponent(apiError.message)}`, domain);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // 成功時はダッシュボードにリダイレクト
     const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-    const redirectUrl = new URL("/dashboard?connected=true", domain);
+    const redirectUrl = new URL("/home?connected=true", domain);
     return NextResponse.redirect(redirectUrl.toString(), 302);
 
   } catch (error) {
     console.error("Callback processing error:", error);
     const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-    const redirectUrl = new URL("/dashboard?error=callback_failed", domain);
+    const redirectUrl = new URL("/home?error=callback_failed", domain);
     return NextResponse.redirect(redirectUrl.toString(), 302);
   }
 }
