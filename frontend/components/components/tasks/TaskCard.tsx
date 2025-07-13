@@ -10,19 +10,22 @@ import { CalendarIcon, CheckIcon, ClockIcon } from "lucide-react";
 
 interface TaskCardProps {
   task: Task;
+  isCompleting?: boolean;
   onToggleComplete?: (taskId: string, completed: boolean) => void;
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
 }
 
-export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, isCompleting = false, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
   // 期限切れ判定：現在時刻（秒）と期限（秒）を比較
   const currentTimeInSeconds = Math.floor(Date.now() / 1000);
   const isExpired = task.expires_at ? currentTimeInSeconds > task.expires_at : false;
   const expiryDate = task.expires_at ? fromUnixTime(task.expires_at) : null;
 
   return (
-    <Card className={`w-full transition-all duration-200 ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''}`}>
+    <Card className={`w-full transition-all duration-700 ease-out ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''} ${
+      isCompleting ? 'transform scale-110 opacity-0 translate-x-8 rotate-3 bg-green-100 border-green-300 shadow-lg' : ''
+    }`}>
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">

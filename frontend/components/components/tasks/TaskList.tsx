@@ -18,6 +18,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
+  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -50,6 +51,11 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
 
       if (!task) return;
 
+      // 完了時にアニメーションを開始
+      if (completed) {
+        setCompletingTasks(prev => new Set([...prev, taskUuid]));
+      }
+
       // APIを呼び出してタスクの完了状態を更新（update_task_by_uuidを使用）
       const response = await fetch(`/api/tasks/${taskUuid}`, {
         method: 'PATCH',
@@ -69,16 +75,31 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
         throw new Error('Failed to update task');
       }
 
-      // 楽観的更新
+      // 完了時はアニメーション後に状態を更新
       if (completed) {
-        setActiveTasks(prev => prev.filter(t => t.uuid !== taskUuid));
-        setCompletedTasks(prev => [...prev, { ...task, completed: true }]);
+        // アニメーション時間を待つ
+        setTimeout(() => {
+          setActiveTasks(prev => prev.filter(t => t.uuid !== taskUuid));
+          setCompletedTasks(prev => [...prev, { ...task, completed: true }]);
+          setCompletingTasks(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(taskUuid);
+            return newSet;
+          });
+        }, 700); // 0.7秒のアニメーション時間
       } else {
+        // 未完了に戻すときは即座に更新
         setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
         setActiveTasks(prev => [...prev, { ...task, completed: false }]);
       }
     } catch (error) {
       console.error("Failed to toggle task completion:", error);
+      // エラー時は完了中状態をリセット
+      setCompletingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskUuid);
+        return newSet;
+      });
       // エラー時は元の状態に戻す
       await fetchTasks();
     }
@@ -159,6 +180,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
               <TaskCard
                 key={task.uuid}
                 task={task}
+                isCompleting={completingTasks.has(task.uuid)}
                 onToggleComplete={handleToggleComplete}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
@@ -175,6 +197,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
               <TaskCard
                 key={task.uuid}
                 task={task}
+                isCompleting={false}
                 onToggleComplete={handleToggleComplete}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
