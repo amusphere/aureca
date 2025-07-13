@@ -19,6 +19,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
+  const [uncompletingTasks, setUncompletingTasks] = useState<Set<string>>(new Set());
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -54,6 +55,9 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
       // 完了時にアニメーションを開始
       if (completed) {
         setCompletingTasks(prev => new Set([...prev, taskUuid]));
+      } else {
+        // 未完了に戻すときのアニメーションを開始
+        setUncompletingTasks(prev => new Set([...prev, taskUuid]));
       }
 
       // APIを呼び出してタスクの完了状態を更新（update_task_by_uuidを使用）
@@ -88,14 +92,27 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
           });
         }, 700); // 0.7秒のアニメーション時間
       } else {
-        // 未完了に戻すときは即座に更新
-        setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
-        setActiveTasks(prev => [...prev, { ...task, completed: false }]);
+        // 未完了に戻すときもアニメーション後に状態を更新
+        setTimeout(() => {
+          setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
+          setActiveTasks(prev => [...prev, { ...task, completed: false }]);
+          setUncompletingTasks(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(taskUuid);
+            return newSet;
+          });
+        }, 700); // 0.7秒のアニメーション時間
       }
     } catch (error) {
       console.error("Failed to toggle task completion:", error);
       // エラー時は完了中状態をリセット
       setCompletingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(taskUuid);
+        return newSet;
+      });
+      // エラー時は未完了中状態もリセット
+      setUncompletingTasks(prev => {
         const newSet = new Set(prev);
         newSet.delete(taskUuid);
         return newSet;
@@ -198,6 +215,7 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
                 key={task.uuid}
                 task={task}
                 isCompleting={false}
+                isUncompleting={uncompletingTasks.has(task.uuid)}
                 onToggleComplete={handleToggleComplete}
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
