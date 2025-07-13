@@ -25,21 +25,7 @@ export function sortTasksByExpiry(tasks: Task[]): Task[] {
   });
 }
 
-/**
- * Sort completed tasks by title alphabetically
- */
-export function sortCompletedTasks(tasks: Task[]): Task[] {
-  return tasks.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
-}
-
 // ===== FILTERING UTILITIES =====
-
-/**
- * Get tasks by completion status
- */
-export function filterTasksByCompletion(tasks: Task[], completed: boolean): Task[] {
-  return tasks.filter(task => task.completed === completed);
-}
 
 /**
  * Filter expired tasks
@@ -168,71 +154,5 @@ export function formatTaskExpiry(task: Task, formatString: string = 'yyyy年M月
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Tokyo'
-  });
-}
-
-/**
- * Get relative time description for task expiry
- */
-export function getTaskExpiryRelativeTime(task: Task): string | null {
-  if (!task.expires_at) return null;
-
-  const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-  const diffInSeconds = task.expires_at - currentTimeInSeconds;
-
-  if (diffInSeconds < 0) {
-    return '期限切れ';
-  }
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  const diffInDays = Math.floor(diffInHours / 24);
-
-  if (diffInDays > 0) {
-    return `${diffInDays}日後`;
-  } else if (diffInHours > 0) {
-    return `${diffInHours}時間後`;
-  } else if (diffInMinutes > 0) {
-    return `${diffInMinutes}分後`;
-  } else {
-    return 'まもなく';
-  }
-}
-
-// ===== STATISTICS UTILITIES =====
-
-/**
- * Get task statistics
- */
-export function getTaskStatistics(tasks: Task[]) {
-  const total = tasks.length;
-  const completed = tasks.filter(task => task.completed).length;
-  const active = total - completed;
-  const expired = getExpiredTasks(tasks.filter(task => !task.completed)).length;
-  const expiringSoon = getTasksExpiringSoon(tasks.filter(task => !task.completed)).length;
-
-  return {
-    total,
-    completed,
-    active,
-    expired,
-    expiringSoon,
-    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
-  };
-}
-
-// ===== LEGACY FUNCTIONS (DEPRECATED) =====
-
-/**
- * Format expiry date for display (legacy - use formatTaskExpiry instead)
- * @deprecated Use formatTaskExpiry instead
- */
-export function formatExpiryDate(expiryTimestamp: number): string {
-  const date = new Date(expiryTimestamp * 1000);
-  return date.toLocaleDateString('ja-JP', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
   });
 }
