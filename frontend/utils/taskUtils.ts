@@ -1,4 +1,6 @@
 import { Task } from "@/types/Task";
+import { format, fromUnixTime } from "date-fns";
+import { ja } from "date-fns/locale";
 
 /**
  * Sort tasks by expiry date
@@ -7,14 +9,21 @@ import { Task } from "@/types/Task";
  */
 export function sortTasksByExpiry(tasks: Task[]): Task[] {
   return tasks.sort((a, b) => {
-    // 期限がない場合は最後に
+    // Tasks without expiry date go last
     if (!a.expires_at && !b.expires_at) return 0;
     if (!a.expires_at) return 1;
     if (!b.expires_at) return -1;
 
-    // 期限が近い順（昇順）
+    // Sort by expiry date ascending (closest first)
     return a.expires_at - b.expires_at;
   });
+}
+
+/**
+ * Sort completed tasks by title alphabetically
+ */
+export function sortCompletedTasks(tasks: Task[]): Task[] {
+  return tasks.sort((a, b) => a.title.localeCompare(b.title, 'ja'));
 }
 
 /**
@@ -27,6 +36,53 @@ export function isTaskExpired(task: Task): boolean {
 }
 
 /**
+ * Format task expiry date for display
+ */
+export function formatTaskExpiry(task: Task, formatString: string = 'yyyy年M月d日 HH:mm'): string | null {
+  if (!task.expires_at) return null;
+  const expiryDate = fromUnixTime(task.expires_at);
+  return format(expiryDate, formatString, { locale: ja });
+}
+
+/**
+ * Get task status for display
+ */
+export function getTaskStatus(task: Task): {
+  isExpired: boolean;
+  isCompleted: boolean;
+  statusText: string;
+  variant: 'default' | 'secondary' | 'destructive';
+} {
+  const isExpired = isTaskExpired(task);
+  const isCompleted = task.completed;
+
+  if (isCompleted) {
+    return {
+      isExpired,
+      isCompleted,
+      statusText: '完了',
+      variant: 'secondary'
+    };
+  }
+
+  if (isExpired) {
+    return {
+      isExpired,
+      isCompleted,
+      statusText: '期限切れ',
+      variant: 'destructive'
+    };
+  }
+
+  return {
+    isExpired,
+    isCompleted,
+    statusText: 'アクティブ',
+    variant: 'default'
+  };
+}
+
+/**
  * Get tasks by completion status
  */
 export function filterTasksByCompletion(tasks: Task[], completed: boolean): Task[] {
@@ -34,7 +90,8 @@ export function filterTasksByCompletion(tasks: Task[], completed: boolean): Task
 }
 
 /**
- * Format expiry date for display
+ * Format expiry date for display (legacy - use formatTaskExpiry instead)
+ * @deprecated Use formatTaskExpiry instead
  */
 export function formatExpiryDate(expiryTimestamp: number): string {
   const date = new Date(expiryTimestamp * 1000);

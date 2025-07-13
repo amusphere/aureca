@@ -38,8 +38,8 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
   return (
     <Card
       className={`w-full transition-all duration-700 ease-out cursor-pointer hover:shadow-md ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''} ${isCompleting ? 'transform scale-110 opacity-0 translate-x-8 rotate-3 bg-green-100 border-green-300 shadow-lg' : ''
-      } ${isUncompleting ? 'transform scale-110 opacity-0 -translate-x-8 -rotate-3 bg-blue-100 border-blue-300 shadow-lg' : ''
-      }`}
+        } ${isUncompleting ? 'transform scale-110 opacity-0 -translate-x-8 -rotate-3 bg-blue-100 border-blue-300 shadow-lg' : ''
+        }`}
       onClick={handleCardClick}
     >
       <CardHeader className="p-3 pb-2">
@@ -49,8 +49,8 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
               variant="ghost"
               size="sm"
               className={`p-1 h-6 w-6 rounded-full border-2 transition-all duration-200 ${task.completed
-                  ? 'bg-green-100 text-green-600 border-green-300'
-                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                ? 'bg-green-100 text-green-600 border-green-300'
+                : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
                 }`}
               onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
             >
