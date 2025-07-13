@@ -62,10 +62,27 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
   }, [currentTask.uuid]);
 
   // Delete task
-  const deleteTask = useCallback(() => {
-    // TODO: Implement delete functionality
-    console.log("Delete task:", currentTask.uuid);
-  }, [currentTask.uuid]);
+  const deleteTask = useCallback(async () => {
+    const isConfirmed = window.confirm('このタスクを削除しますか？');
+    if (!isConfirmed) return;
+
+    try {
+      await withErrorHandling(
+        async () => {
+          await TaskService.deleteTask(currentTask.uuid);
+          // タスク削除後、タスク一覧ページに戻る
+          router.push('/home');
+        },
+        {
+          onError: (error) => {
+            console.error("Failed to delete task:", error.message);
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Delete task error:", error);
+    }
+  }, [currentTask.uuid, withErrorHandling, router]);
 
   // Navigate back
   const goBack = useCallback(() => {

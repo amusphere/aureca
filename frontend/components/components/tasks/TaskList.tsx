@@ -28,6 +28,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     fetchTasks,
     createTask,
     toggleTaskComplete,
+    deleteTask,
     error,
     clearError,
   } = useTasks();
@@ -118,7 +119,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                 isCompleting={completingTasks.has(task.uuid)}
                 onToggleComplete={toggleTaskComplete}
                 onEdit={onEditTask}
-                onDelete={onDeleteTask}
+                onDelete={onDeleteTask || deleteTask}
               />
             ))
           )
@@ -136,7 +137,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                 isUncompleting={uncompletingTasks.has(task.uuid)}
                 onToggleComplete={toggleTaskComplete}
                 onEdit={onEditTask}
-                onDelete={onDeleteTask}
+                onDelete={onDeleteTask || deleteTask}
               />
             ))
           )

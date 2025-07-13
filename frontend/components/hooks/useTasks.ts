@@ -20,6 +20,7 @@ interface UseTasksReturn {
   fetchTasks: () => Promise<void>;
   createTask: (taskData: CreateTaskRequest) => Promise<void>;
   toggleTaskComplete: (taskUuid: string, completed: boolean) => Promise<void>;
+  deleteTask: (taskUuid: string) => Promise<void>;
 
   // Error handling
   error: ErrorState | null;
@@ -39,14 +40,14 @@ export function useTasks(): UseTasksReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [uncompletingTasks, setUncompletingTasks] = useState<Set<string>>(new Set());
-  
+
   // Unified error handling
   const { error, withErrorHandling, clearError } = useErrorHandling();
 
   // Fetch tasks from API using TaskService
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
-    
+
     try {
       await withErrorHandling(
         async () => {
@@ -154,6 +155,29 @@ export function useTasks(): UseTasksReturn {
     );
   }, [withErrorHandling, activeTasks, completedTasks, fetchTasks]);
 
+  // Delete task with unified error handling
+  const deleteTask = useCallback(async (taskUuid: string) => {
+    const isConfirmed = window.confirm('このタスクを削除しますか？');
+    if (!isConfirmed) return;
+
+    await withErrorHandling(
+      async () => {
+        await TaskService.deleteTask(taskUuid);
+
+        // Remove task from local state
+        setActiveTasks(prev => prev.filter(t => t.uuid !== taskUuid));
+        setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
+      },
+      {
+        onError: (error) => {
+          console.error("Failed to delete task:", error.message);
+          // Refresh data on error
+          fetchTasks();
+        }
+      }
+    );
+  }, [withErrorHandling, fetchTasks]);
+
   // Initial data fetch
   useEffect(() => {
     fetchTasks();
@@ -173,6 +197,7 @@ export function useTasks(): UseTasksReturn {
     fetchTasks,
     createTask,
     toggleTaskComplete,
+    deleteTask,
 
     // Error handling
     error,
