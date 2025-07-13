@@ -25,14 +25,18 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
     <Card className={`w-full transition-all duration-200 ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''}`}>
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-2 flex-1">
+          <div className="flex items-start gap-3 flex-1">
             <Button
               variant="ghost"
               size="sm"
-              className={`p-1 h-5 w-5 rounded ${task.completed ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100'}`}
+              className={`p-1 h-6 w-6 rounded-full border-2 transition-all duration-200 ${
+                task.completed
+                  ? 'bg-green-100 text-green-600 border-green-300'
+                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+              }`}
               onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
             >
-              {task.completed && <CheckIcon className="w-3 h-3" />}
+              {task.completed && <CheckIcon className="w-4 h-4" />}
             </Button>
             <div className="flex-1 min-w-0">
               <CardTitle className={`text-sm font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
