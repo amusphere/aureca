@@ -31,25 +31,23 @@ export function TaskHeader({ task, onEdit, onDelete, showActions = true }: TaskH
         <div className="flex gap-2 flex-shrink-0">
           {onEdit && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onEdit}
-              className="gap-1"
+              className="h-8 w-8 p-0 hover:bg-gray-100"
             >
-              <Pencil className="h-3 w-3" />
-              編集
+              <Pencil className="h-4 w-4 text-gray-600" />
             </Button>
           )}
 
           {onDelete && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onDelete}
-              className="gap-1 text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 hover:bg-red-50 text-red-600 hover:text-red-700"
             >
-              <Trash2 className="h-3 w-3" />
-              削除
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
