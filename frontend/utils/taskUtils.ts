@@ -1,6 +1,5 @@
 import { Task } from "@/types/Task";
-import { format, fromUnixTime } from "date-fns";
-import { ja } from "date-fns/locale";
+import { fromUnixTime } from "date-fns";
 
 /**
  * Unified task utilities following AGENTS.md structure
@@ -144,11 +143,32 @@ export function getTaskStatus(task: Task): {
 
 /**
  * Format task expiry date for display
+ * Uses toLocaleDateString for SSR compatibility
  */
 export function formatTaskExpiry(task: Task, formatString: string = 'yyyy年M月d日 HH:mm'): string | null {
   if (!task.expires_at) return null;
   const expiryDate = fromUnixTime(task.expires_at);
-  return format(expiryDate, formatString, { locale: ja });
+
+  // Use toLocaleDateString for SSR compatibility
+  if (formatString === 'M/d HH:mm') {
+    return expiryDate.toLocaleDateString('ja-JP', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Tokyo'
+    });
+  }
+
+  // Default format
+  return expiryDate.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Tokyo'
+  });
 }
 
 /**

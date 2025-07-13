@@ -4,9 +4,9 @@ import { Badge } from "@/components/components/ui/badge";
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
-import { CalendarIcon, CheckIcon, ClockIcon } from "lucide-react";
+import { formatTaskExpiry, getTaskStatus } from "@/utils/taskUtils";
+import { CalendarIcon, CheckIcon, ClockIcon, EditIcon, TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getTaskStatus, formatTaskExpiry } from "@/utils/taskUtils";
 
 interface TaskCardProps {
   task: Task;
@@ -97,22 +97,22 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
           <div className="flex justify-end gap-1">
             {onEdit && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs"
+                className="h-8 w-8 p-0 hover:bg-gray-100"
                 onClick={() => onEdit(task)}
               >
-                編集
+                <EditIcon className="w-4 h-4 text-gray-600" />
               </Button>
             )}
             {onDelete && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                className="h-8 w-8 p-0 hover:bg-red-50"
                 onClick={() => onDelete(task.uuid)}
               >
-                削除
+                <TrashIcon className="w-4 h-4 text-red-600" />
               </Button>
             )}
           </div>

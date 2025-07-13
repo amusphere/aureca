@@ -3,6 +3,7 @@
 import { Task } from "@/types/Task";
 import { formatTaskExpiry, isTaskExpired } from "@/utils/taskUtils";
 import { CalendarIcon, ClockIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface TaskExpiryDisplayProps {
   task: Task;
@@ -18,10 +19,16 @@ export function TaskExpiryDisplay({
   formatString = 'yyyy年M月d日 HH:mm',
   showIcon = true
 }: TaskExpiryDisplayProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const formattedExpiry = formatTaskExpiry(task, formatString);
   const isExpired = isTaskExpired(task);
 
-  if (!formattedExpiry) return null;
+  if (!formattedExpiry || !mounted) return null;
 
   return (
     <div className="flex items-center gap-2">
