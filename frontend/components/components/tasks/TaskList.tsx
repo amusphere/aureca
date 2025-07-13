@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent } from "@/components/components/ui/card";
-import { CreateTaskRequest, Task } from "@/types/Task";
+import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useState } from "react";
 import { useTasks } from "../../hooks/useTasks";
@@ -18,6 +18,7 @@ interface TaskListProps {
 export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   const [activeTab, setActiveTab] = useState("active");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const {
     activeTasks,
@@ -27,6 +28,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     uncompletingTasks,
     fetchTasks,
     createTask,
+    updateTask,
     toggleTaskComplete,
     deleteTask,
     error,
@@ -36,6 +38,21 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTask(taskData);
     setIsTaskFormOpen(false);
+  };
+
+  const handleEditTask = (task: Task) => {
+    if (onEditTask) {
+      onEditTask(task);
+    } else {
+      setEditingTask(task);
+    }
+  };
+
+  const handleUpdateTask = async (taskData: UpdateTaskRequest) => {
+    if (editingTask) {
+      await updateTask(editingTask.uuid, taskData);
+      setEditingTask(null);
+    }
   };
 
   if (isLoading) {
@@ -118,7 +135,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                 task={task}
                 isCompleting={completingTasks.has(task.uuid)}
                 onToggleComplete={toggleTaskComplete}
-                onEdit={onEditTask}
+                onEdit={handleEditTask}
                 onDelete={onDeleteTask || deleteTask}
               />
             ))
@@ -136,7 +153,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                 isCompleting={false}
                 isUncompleting={uncompletingTasks.has(task.uuid)}
                 onToggleComplete={toggleTaskComplete}
-                onEdit={onEditTask}
+                onEdit={handleEditTask}
                 onDelete={onDeleteTask || deleteTask}
               />
             ))
@@ -150,6 +167,16 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         onClose={() => setIsTaskFormOpen(false)}
         onSubmit={handleCreateTask}
       />
+
+      {/* タスク編集フォーム */}
+      {editingTask && (
+        <TaskForm
+          isOpen={!!editingTask}
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSubmit={handleUpdateTask}
+        />
+      )}
     </div>
   );
 }

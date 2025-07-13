@@ -1,6 +1,6 @@
 "use client";
 
-import { Task } from "@/types/Task";
+import { Task, UpdateTaskRequest } from "@/types/Task";
 import { TaskService } from "@/utils/taskService";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
@@ -10,12 +10,15 @@ interface UseTaskDetailReturn {
   // State
   currentTask: Task;
   isToggling: boolean;
+  isEditing: boolean;
 
   // Actions
   toggleComplete: () => Promise<void>;
   editTask: () => void;
+  updateTask: (taskData: UpdateTaskRequest) => Promise<void>;
   deleteTask: () => void;
   goBack: () => void;
+  setIsEditing: (isEditing: boolean) => void;
 
   // Error handling
   error: ErrorState | null;
@@ -29,6 +32,7 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
   const router = useRouter();
   const [currentTask, setCurrentTask] = useState<Task>(initialTask);
   const [isToggling, setIsToggling] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { error, withErrorHandling, clearError } = useErrorHandling();
 
   // Toggle task completion status
@@ -57,9 +61,29 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
 
   // Navigate to edit page
   const editTask = useCallback(() => {
-    // TODO: Implement edit functionality
-    console.log("Edit task:", currentTask.uuid);
-  }, [currentTask.uuid]);
+    setIsEditing(true);
+  }, []);
+
+  // Update task
+  const updateTask = useCallback(async (taskData: UpdateTaskRequest) => {
+    try {
+      await withErrorHandling(
+        async () => {
+          const updatedTask = await TaskService.updateTask(currentTask.uuid, taskData);
+          setCurrentTask(updatedTask);
+          setIsEditing(false);
+          return updatedTask;
+        },
+        {
+          onError: (error) => {
+            console.error("Failed to update task:", error.message);
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Update task error:", error);
+    }
+  }, [currentTask.uuid, withErrorHandling]);
 
   // Delete task
   const deleteTask = useCallback(async () => {
@@ -93,12 +117,15 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
     // State
     currentTask,
     isToggling,
+    isEditing,
 
     // Actions
     toggleComplete,
     editTask,
+    updateTask,
     deleteTask,
     goBack,
+    setIsEditing,
 
     // Error handling
     error,

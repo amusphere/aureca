@@ -5,15 +5,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/components/ui/form";
 import { Input } from "@/components/components/ui/input";
 import { Textarea } from "@/components/components/ui/textarea";
-import { CreateTaskRequest } from "@/types/Task";
-import { format } from "date-fns";
-import { useState } from "react";
+import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
+import { format, fromUnixTime } from "date-fns";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface TaskFormProps {
   isOpen: boolean;
+  task?: Task; // 編集時に渡される既存のタスク
   onClose: () => void;
-  onSubmit: (task: CreateTaskRequest) => Promise<void>;
+  onSubmit: (taskData: CreateTaskRequest | UpdateTaskRequest) => Promise<void>;
 }
 
 interface TaskFormValues {
@@ -22,8 +23,9 @@ interface TaskFormValues {
   expires_at?: string; // ISO date string for form input
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit }: TaskFormProps) {
+export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!task;
 
   const form = useForm<TaskFormValues>({
     defaultValues: {
@@ -33,31 +35,64 @@ export function TaskForm({ isOpen, onClose, onSubmit }: TaskFormProps) {
     },
   });
 
+  // タスクが変更されたときにフォームの値を更新
+  useEffect(() => {
+    if (task) {
+      form.reset({
+        title: task.title,
+        description: task.description || "",
+        expires_at: task.expires_at
+          ? format(fromUnixTime(task.expires_at), "yyyy-MM-dd'T'HH:mm")
+          : "",
+      });
+    } else {
+      form.reset({
+        title: "",
+        description: "",
+        expires_at: "",
+      });
+    }
+  }, [task, form]);
+
   const handleSubmit = async (data: TaskFormValues) => {
     setIsSubmitting(true);
     try {
-      const taskData: CreateTaskRequest = {
+      const taskData = {
         title: data.title,
         description: data.description || undefined,
         expires_at: data.expires_at ? Math.floor(new Date(data.expires_at).getTime() / 1000) : undefined,
       };
 
       await onSubmit(taskData);
-      form.reset();
+
+      if (!isEditMode) {
+        form.reset(); // 新規作成時のみリセット
+      }
       onClose();
     } catch (error) {
-      console.error("Failed to create task:", error);
+      console.error("Failed to submit task:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    form.reset();
+    // Reset form to original values
+    if (task) {
+      form.reset({
+        title: task.title,
+        description: task.description || "",
+        expires_at: task.expires_at
+          ? format(fromUnixTime(task.expires_at), "yyyy-MM-dd'T'HH:mm")
+          : "",
+      });
+    } else {
+      form.reset();
+    }
     onClose();
   };
 
-  // 現在時刻をISO形式で取得（datetime-localの初期値用）
+  // 現在時刻をISO形式で取得（datetime-localの最小値用）
   const now = new Date();
   const localDateTime = format(now, "yyyy-MM-dd'T'HH:mm");
 
@@ -65,7 +100,9 @@ export function TaskForm({ isOpen, onClose, onSubmit }: TaskFormProps) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>新しいタスクを作成</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? "タスクを編集" : "新しいタスクを作成"}
+          </DialogTitle>
           <DialogDescription>
             タスクの詳細を入力してください。期限は任意です。
           </DialogDescription>
@@ -146,7 +183,10 @@ export function TaskForm({ isOpen, onClose, onSubmit }: TaskFormProps) {
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "作成中..." : "作成"}
+                {isSubmitting
+                  ? (isEditMode ? "更新中..." : "作成中...")
+                  : (isEditMode ? "更新" : "作成")
+                }
               </Button>
             </DialogFooter>
           </form>

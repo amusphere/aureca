@@ -7,6 +7,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { ErrorDisplay } from "../components/commons/ErrorDisplay";
 import { TaskHeader } from "../components/commons/TaskHeader";
 import { TaskExpiryDisplay } from "../components/tasks/TaskExpiryDisplay";
+import { TaskForm } from "../components/tasks/TaskForm";
 import { useTaskDetail } from "../hooks/useTaskDetail";
 
 interface TaskDetailPageProps {
@@ -20,10 +21,13 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   const {
     currentTask,
     isToggling,
+    isEditing,
     toggleComplete,
     editTask,
+    updateTask,
     deleteTask,
     goBack,
+    setIsEditing,
     error,
     clearError,
   } = useTaskDetail(task);
@@ -105,6 +109,14 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Task Edit Form */}
+      <TaskForm
+        isOpen={isEditing}
+        task={currentTask}
+        onClose={() => setIsEditing(false)}
+        onSubmit={updateTask}
+      />
     </div>
   );
 }

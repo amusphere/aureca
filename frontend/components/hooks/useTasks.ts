@@ -1,6 +1,6 @@
 "use client";
 
-import { CreateTaskRequest, Task } from "@/types/Task";
+import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 import { TaskService } from "@/utils/taskService";
 import { sortTasksByExpiry } from "@/utils/taskUtils";
 import { useCallback, useEffect, useState } from "react";
@@ -19,6 +19,7 @@ interface UseTasksReturn {
   // Actions
   fetchTasks: () => Promise<void>;
   createTask: (taskData: CreateTaskRequest) => Promise<void>;
+  updateTask: (taskUuid: string, taskData: UpdateTaskRequest) => Promise<void>;
   toggleTaskComplete: (taskUuid: string, completed: boolean) => Promise<void>;
   deleteTask: (taskUuid: string) => Promise<void>;
 
@@ -82,6 +83,34 @@ export function useTasks(): UseTasksReturn {
         onError: (error) => {
           console.error("Failed to create task:", error.message);
           throw error; // Re-throw for form error handling
+        }
+      }
+    );
+  }, [withErrorHandling, fetchTasks]);
+
+  // Update task with unified error handling
+  const updateTask = useCallback(async (taskUuid: string, taskData: UpdateTaskRequest) => {
+    await withErrorHandling(
+      async () => {
+        const updatedTask = await TaskService.updateTask(taskUuid, taskData);
+
+        // Update task in local state
+        setActiveTasks(prev =>
+          prev.map(task =>
+            task.uuid === taskUuid ? updatedTask : task
+          )
+        );
+        setCompletedTasks(prev =>
+          prev.map(task =>
+            task.uuid === taskUuid ? updatedTask : task
+          )
+        );
+      },
+      {
+        onError: (error) => {
+          console.error("Failed to update task:", error.message);
+          // Refresh data on error
+          fetchTasks();
         }
       }
     );
@@ -196,6 +225,7 @@ export function useTasks(): UseTasksReturn {
     // Actions
     fetchTasks,
     createTask,
+    updateTask,
     toggleTaskComplete,
     deleteTask,
 
