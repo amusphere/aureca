@@ -10,104 +10,38 @@ import { format, fromUnixTime } from "date-fns";
 import { ja } from "date-fns/locale";
 import { ArrowLeft, Calendar, Clock, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface TaskDetailPageProps {
-  taskUuid: string;
+  task: Task;
 }
 
-export default function TaskDetailPage({ taskUuid }: TaskDetailPageProps) {
+export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   const router = useRouter();
-  const [task, setTask] = useState<Task | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [currentTask, setCurrentTask] = useState<Task>(task);
 
-  // タスクの詳細を取得
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(`/api/tasks/${taskUuid}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError("タスクが見つかりませんでした");
-          } else {
-            setError("タスクの取得に失敗しました");
-          }
-          return;
-        }
-
-        const taskData = await response.json();
-        setTask(taskData);
-      } catch (err) {
-        setError("タスクの取得中にエラーが発生しました");
-        console.error("Failed to fetch task:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (taskUuid) {
-      fetchTask();
-    }
-  }, [taskUuid]);
-
-  // タスクの完了状態を切り替え
+  // Toggle task completion status
   const handleToggleComplete = async () => {
-    if (!task) return;
-
     try {
       setIsToggling(true);
-      const updatedTask = await TaskService.toggleTaskCompletion(task, !task.completed);
-      setTask(updatedTask);
+      const updatedTask = await TaskService.toggleTaskCompletion(currentTask, !currentTask.completed);
+      setCurrentTask(updatedTask);
     } catch (err) {
       console.error("Failed to toggle task completion:", err);
-      setError("タスクの更新に失敗しました");
+      // Error handling (show toast notification if needed)
     } finally {
       setIsToggling(false);
     }
   };
 
-  // 戻るボタンの処理
+  // Handle back button click
   const handleGoBack = () => {
     router.back();
   };
 
-  // ローディング状態
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-6 py-8 max-w-2xl">
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">読み込み中...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // エラー状態
-  if (error || !task) {
-    return (
-      <div className="container mx-auto px-6 py-8 max-w-2xl">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-            <div className="text-red-600 text-center">{error || "タスクが見つかりませんでした"}</div>
-            <Button onClick={handleGoBack} variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              戻る
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const expired = isTaskExpired(task);
-  const expiryDate = task.expires_at ? fromUnixTime(task.expires_at) : null;
+  const expired = isTaskExpired(currentTask);
+  const expiryDate = currentTask.expires_at ? fromUnixTime(currentTask.expires_at) : null;
 
   return (
     <div className="container mx-auto px-6 py-8 max-w-2xl">
@@ -115,16 +49,16 @@ export default function TaskDetailPage({ taskUuid }: TaskDetailPageProps) {
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className={`text-xl font-semibold ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
-                {task.title}
+              <CardTitle className={`text-xl font-semibold ${currentTask.completed ? 'line-through text-muted-foreground' : ''}`}>
+                {currentTask.title}
               </CardTitle>
               <div className="flex gap-2 mt-3">
-                {task.completed && (
+                {currentTask.completed && (
                   <Badge variant="secondary" className="text-xs">
                     完了
                   </Badge>
                 )}
-                {expired && !task.completed && (
+                {expired && !currentTask.completed && (
                   <Badge variant="destructive" className="text-xs">
                     期限切れ
                   </Badge>
@@ -135,20 +69,20 @@ export default function TaskDetailPage({ taskUuid }: TaskDetailPageProps) {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* 説明 */}
-          {task.description && (
+          {/* Description */}
+          {currentTask.description && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <FileText className="w-4 h-4" />
                 説明
               </div>
               <div className="pl-6 text-sm whitespace-pre-wrap">
-                {task.description}
+                {currentTask.description}
               </div>
             </div>
           )}
 
-          {/* 期限 */}
+          {/* Due date */}
           {expiryDate && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -159,16 +93,16 @@ export default function TaskDetailPage({ taskUuid }: TaskDetailPageProps) {
                 )}
                 期限
               </div>
-              <div className={`pl-6 text-sm ${expired && !task.completed ? 'text-red-600 font-medium' : ''}`}>
+              <div className={`pl-6 text-sm ${expired && !currentTask.completed ? 'text-red-600 font-medium' : ''}`}>
                 {format(expiryDate, 'yyyy年M月d日 HH:mm', { locale: ja })}
-                {expired && !task.completed && (
+                {expired && !currentTask.completed && (
                   <span className="ml-2 text-red-500">(期限切れ)</span>
                 )}
               </div>
             </div>
           )}
 
-          {/* アクションボタン */}
+          {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t">
             <Button
               onClick={handleGoBack}
@@ -182,11 +116,11 @@ export default function TaskDetailPage({ taskUuid }: TaskDetailPageProps) {
               onClick={handleToggleComplete}
               disabled={isToggling}
               className="flex-1"
-              variant={task.completed ? "outline" : "default"}
+              variant={currentTask.completed ? "outline" : "default"}
             >
               {isToggling ? (
                 "更新中..."
-              ) : task.completed ? (
+              ) : currentTask.completed ? (
                 "未完了にする"
               ) : (
                 "完了にする"
