@@ -2,24 +2,25 @@
 
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent } from "@/components/components/ui/card";
-import { Task } from "@/types/Task";
+import { CreateTaskRequest, Task } from "@/types/Task";
 import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TaskCard } from "./TaskCard";
+import { TaskForm } from "./TaskForm";
 
 interface TaskListProps {
-  onCreateTask?: () => void;
   onEditTask?: (task: Task) => void;
   onDeleteTask?: (taskId: string) => void;
 }
 
-export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListProps) {
+export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   const [activeTasks, setActiveTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("active");
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [uncompletingTasks, setUncompletingTasks] = useState<Set<string>>(new Set());
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -122,6 +123,28 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
     }
   };
 
+  const handleCreateTask = async (taskData: CreateTaskRequest) => {
+    try {
+      const response = await fetch("/api/tasks", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+
+      // タスク作成後、リストを再取得
+      await fetchTasks();
+    } catch (error) {
+      console.error("Failed to create task:", error);
+      throw error; // TaskFormでエラーハンドリングできるよう再スロー
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
   }, []);
@@ -152,16 +175,14 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
           >
             <RefreshCwIcon className="w-4 h-4" />
           </Button>
-          {onCreateTask && (
-            <Button
-              onClick={onCreateTask}
-              size="sm"
-              aria-label="新規作成"
-              className="h-8 w-8 p-0"
-            >
-              <PlusIcon className="w-4 h-4" />
-            </Button>
-          )}
+          <Button
+            onClick={() => setIsTaskFormOpen(true)}
+            size="sm"
+            aria-label="新規作成"
+            className="h-8 w-8 p-0"
+          >
+            <PlusIcon className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -224,6 +245,13 @@ export function TaskList({ onCreateTask, onEditTask, onDeleteTask }: TaskListPro
           )
         )}
       </div>
+
+      {/* タスク作成フォーム */}
+      <TaskForm
+        isOpen={isTaskFormOpen}
+        onClose={() => setIsTaskFormOpen(false)}
+        onSubmit={handleCreateTask}
+      />
     </div>
   );
 }

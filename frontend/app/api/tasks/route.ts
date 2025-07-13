@@ -1,4 +1,4 @@
-import { apiGet } from '@/utils/api';
+import { apiGet, apiPost } from '@/utils/api';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -33,6 +33,31 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching tasks:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // バックエンドのPOST /tasksエンドポイントを使用
+    const response = await apiPost('/tasks', body);
+
+    if (response.error) {
+      return NextResponse.json(
+        { error: response.error.message || 'Failed to create task' },
+        { status: response.error.status || 500 }
+      );
+    }
+
+    return NextResponse.json(response.data);
+
+  } catch (error) {
+    console.error('Error creating task:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
