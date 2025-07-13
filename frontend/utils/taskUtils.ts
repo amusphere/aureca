@@ -47,7 +47,7 @@ export function filterTasksByCompletion(tasks: Task[], completed: boolean): Task
  */
 export function getExpiredTasks(tasks: Task[]): Task[] {
   const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-  return tasks.filter(task => 
+  return tasks.filter(task =>
     task.expires_at && currentTimeInSeconds > task.expires_at
   );
 }
@@ -58,10 +58,10 @@ export function getExpiredTasks(tasks: Task[]): Task[] {
 export function getTasksExpiringSoon(tasks: Task[], withinHours: number = 24): Task[] {
   const currentTimeInSeconds = Math.floor(Date.now() / 1000);
   const thresholdTime = currentTimeInSeconds + (withinHours * 60 * 60);
-  
-  return tasks.filter(task => 
-    task.expires_at && 
-    task.expires_at > currentTimeInSeconds && 
+
+  return tasks.filter(task =>
+    task.expires_at &&
+    task.expires_at > currentTimeInSeconds &&
     task.expires_at <= thresholdTime
   );
 }
@@ -156,18 +156,18 @@ export function formatTaskExpiry(task: Task, formatString: string = 'yyyy年M月
  */
 export function getTaskExpiryRelativeTime(task: Task): string | null {
   if (!task.expires_at) return null;
-  
+
   const currentTimeInSeconds = Math.floor(Date.now() / 1000);
   const diffInSeconds = task.expires_at - currentTimeInSeconds;
-  
+
   if (diffInSeconds < 0) {
     return '期限切れ';
   }
-  
+
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
-  
+
   if (diffInDays > 0) {
     return `${diffInDays}日後`;
   } else if (diffInHours > 0) {
@@ -190,7 +190,7 @@ export function getTaskStatistics(tasks: Task[]) {
   const active = total - completed;
   const expired = getExpiredTasks(tasks.filter(task => !task.completed)).length;
   const expiringSoon = getTasksExpiringSoon(tasks.filter(task => !task.completed)).length;
-  
+
   return {
     total,
     completed,

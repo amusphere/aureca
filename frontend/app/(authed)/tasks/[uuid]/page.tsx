@@ -4,11 +4,11 @@ import { apiGet } from "@/utils/api";
 import { notFound } from "next/navigation";
 
 interface TaskDetailRouteProps {
-  params: { uuid: string };
+  params: Promise<{ uuid: string }>;
 }
 
 export default async function TaskDetailRoute({ params }: TaskDetailRouteProps) {
-  const { uuid } = params;
+  const { uuid } = await params;
 
   if (!uuid) {
     notFound();
