@@ -1,0 +1,2 @@
+class AiTaskService:
+    pass
