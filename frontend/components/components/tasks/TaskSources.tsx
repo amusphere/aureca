@@ -13,7 +13,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
   const {
     generatedDrafts,
     isGeneratingDraft,
-    isLoadingDraft,
+    isLoadingDraftForSource,
     generateDraft,
     error,
     clearError
@@ -25,6 +25,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
 
   const renderSourceTypeComponent = (source: TaskSource) => {
     const draftInfo = generatedDrafts[source.uuid];
+    const isLoadingDraftForThisSource = isLoadingDraftForSource(source.uuid);
 
     switch (source.source_type) {
       case "email":
@@ -34,7 +35,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
             draftInfo={draftInfo}
             onGenerateDraft={generateDraft}
             isGeneratingDraft={isGeneratingDraft}
-            isLoadingDraft={isLoadingDraft}
+            isLoadingDraft={isLoadingDraftForThisSource}
           />
         );
       default:

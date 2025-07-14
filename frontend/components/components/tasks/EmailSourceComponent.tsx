@@ -26,17 +26,21 @@ export function EmailSourceComponent({
   isLoadingDraft
 }: EmailSourceComponentProps) {
   const renderDraftButton = () => {
+    // ドラフト情報がない場合（初期状態または確認中）
     if (!draftInfo) {
+      const isCheckingDraft = isLoadingDraft;
+      const isGenerating = isGeneratingDraft;
+
       return (
         <Button
           onClick={() => onGenerateDraft(source)}
-          disabled={isGeneratingDraft || isLoadingDraft}
+          disabled={isGenerating || isCheckingDraft}
           variant="outline"
           size="sm"
           className="h-7 text-xs px-2"
         >
           <PenTool className="w-3 h-3 mr-1" />
-          {isGeneratingDraft ? "生成中..." : isLoadingDraft ? "確認中..." : "返信下書き生成"}
+          {isGenerating ? "生成中..." : isCheckingDraft ? "確認中..." : "返信下書き生成"}
         </Button>
       );
     }

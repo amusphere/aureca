@@ -15,6 +15,7 @@ interface UseDraftManagerReturn {
   generatedDrafts: Record<string, GeneratedDraftInfo>;
   isGeneratingDraft: boolean;
   isLoadingDraft: boolean;
+  isLoadingDraftForSource: (sourceUuid: string) => boolean;
   generateDraft: (source: TaskSource) => Promise<void>;
   getExistingDraft: (source: TaskSource) => Promise<void>;
   error: ReturnType<typeof useErrorHandling>['error'];
@@ -28,14 +29,20 @@ interface UseDraftManagerReturn {
 export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+  const [loadingDraftSources, setLoadingDraftSources] = useState<Set<string>>(new Set());
   const [generatedDrafts, setGeneratedDrafts] = useState<Record<string, GeneratedDraftInfo>>({});
   const [checkedSources, setCheckedSources] = useState<Set<string>>(new Set());
 
   const { error, withErrorHandling, clearError } = useErrorHandling();
 
+  const isLoadingDraftForSource = useCallback((sourceUuid: string): boolean => {
+    return loadingDraftSources.has(sourceUuid);
+  }, [loadingDraftSources]);
+
   const getExistingDraft = useCallback(async (source: TaskSource) => {
     if (source.source_type !== "email") return;
 
+    setLoadingDraftSources(prev => new Set([...prev, source.uuid]));
     setIsLoadingDraft(true);
     try {
       await withErrorHandling(
@@ -65,6 +72,11 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
         }
       );
     } finally {
+      setLoadingDraftSources(prev => {
+        const newSet = new Set([...prev]);
+        newSet.delete(source.uuid);
+        return newSet;
+      });
       setIsLoadingDraft(false);
     }
   }, [withErrorHandling]);
@@ -120,6 +132,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
     generatedDrafts,
     isGeneratingDraft,
     isLoadingDraft,
+    isLoadingDraftForSource,
     generateDraft,
     getExistingDraft,
     error,
