@@ -31,3 +31,26 @@ export interface UpdateTaskRequest {
   completed?: boolean;
   expires_at?: number;
 }
+
+// ソースタイプ関連の型定義
+export interface SourceTypeConfig {
+  icon: React.ComponentType<{ className?: string }>;
+  displayName: string;
+  color?: string;
+}
+
+export type SourceTypeKey =
+  | "email"
+  | "calendar"
+  | "slack"
+  | "teams"
+  | "discord"
+  | "github_issue"
+  | "github_pr"
+  | "jira"
+  | "trello"
+  | "asana"
+  | "notion"
+  | "linear"
+  | "clickup"
+  | "other";
