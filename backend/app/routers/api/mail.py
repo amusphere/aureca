@@ -1,5 +1,5 @@
 from app.database import get_session
-from app.models.mail import DraftModel
+from app.models.google_mail import DraftModel
 from app.schema import User
 from app.services.auth import auth_user
 from app.services.gmail_service import get_authenticated_gmail_service
