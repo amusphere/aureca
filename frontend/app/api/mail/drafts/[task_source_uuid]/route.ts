@@ -1,5 +1,5 @@
 import { EmailDraft } from '@/types/EmailDraft';
-import { apiGet, apiPost, createApiResponse } from '@/utils/api';
+import { apiDelete, apiGet, apiPost, createApiResponse } from '@/utils/api';
 
 export async function GET(
   request: Request,
@@ -18,5 +18,15 @@ export async function POST(
   const { task_source_uuid } = params;
 
   const result = await apiPost<EmailDraft>(`/mail/drafts/${task_source_uuid}`, {});
+  return createApiResponse(result);
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { task_source_uuid: string } }
+) {
+  const { task_source_uuid } = params;
+
+  const result = await apiDelete(`/mail/drafts/${task_source_uuid}`);
   return createApiResponse(result);
 }

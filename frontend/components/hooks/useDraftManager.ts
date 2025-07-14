@@ -17,6 +17,7 @@ interface UseDraftManagerReturn {
   isLoadingDraft: boolean;
   isLoadingDraftForSource: (sourceUuid: string) => boolean;
   generateDraft: (source: TaskSource) => Promise<void>;
+  deleteDraft: (source: TaskSource) => Promise<void>;
   getExistingDraft: (source: TaskSource) => Promise<void>;
   error: ReturnType<typeof useErrorHandling>['error'];
   clearError: () => void;
@@ -117,6 +118,37 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
     }
   }, [withErrorHandling]);
 
+  const deleteDraft = useCallback(async (source: TaskSource) => {
+    if (source.source_type !== "email") return;
+
+    try {
+      await withErrorHandling(
+        async () => {
+          const response = await fetch(`/api/mail/drafts/${source.uuid}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // ドラフト情報をクリア
+          setGeneratedDrafts(prev => {
+            const updated = { ...prev };
+            delete updated[source.uuid];
+            return updated;
+          });
+        },
+        {
+          retryable: true,
+          onError: (error) => console.error('Error deleting draft:', error.message)
+        }
+      );
+    } catch (error) {
+      console.error('Failed to delete draft:', error);
+    }
+  }, [withErrorHandling]);
+
   // 初期表示時に既存ドラフトを取得
   useEffect(() => {
     const emailSources = sources.filter(source => source.source_type === "email");
@@ -134,6 +166,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
     isLoadingDraft,
     isLoadingDraftForSource,
     generateDraft,
+    deleteDraft,
     getExistingDraft,
     error,
     clearError

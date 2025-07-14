@@ -1,7 +1,7 @@
 import { Button } from "@/components/components/ui/button";
 import { EmailDraft } from "@/types/EmailDraft";
 import { TaskSource } from "@/types/Task";
-import { PenTool } from "lucide-react";
+import { PenTool, Trash2 } from "lucide-react";
 import { MarkdownContent } from "../chat/MarkdownContent";
 
 interface EmailDraftInfo {
@@ -14,6 +14,7 @@ interface EmailSourceComponentProps {
   source: TaskSource;
   draftInfo?: EmailDraftInfo;
   onGenerateDraft: (source: TaskSource) => void;
+  onDeleteDraft: (source: TaskSource) => void;
   isGeneratingDraft: boolean;
   isLoadingDraft: boolean;
 }
@@ -22,6 +23,7 @@ export function EmailSourceComponent({
   source,
   draftInfo,
   onGenerateDraft,
+  onDeleteDraft,
   isGeneratingDraft,
   isLoadingDraft
 }: EmailSourceComponentProps) {
@@ -46,17 +48,37 @@ export function EmailSourceComponent({
     }
 
     if (draftInfo.isExisting) {
+      const handleDeleteAndRegenerate = async () => {
+        try {
+          await onDeleteDraft(source);
+          await onGenerateDraft(source);
+        } catch (error) {
+          console.error('Error deleting and regenerating draft:', error);
+        }
+      };
+
       return (
-        <Button
-          onClick={() => onGenerateDraft(source)}
-          disabled={isGeneratingDraft}
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs px-2"
-        >
-          <PenTool className="w-3 h-3 mr-1" />
-          {isGeneratingDraft ? "生成中..." : "新しい下書きを生成"}
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            onClick={handleDeleteAndRegenerate}
+            disabled={isGeneratingDraft}
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs px-2"
+          >
+            <PenTool className="w-3 h-3 mr-1" />
+            {isGeneratingDraft ? "生成中..." : "新しい下書きを生成"}
+          </Button>
+          <Button
+            onClick={() => onDeleteDraft(source)}
+            disabled={isGeneratingDraft}
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       );
     }
 

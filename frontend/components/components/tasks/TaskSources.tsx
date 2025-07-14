@@ -15,6 +15,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
     isGeneratingDraft,
     isLoadingDraftForSource,
     generateDraft,
+    deleteDraft,
     error,
     clearError
   } = useDraftManager(sources);
@@ -34,6 +35,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
             source={source}
             draftInfo={draftInfo}
             onGenerateDraft={generateDraft}
+            onDeleteDraft={deleteDraft}
             isGeneratingDraft={isGeneratingDraft}
             isLoadingDraft={isLoadingDraftForThisSource}
           />
