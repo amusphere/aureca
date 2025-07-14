@@ -88,7 +88,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
     try {
       await withErrorHandling(
         async () => {
-          const response = await fetch(`/api/ai/generate-email-reply-draft/${source.uuid}`, {
+          const response = await fetch(`/api/mail/drafts/${source.uuid}`, {
             method: 'POST',
           });
 

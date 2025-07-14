@@ -4,12 +4,11 @@ from app.models.ai_assistant import (
     AIResponseModel,
     GenerateTasksFromEmailsResponseModel,
 )
-from app.models.google_mail import DraftModel
 from app.schema import User
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
@@ -50,27 +49,3 @@ async def generate_tasks_from_emails_endpoint(
         "message": f"{len(generated_tasks)}個のタスクを生成しました",
         "generated_tasks": generated_tasks,
     }
-
-
-@router.post(
-    "/generate-email-reply-draft/{task_source_uuid}",
-    response_model=DraftModel,
-)
-async def generate_email_reply_draft_endpoint(
-    task_source_uuid: str,
-    session: Session = Depends(get_session),
-    user: User = Depends(auth_user),
-):
-    """TaskSourceからメール返信下書きを生成"""
-    ai_task_service = AiTaskService(session=session, user_id=user.id)
-    reply_draft = await ai_task_service.generate_email_reply_draft(
-        task_source_uuid=task_source_uuid, user=user
-    )
-
-    if not reply_draft:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="TaskSource not found or not an email source",
-        )
-
-    return reply_draft

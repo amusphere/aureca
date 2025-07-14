@@ -17,8 +17,8 @@ export async function POST(
       );
     }
 
-    // バックエンドのAIエンドポイントにapiPostを使ってリクエストを送信
-    const apiResponse = await apiPost(`/ai/generate-email-reply-draft/${task_source_uuid}`, {});
+    // バックエンドのmail APIエンドポイントにapiPostを使ってリクエストを送信
+    const apiResponse = await apiPost(`/mail/drafts/${task_source_uuid}`, {});
 
     // apiResponseを使ってNextResponseを生成
     return createApiResponse(apiResponse);
