@@ -35,18 +35,3 @@ class GenerateTasksFromEmailsResponseModel(BaseModel):
     success: bool
     message: str
     generated_tasks: list[GeneratedTaskModel]
-
-
-class EmailReplyDraftModel(BaseModel):
-    """メール返信下書きモデル"""
-
-    subject: str
-    body: str
-
-
-class EmailReplyDraftResponseModel(BaseModel):
-    """メール返信下書きレスポンスモデル"""
-
-    success: bool
-    message: str
-    draft: EmailReplyDraftModel

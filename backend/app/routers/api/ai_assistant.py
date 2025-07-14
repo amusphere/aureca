@@ -2,9 +2,9 @@ from app.database import get_session
 from app.models.ai_assistant import (
     AIRequestModel,
     AIResponseModel,
-    EmailReplyDraftResponseModel,
     GenerateTasksFromEmailsResponseModel,
 )
+from app.models.google_mail import DraftModel
 from app.schema import User
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai_task_service import AiTaskService
@@ -54,7 +54,7 @@ async def generate_tasks_from_emails_endpoint(
 
 @router.post(
     "/generate-email-reply-draft/{task_source_uuid}",
-    response_model=EmailReplyDraftResponseModel,
+    response_model=DraftModel,
 )
 async def generate_email_reply_draft_endpoint(
     task_source_uuid: str,
@@ -76,12 +76,4 @@ async def generate_email_reply_draft_endpoint(
             detail="TaskSource not found or not an email source",
         )
 
-    return {
-        "success": True,
-        "message": "メール返信下書きを生成しました"
-        + ("（Gmailに下書き保存済み）" if create_gmail_draft else ""),
-        "draft": {
-            "subject": reply_draft.subject,
-            "body": reply_draft.body,
-        },
-    }
+    return reply_draft
