@@ -58,16 +58,13 @@ async def generate_tasks_from_emails_endpoint(
 )
 async def generate_email_reply_draft_endpoint(
     task_source_uuid: str,
-    create_gmail_draft: bool = False,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
     """TaskSourceからメール返信下書きを生成"""
     ai_task_service = AiTaskService(session=session, user_id=user.id)
     reply_draft = await ai_task_service.generate_email_reply_draft(
-        task_source_uuid=task_source_uuid,
-        user=user,
-        create_gmail_draft=create_gmail_draft,
+        task_source_uuid=task_source_uuid, user=user
     )
 
     if not reply_draft:

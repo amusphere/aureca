@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/components/ui/button";
+import { EmailDraft } from "@/types/EmailDraft";
 import { TaskSource } from "@/types/Task";
 import { Calendar, Clipboard, ExternalLink, Github, Mail, MessageSquare, PenTool } from "lucide-react";
 import { useState } from "react";
@@ -10,20 +11,9 @@ interface TaskSourcesProps {
   sources: TaskSource[];
 }
 
-interface EmailDraft {
-  subject: string;
-  body: string;
-}
-
-interface EmailDraftResponse {
-  success: boolean;
-  message: string;
-  draft: EmailDraft;
-}
-
 interface GeneratedDraftInfo {
   draft: EmailDraft;
-  message: string;
+  message?: string;
 }
 
 const getSourceIcon = (sourceType: string) => {
@@ -85,19 +75,15 @@ export function TaskSources({ sources }: TaskSourcesProps) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: EmailDraftResponse = await response.json();
+      const data: EmailDraft = await response.json();
 
-      if (data.success) {
-        setGeneratedDrafts(prev => ({
-          ...prev,
-          [source.uuid]: {
-            draft: data.draft,
-            message: data.message
-          }
-        }));
-      } else {
-        console.error('Draft generation failed:', data.message);
-      }
+      setGeneratedDrafts(prev => ({
+        ...prev,
+        [source.uuid]: {
+          draft: data,
+          message: "メール下書きが生成されました"
+        }
+      }));
     } catch (error) {
       console.error('Error generating draft:', error);
     } finally {
@@ -186,15 +172,29 @@ export function TaskSources({ sources }: TaskSourcesProps) {
                     </div>
                   )}
                   <div className="space-y-1">
-                    <div className="text-xs">
-                      <strong>件名:</strong> {hasGeneratedDraft.draft.subject}
-                    </div>
-                    <div className="text-xs">
-                      <strong>本文:</strong>
-                      <div className="mt-1 text-muted-foreground whitespace-pre-wrap line-clamp-4">
-                        {hasGeneratedDraft.draft.body}
+                    {hasGeneratedDraft.draft.to && (
+                      <div className="text-xs">
+                        <strong>宛先:</strong> {hasGeneratedDraft.draft.to}
                       </div>
-                    </div>
+                    )}
+                    {hasGeneratedDraft.draft.subject && (
+                      <div className="text-xs">
+                        <strong>件名:</strong> {hasGeneratedDraft.draft.subject}
+                      </div>
+                    )}
+                    {hasGeneratedDraft.draft.body && (
+                      <div className="text-xs">
+                        <strong>本文:</strong>
+                        <div className="mt-1 text-muted-foreground whitespace-pre-wrap line-clamp-4">
+                          <MarkdownContent content={hasGeneratedDraft.draft.body} />
+                        </div>
+                      </div>
+                    )}
+                    {hasGeneratedDraft.draft.snippet && (
+                      <div className="text-xs text-gray-500">
+                        <strong>プレビュー:</strong> {hasGeneratedDraft.draft.snippet}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

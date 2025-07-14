@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import List
 
+from app.models.google_mail import DraftModel
 from app.repositories.task_source import create_task_source, get_task_source_by_uuid
 from app.repositories.tasks import create_task
 from app.schema import SourceType, TaskSource, User
@@ -222,8 +223,8 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             return None
 
     async def generate_email_reply_draft(
-        self, task_source_uuid: str, user: User, create_gmail_draft: bool = False
-    ) -> EmailReplyDraftResponse | None:
+        self, task_source_uuid: str, user: User
+    ) -> DraftModel | None:
         """
         タスクソースからメールの返信下書きを生成する
 
@@ -263,11 +264,10 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
                 email_content, task_source
             )
 
-            # Gmailに下書きを作成する場合
-            if create_gmail_draft and reply_draft:
-                await self._create_gmail_draft(user, email_content, reply_draft)
+            # Gmailに下書きを作成
+            draft = await self._create_gmail_draft(user, email_content, reply_draft)
 
-            return reply_draft
+            return draft
 
         except Exception as e:
             self.logger.error(f"メール返信下書き生成に失敗: {str(e)}")
