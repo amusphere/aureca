@@ -4,7 +4,7 @@ import { Button } from "@/components/components/ui/button";
 import { EmailDraft } from "@/types/EmailDraft";
 import { TaskSource } from "@/types/Task";
 import { Calendar, Clipboard, ExternalLink, GitBranch, Mail, MessageSquare, PenTool } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MarkdownContent } from "../chat/MarkdownContent";
 
 interface TaskSourcesProps {
@@ -14,6 +14,7 @@ interface TaskSourcesProps {
 interface GeneratedDraftInfo {
   draft: EmailDraft;
   message?: string;
+  isExisting?: boolean; // 既存のドラフトかどうか
 }
 
 const getSourceIcon = (sourceType: string) => {
@@ -56,7 +57,51 @@ const getSourceDisplayName = (sourceType: string): string => {
 
 export function TaskSources({ sources }: TaskSourcesProps) {
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [isLoadingDraft, setIsLoadingDraft] = useState(false);
   const [generatedDrafts, setGeneratedDrafts] = useState<Record<string, GeneratedDraftInfo>>({});
+  const [checkedSources, setCheckedSources] = useState<Set<string>>(new Set());
+
+  // 既存のドラフトを取得する関数
+  const getExistingDraft = useCallback(async (source: TaskSource) => {
+    if (source.source_type !== "email") return;
+
+    setIsLoadingDraft(true);
+    try {
+      const response = await fetch(`/api/mail/drafts/${source.uuid}`);
+
+      if (response.ok) {
+        const draft: EmailDraft = await response.json();
+        setGeneratedDrafts(prev => ({
+          ...prev,
+          [source.uuid]: {
+            draft,
+            message: "既存のドラフトが見つかりました",
+            isExisting: true
+          }
+        }));
+      } else if (response.status === 404) {
+        // ドラフトが見つからない場合は何もしない
+        console.log('No existing draft found for this email');
+      } else {
+        console.error('Error fetching existing draft:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching existing draft:', error);
+    } finally {
+      setIsLoadingDraft(false);
+    }
+  }, []);
+
+  // メールソースの既存ドラフトを初期表示時に取得
+  useEffect(() => {
+    const emailSources = sources.filter(source => source.source_type === "email");
+    emailSources.forEach(source => {
+      if (!checkedSources.has(source.uuid) && !generatedDrafts[source.uuid]) {
+        setCheckedSources(prev => new Set([...prev, source.uuid]));
+        getExistingDraft(source);
+      }
+    });
+  }, [sources, getExistingDraft, checkedSources, generatedDrafts]);
 
   if (!sources || sources.length === 0) {
     return null;
@@ -81,7 +126,8 @@ export function TaskSources({ sources }: TaskSourcesProps) {
         ...prev,
         [source.uuid]: {
           draft: data,
-          message: "メール下書きが生成されました"
+          message: "メール下書きが生成されました",
+          isExisting: false
         }
       }));
     } catch (error) {
@@ -135,18 +181,31 @@ export function TaskSources({ sources }: TaskSourcesProps) {
               )}
 
               {/* メール返信ドラフト生成ボタン */}
-              {source.source_type === "email" && !hasGeneratedDraft && (
+              {source.source_type === "email" && (
                 <div className="mt-2">
-                  <Button
-                    onClick={() => generateEmailDraft(source)}
-                    disabled={isGeneratingDraft}
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs px-2"
-                  >
-                    <PenTool className="w-3 h-3 mr-1" />
-                    {isGeneratingDraft ? "生成中..." : "返信下書き生成"}
-                  </Button>
+                  {!hasGeneratedDraft ? (
+                    <Button
+                      onClick={() => generateEmailDraft(source)}
+                      disabled={isGeneratingDraft || isLoadingDraft}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs px-2"
+                    >
+                      <PenTool className="w-3 h-3 mr-1" />
+                      {isGeneratingDraft ? "生成中..." : isLoadingDraft ? "確認中..." : "返信下書き生成"}
+                    </Button>
+                  ) : hasGeneratedDraft.isExisting && (
+                    <Button
+                      onClick={() => generateEmailDraft(source)}
+                      disabled={isGeneratingDraft}
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs px-2"
+                    >
+                      <PenTool className="w-3 h-3 mr-1" />
+                      {isGeneratingDraft ? "生成中..." : "新しい下書きを生成"}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -154,7 +213,9 @@ export function TaskSources({ sources }: TaskSourcesProps) {
               {hasGeneratedDraft && (
                 <div className="mt-2 p-2 bg-gray-50 rounded-md border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-700">生成された返信下書き</span>
+                    <span className="text-xs font-medium text-gray-700">
+                      {hasGeneratedDraft.isExisting ? "既存の返信下書き" : "生成された返信下書き"}
+                    </span>
                     {source.source_url && (
                       <a
                         href={source.source_url}
@@ -167,7 +228,10 @@ export function TaskSources({ sources }: TaskSourcesProps) {
                     )}
                   </div>
                   {hasGeneratedDraft.message && (
-                    <div className="text-xs text-green-600 bg-green-50 p-1 rounded">
+                    <div className={`text-xs p-1 rounded ${hasGeneratedDraft.isExisting
+                        ? "text-blue-600 bg-blue-50"
+                        : "text-green-600 bg-green-50"
+                      }`}>
                       {hasGeneratedDraft.message}
                     </div>
                   )}

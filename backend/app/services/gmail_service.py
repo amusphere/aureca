@@ -740,16 +740,15 @@ class GmailService:
 
             draft_data = {
                 "id": result["id"],
-                "message_id": message.get("id"),
-                "thread_id": message.get("threadId"),
-                "to": headers.get("to", ""),
-                "from": headers.get("from", ""),
                 "subject": headers.get("subject", ""),
-                "date": headers.get("date", ""),
+                "body": body,
+                "to": headers.get("to", ""),
                 "cc": headers.get("cc", ""),
                 "bcc": headers.get("bcc", ""),
-                "body": body,
-                "headers": headers,
+                "thread_id": message.get("threadId"),
+                "snippet": message.get("snippet", ""),
+                "created_at": headers.get("date", ""),
+                "updated_at": headers.get("date", ""),
             }
 
             logger.info(f"Retrieved draft {draft_id}")
@@ -797,6 +796,39 @@ class GmailService:
         except Exception as e:
             logger.error(f"Failed to get draft metadata for {draft_id}: {str(e)}")
             return {"id": draft_id, "error": str(e)}
+
+    async def get_drafts_by_thread_id(self, thread_id: str) -> List[Dict[str, Any]]:
+        """
+        Get drafts for a specific thread
+
+        Args:
+            thread_id: Gmail thread ID to get drafts for
+
+        Returns:
+            List of draft dictionaries for the specified thread
+        """
+        self._ensure_connected()
+
+        try:
+            # Get all drafts first
+            result = self.gmail_service.users().drafts().list(userId="me").execute()
+
+            drafts = result.get("drafts", [])
+            thread_drafts = []
+
+            # Filter drafts by thread ID
+            for draft in drafts:
+                draft_detail = await self._get_draft_metadata(draft["id"])
+                if draft_detail.get("thread_id") == thread_id:
+                    # Get full draft details for thread matches
+                    full_draft = await self.get_draft(draft["id"])
+                    thread_drafts.append(full_draft)
+
+            logger.info(f"Found {len(thread_drafts)} drafts for thread {thread_id}")
+            return thread_drafts
+
+        except Exception as e:
+            self._handle_gmail_api_error("get drafts by thread id", e)
 
     # Convenience methods for common email operations
 
