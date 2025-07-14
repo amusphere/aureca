@@ -93,7 +93,9 @@ class Tasks(SQLModel, table=True):
     completed: bool = Field(default=False)
     expires_at: float | None = Field(default=None, nullable=True)
 
-    sources: list["TaskSource"] = Relationship(back_populates="task")
+    sources: list["TaskSource"] = Relationship(
+        back_populates="task", cascade_delete=True
+    )
 
 
 class TaskSource(SQLModel, table=True):
