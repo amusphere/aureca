@@ -378,22 +378,24 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
         try:
             # 元のメールの送信者情報を取得
             original_sender = original_email.get("from", "")
+            original_email_id = original_email.get("id", "")
 
-            # Gmail下書きを作成
+            # Gmail返信下書きを作成（スレッドに紐づけ）
             async with get_authenticated_gmail_service(
                 user, self.session
             ) as gmail_service:
-                draft_result = await gmail_service.create_draft(
+                draft_result = await gmail_service.create_reply_draft(
+                    original_email_id=original_email_id,
                     to=original_sender,
                     subject=reply_draft.subject,
                     body=reply_draft.body,
                 )
 
             self.logger.info(
-                f"Gmail下書きを作成しました: {draft_result.get('id', 'unknown')}"
+                f"Gmail返信下書きを作成しました: {draft_result.get('id', 'unknown')}, スレッドID: {draft_result.get('threadId', 'unknown')}"
             )
             return draft_result
 
         except Exception as e:
-            self.logger.error(f"Gmail下書き作成に失敗: {str(e)}")
+            self.logger.error(f"Gmail返信下書き作成に失敗: {str(e)}")
             return None

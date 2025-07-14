@@ -182,7 +182,7 @@ class GmailService:
         result = {}
         for header in headers:
             name = header["name"].lower()
-            if name in ["from", "to", "subject", "date", "cc", "bcc"]:
+            if name in ["from", "to", "subject", "date", "cc", "bcc", "message-id"]:
                 result[name] = header["value"]
         return result
 
@@ -291,15 +291,18 @@ class GmailService:
 
             # Extract header information
             headers = msg["payload"].get("headers", [])
+            headers_dict = self._extract_headers_to_dict(headers)
+
             email_data = {
                 "id": msg["id"],
                 "threadId": msg["threadId"],
                 "body": body,
                 "snippet": msg.get("snippet", ""),
+                "headers": headers_dict,  # Add headers separately for easier access
             }
 
-            # Merge header information
-            email_data.update(self._extract_headers_to_dict(headers))
+            # Merge header information into main dict for backward compatibility
+            email_data.update(headers_dict)
 
             logger.debug(f"Retrieved content for email {email_id}")
             return email_data
@@ -441,6 +444,79 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("create draft", e)
 
+    async def create_reply_draft(
+        self,
+        original_email_id: str,
+        to: str,
+        subject: str,
+        body: str,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a reply draft that is threaded to the original email
+
+        Args:
+            original_email_id: ID of the original email to reply to
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
+            cc: CC email address (optional)
+            bcc: BCC email address (optional)
+
+        Returns:
+            Dictionary with draft creation result
+        """
+        self._ensure_connected()
+        self._validate_email_parameters(to, subject, body)
+
+        try:
+            # Get original email details for threading
+            original_email = await self.get_email_content(original_email_id)
+            thread_id = original_email.get("threadId")
+
+            # Extract Message-ID from original email for proper threading
+            original_message_id = None
+            original_headers = original_email.get("headers", {})
+            if isinstance(original_headers, dict):
+                original_message_id = original_headers.get("message-id")
+
+            # Create message with proper threading headers
+            raw_message = self._create_reply_message(
+                to=to,
+                subject=subject,
+                body=body,
+                cc=cc,
+                bcc=bcc,
+                original_message_id=original_message_id,
+                thread_id=thread_id,
+            )
+
+            # Create draft with threadId
+            draft_body = {"message": {"raw": raw_message}}
+            if thread_id:
+                draft_body["message"]["threadId"] = thread_id
+
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .create(userId="me", body=draft_body)
+                .execute()
+            )
+
+            logger.info(
+                f"Reply draft created successfully for {to} in thread {thread_id}"
+            )
+            return {
+                "id": result["id"],
+                "message": result["message"],
+                "threadId": thread_id,
+                "status": "reply_draft_created",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("create reply draft", e)
+
     def _create_message(
         self,
         to: str,
@@ -470,6 +546,48 @@ class GmailService:
             message["cc"] = cc
         if bcc:
             message["bcc"] = bcc
+
+        # Base64 URL-safe encoding
+        return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+
+    def _create_reply_message(
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        original_message_id: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+    ) -> str:
+        """
+        Create reply email message with proper threading headers
+
+        Args:
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
+            original_message_id: Message-ID of the original email
+            thread_id: Thread ID of the original email
+            cc: CC email address (optional)
+            bcc: BCC email address (optional)
+
+        Returns:
+            Base64 URL-safe encoded message with threading headers
+        """
+        message = email.mime.text.MIMEText(body, "plain", "utf-8")
+        message["to"] = to
+        message["subject"] = subject
+
+        if cc:
+            message["cc"] = cc
+        if bcc:
+            message["bcc"] = bcc
+
+        # Add threading headers for proper reply chain
+        if original_message_id:
+            message["In-Reply-To"] = original_message_id
+            message["References"] = original_message_id
 
         # Base64 URL-safe encoding
         return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
