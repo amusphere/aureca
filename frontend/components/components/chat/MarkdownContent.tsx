@@ -9,25 +9,25 @@ interface MarkdownContentProps {
 
 const markdownComponents = {
   p: ({ children }: { children: React.ReactNode }) => (
-    <p className="mb-2 last:mb-0">{children}</p>
+    <p className="mb-2 last:mb-0 break-words">{children}</p>
   ),
   h1: ({ children }: { children: React.ReactNode }) => (
-    <h1 className="text-lg font-bold mb-2">{children}</h1>
+    <h1 className="text-lg font-bold mb-2 break-words">{children}</h1>
   ),
   h2: ({ children }: { children: React.ReactNode }) => (
-    <h2 className="text-base font-bold mb-2">{children}</h2>
+    <h2 className="text-base font-bold mb-2 break-words">{children}</h2>
   ),
   h3: ({ children }: { children: React.ReactNode }) => (
-    <h3 className="text-sm font-bold mb-2">{children}</h3>
+    <h3 className="text-sm font-bold mb-2 break-words">{children}</h3>
   ),
   ul: ({ children }: { children: React.ReactNode }) => (
-    <ul className="list-disc pl-4 mb-2">{children}</ul>
+    <ul className="list-disc pl-4 mb-2 break-words">{children}</ul>
   ),
   ol: ({ children }: { children: React.ReactNode }) => (
-    <ol className="list-decimal pl-4 mb-2">{children}</ol>
+    <ol className="list-decimal pl-4 mb-2 break-words">{children}</ol>
   ),
   li: ({ children }: { children: React.ReactNode }) => (
-    <li className="mb-1">{children}</li>
+    <li className="mb-1 break-words">{children}</li>
   ),
   code: ({ children, className, ...props }: {
     children: React.ReactNode;
@@ -46,7 +46,7 @@ const markdownComponents = {
 
     return (
       <code
-        className={cn("block bg-gray-100 p-2 rounded text-xs font-mono overflow-x-auto", className)}
+        className={cn("block bg-gray-100 p-2 rounded text-xs font-mono overflow-x-auto whitespace-pre-wrap break-words", className)}
         {...props}
       >
         {children}
@@ -67,7 +67,7 @@ const markdownComponents = {
   } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
     <a
       href={href}
-      className="text-blue-600 hover:underline"
+      className="text-blue-600 hover:underline break-all"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
@@ -79,7 +79,7 @@ const markdownComponents = {
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
   return (
-    <div className={cn("text-sm markdown-body", className)}>
+    <div className={cn("text-sm markdown-body overflow-hidden", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={markdownComponents}

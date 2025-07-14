@@ -58,12 +58,12 @@ export function TaskSources({ sources }: TaskSourcesProps) {
       <div className="text-sm font-medium text-muted-foreground">
         関連情報
       </div>
-      <div className="pl-6 space-y-3">
+      <div className="pl-3 sm:pl-6 space-y-3">
         {sources.map((source) => (
-          <Card key={source.uuid} className="border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
+          <Card key={source.uuid} className="border-l-4 border-l-blue-500 overflow-hidden">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-2 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2">
                     {getSourceIcon(source.source_type)}
                     <Badge variant="secondary" className="text-xs">
@@ -72,14 +72,14 @@ export function TaskSources({ sources }: TaskSourcesProps) {
                   </div>
 
                   {source.title && (
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-sm break-words">
                       {source.title}
                     </div>
                   )}
 
                   {source.content && (
-                    <div className="text-sm text-muted-foreground">
-                      <MarkdownContent content={source.content} />
+                    <div className="text-sm text-muted-foreground prose prose-sm max-w-none overflow-hidden">
+                      <MarkdownContent content={source.content} className="break-words" />
                     </div>
                   )}
                 </div>
@@ -89,7 +89,8 @@ export function TaskSources({ sources }: TaskSourcesProps) {
                     href={source.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                    className="text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0 p-1 touch-manipulation"
+                    aria-label="外部リンクを開く"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
