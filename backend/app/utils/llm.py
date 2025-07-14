@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 _openai_client: openai.OpenAI | None = None
 
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-4.1"
 
 
 def get_openai_client():
