@@ -8,7 +8,6 @@ from app.repositories.tasks import (
     update_task_by_uuid,
 )
 from app.schema import User
-from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
@@ -107,22 +106,3 @@ async def delete_task_endpoint(
         )
 
     delete_task_by_uuid(session=session, uuid=task_uuid, user_id=user.id)
-
-
-@router.post("/generate-from-emails")
-async def generate_tasks_from_emails_endpoint(
-    max_emails: int = 10,
-    session: Session = Depends(get_session),
-    user: User = Depends(auth_user),
-):
-    """新着メールからタスクを自動生成"""
-    ai_task_service = AiTaskService(session=session, user_id=user.id)
-    generated_tasks = await ai_task_service.generate_tasks_from_new_emails(
-        user=user, max_emails=max_emails
-    )
-
-    return {
-        "success": True,
-        "message": f"{len(generated_tasks)}個のタスクを生成しました",
-        "generated_tasks": generated_tasks,
-    }
