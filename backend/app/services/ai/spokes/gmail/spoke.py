@@ -566,3 +566,62 @@ class GmailSpoke(BaseSpoke):
                 error=f"Failed to retrieve new emails: {str(e)}",
                 data={"error_type": "general_error"},
             )
+
+    async def action_create_reply_draft(
+        self, parameters: Dict[str, Any]
+    ) -> SpokeResponse:
+        """Create email reply draft action"""
+
+        # Validate required parameters
+        original_email_id = parameters.get("original_email_id")
+        if not original_email_id:
+            return self._create_parameter_error_response(
+                "Original email ID is required"
+            )
+
+        try:
+            # Validate email parameters
+            email_params = self._validate_email_parameters(parameters)
+
+            # Get Gmail service and create reply draft
+            async with get_authenticated_gmail_service(
+                self.current_user, self.session
+            ) as gmail_service:
+                result = await gmail_service.create_reply_draft(
+                    original_email_id=original_email_id,
+                    to=email_params["to"],
+                    subject=email_params["subject"],
+                    body=email_params["body"],
+                    cc=email_params["cc"],
+                    bcc=email_params["bcc"],
+                )
+
+            return self._create_success_response(
+                data={"result": result}, message="Reply draft created successfully"
+            )
+
+        except ValueError as e:
+            return self._create_parameter_error_response(str(e))
+        except GmailAuthenticationError as e:
+            self.logger.error(
+                f"Gmail authentication error in create_reply_draft: {str(e)}"
+            )
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail authentication error: {str(e)}",
+                data={"error_type": "authentication_error"},
+            )
+        except GmailAPIError as e:
+            self.logger.error(f"Gmail API error in create_reply_draft: {str(e)}")
+            return SpokeResponse(
+                success=False,
+                error=f"Gmail API error: {str(e)}",
+                data={"error_type": "api_error"},
+            )
+        except Exception as e:
+            self.logger.error(f"Unexpected error in create_reply_draft: {str(e)}")
+            return SpokeResponse(
+                success=False,
+                error=f"Failed to create reply draft: {str(e)}",
+                data={"error_type": "general_error"},
+            )
