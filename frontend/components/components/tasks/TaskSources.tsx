@@ -13,6 +13,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
   const {
     generatedDrafts,
     isGeneratingDraft,
+    isDeletingDraft,
     isLoadingDraftForSource,
     generateDraft,
     deleteDraft,
@@ -38,6 +39,7 @@ export function TaskSources({ sources }: TaskSourcesProps) {
             onDeleteDraft={deleteDraft}
             isGeneratingDraft={isGeneratingDraft}
             isLoadingDraft={isLoadingDraftForThisSource}
+            isDeletingDraft={isDeletingDraft}
           />
         );
       default:

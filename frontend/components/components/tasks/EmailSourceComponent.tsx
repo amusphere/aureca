@@ -17,6 +17,7 @@ interface EmailSourceComponentProps {
   onDeleteDraft: (source: TaskSource) => void;
   isGeneratingDraft: boolean;
   isLoadingDraft: boolean;
+  isDeletingDraft?: boolean;
 }
 
 export function EmailSourceComponent({
@@ -25,7 +26,8 @@ export function EmailSourceComponent({
   onGenerateDraft,
   onDeleteDraft,
   isGeneratingDraft,
-  isLoadingDraft
+  isLoadingDraft,
+  isDeletingDraft = false
 }: EmailSourceComponentProps) {
   const renderDraftButton = () => {
     // ドラフト情報がない場合（初期状態または確認中）
@@ -47,40 +49,43 @@ export function EmailSourceComponent({
       );
     }
 
-    if (draftInfo.isExisting) {
-      const handleDeleteAndRegenerate = async () => {
-        try {
-          await onDeleteDraft(source);
-          await onGenerateDraft(source);
-        } catch (error) {
-          console.error('Error deleting and regenerating draft:', error);
-        }
-      };
+    // ドラフトが存在する場合（既存または新規生成）
+    const handleDeleteAndRegenerate = async () => {
+      if (isGeneratingDraft || isDeletingDraft) return; // 処理中は何もしない
 
-      return (
-        <div className="flex gap-1">
-          <Button
-            onClick={handleDeleteAndRegenerate}
-            disabled={isGeneratingDraft}
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs px-2"
-          >
-            <PenTool className="w-3 h-3 mr-1" />
-            {isGeneratingDraft ? "生成中..." : "新しい下書きを生成"}
-          </Button>
-          <Button
-            onClick={() => onDeleteDraft(source)}
-            disabled={isGeneratingDraft}
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      );
-    }
+      try {
+        await onDeleteDraft(source);
+        await onGenerateDraft(source);
+      } catch (error) {
+        console.error('Error deleting and regenerating draft:', error);
+      }
+    };
+
+    const isProcessing = isGeneratingDraft || isDeletingDraft;
+
+    return (
+      <div className="flex gap-1">
+        <Button
+          onClick={handleDeleteAndRegenerate}
+          disabled={isProcessing}
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs px-2"
+        >
+          <PenTool className="w-3 h-3 mr-1" />
+          {isProcessing ? "処理中..." : "再生成"}
+        </Button>
+        <Button
+          onClick={() => onDeleteDraft(source)}
+          disabled={isProcessing}
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+    );
 
     return null;
   };

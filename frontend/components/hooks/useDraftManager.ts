@@ -15,6 +15,7 @@ interface UseDraftManagerReturn {
   generatedDrafts: Record<string, GeneratedDraftInfo>;
   isGeneratingDraft: boolean;
   isLoadingDraft: boolean;
+  isDeletingDraft: boolean;
   isLoadingDraftForSource: (sourceUuid: string) => boolean;
   generateDraft: (source: TaskSource) => Promise<void>;
   deleteDraft: (source: TaskSource) => Promise<void>;
@@ -30,6 +31,7 @@ interface UseDraftManagerReturn {
 export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+  const [isDeletingDraft, setIsDeletingDraft] = useState(false);
   const [loadingDraftSources, setLoadingDraftSources] = useState<Set<string>>(new Set());
   const [generatedDrafts, setGeneratedDrafts] = useState<Record<string, GeneratedDraftInfo>>({});
   const [checkedSources, setCheckedSources] = useState<Set<string>>(new Set());
@@ -121,6 +123,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
   const deleteDraft = useCallback(async (source: TaskSource) => {
     if (source.source_type !== "email") return;
 
+    setIsDeletingDraft(true);
     try {
       await withErrorHandling(
         async () => {
@@ -146,6 +149,8 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
       );
     } catch (error) {
       console.error('Failed to delete draft:', error);
+    } finally {
+      setIsDeletingDraft(false);
     }
   }, [withErrorHandling]);
 
@@ -164,6 +169,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
     generatedDrafts,
     isGeneratingDraft,
     isLoadingDraft,
+    isDeletingDraft,
     isLoadingDraftForSource,
     generateDraft,
     deleteDraft,
