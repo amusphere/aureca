@@ -667,6 +667,137 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("modify labels", e)
 
+    async def get_drafts(
+        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of email drafts
+
+        Args:
+            max_results: Maximum number of drafts to retrieve
+
+        Returns:
+            List of draft dictionaries with metadata
+        """
+        self._ensure_connected()
+
+        try:
+            # Validate max_results
+            max_results = min(max_results, GmailConfig.MAX_RESULTS_LIMIT)
+
+            # Get drafts list
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .list(userId="me", maxResults=max_results)
+                .execute()
+            )
+
+            drafts = result.get("drafts", [])
+            drafts_data = []
+
+            # Get metadata for each draft
+            for draft in drafts:
+                draft_id = draft["id"]
+                draft_detail = await self._get_draft_metadata(draft_id)
+                drafts_data.append(draft_detail)
+
+            logger.info(f"Retrieved {len(drafts_data)} drafts")
+            return drafts_data
+
+        except Exception as e:
+            self._handle_gmail_api_error("get drafts", e)
+
+    async def get_draft(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Get specific draft details
+
+        Args:
+            draft_id: Draft ID to retrieve
+
+        Returns:
+            Dictionary with complete draft information
+        """
+        self._ensure_connected()
+
+        try:
+            # Get draft details
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .get(userId="me", id=draft_id)
+                .execute()
+            )
+
+            message = result.get("message", {})
+            payload = message.get("payload", {})
+
+            # Extract headers
+            headers = self._extract_headers_to_dict(payload.get("headers", []))
+
+            # Extract body
+            body = self._extract_message_body(payload)
+
+            draft_data = {
+                "id": result["id"],
+                "message_id": message.get("id"),
+                "thread_id": message.get("threadId"),
+                "to": headers.get("to", ""),
+                "from": headers.get("from", ""),
+                "subject": headers.get("subject", ""),
+                "date": headers.get("date", ""),
+                "cc": headers.get("cc", ""),
+                "bcc": headers.get("bcc", ""),
+                "body": body,
+                "headers": headers,
+            }
+
+            logger.info(f"Retrieved draft {draft_id}")
+            return draft_data
+
+        except Exception as e:
+            self._handle_gmail_api_error("get draft", e)
+
+    async def _get_draft_metadata(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Get draft metadata without full body content
+
+        Args:
+            draft_id: Draft ID to retrieve metadata for
+
+        Returns:
+            Dictionary with draft metadata
+        """
+        try:
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .get(userId="me", id=draft_id, format="metadata")
+                .execute()
+            )
+
+            message = result.get("message", {})
+            payload = message.get("payload", {})
+
+            # Extract headers
+            headers = self._extract_headers_to_dict(payload.get("headers", []))
+
+            return {
+                "id": result["id"],
+                "message_id": message.get("id"),
+                "thread_id": message.get("threadId"),
+                "to": headers.get("to", ""),
+                "from": headers.get("from", ""),
+                "subject": headers.get("subject", ""),
+                "date": headers.get("date", ""),
+                "cc": headers.get("cc", ""),
+                "snippet": message.get("snippet", ""),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get draft metadata for {draft_id}: {str(e)}")
+            return {"id": draft_id, "error": str(e)}
+
     # Convenience methods for common email operations
 
     async def get_unread_emails(
