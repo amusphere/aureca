@@ -2,8 +2,9 @@ import logging
 from datetime import datetime
 from typing import List
 
+from app.repositories.task_source import create_task_source, get_task_source_by_uuid
 from app.repositories.tasks import create_task
-from app.schema import User, TaskSource, SourceType
+from app.schema import SourceType, TaskSource, User
 from app.services.gmail_service import get_authenticated_gmail_service
 from app.utils.llm import llm_chat_completions_perse
 from pydantic import BaseModel
@@ -24,6 +25,13 @@ class TaskGenerationResponse(BaseModel):
     title: str
     description: str
     expires_at: float | None = None
+
+
+class EmailReplyDraftResponse(BaseModel):
+    """LLMからのメール返信下書きレスポンス"""
+
+    subject: str
+    body: str
 
 
 class AiTaskService:
@@ -78,18 +86,16 @@ class AiTaskService:
                         )
 
                         # タスクソースを作成
-                        task_source = TaskSource(
+                        create_task_source(
+                            session=self.session,
                             task_id=task.id,
                             source_type=SourceType.EMAIL,
                             source_id=email["id"],
                             title=email_content.get("subject", ""),
-                            content=email_content.get("body", "")[:1000],
+                            content=email_content.get("body", ""),
                             source_url=None,
                             extra_data=None,
                         )
-                        self.session.add(task_source)
-                        self.session.commit()
-                        self.session.refresh(task_source)
 
                         generated_tasks.append(
                             {
@@ -208,4 +214,181 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             return None
 
         except Exception:
+            return None
+
+    async def generate_email_reply_draft(
+        self, task_source_uuid: str, user: User, create_gmail_draft: bool = False
+    ) -> EmailReplyDraftResponse | None:
+        """
+        タスクソースからメールの返信下書きを生成する
+
+        Args:
+            task_source_uuid: タスクソースのUUID
+            user: ユーザー情報
+            create_gmail_draft: Trueの場合、Gmailに下書きを作成する
+
+        Returns:
+            生成された返信下書き、または None（エラーまたはメール以外のソース）
+        """
+        try:
+            # タスクソースを取得
+            task_source = get_task_source_by_uuid(self.session, task_source_uuid)
+
+            if not task_source or task_source.task.user_id != user.id:
+                self.logger.error(f"TaskSource not found: {task_source_uuid}")
+                return None
+
+            # メールソースでない場合はエラー
+            if task_source.source_type != SourceType.EMAIL:
+                self.logger.error(
+                    f"TaskSource is not email type: {task_source.source_type}"
+                )
+                return None
+
+            # メールIDがない場合はエラー
+            if not task_source.source_id:
+                self.logger.error(f"Email source_id is missing: {task_source_uuid}")
+                return None
+
+            # 元のメール内容を取得
+            email_content = await self._get_email_detail(user, task_source.source_id)
+
+            # LLMで返信下書きを生成
+            reply_draft = await self._generate_reply_draft_from_email(
+                email_content, task_source
+            )
+
+            # Gmailに下書きを作成する場合
+            if create_gmail_draft and reply_draft:
+                await self._create_gmail_draft(user, email_content, reply_draft)
+
+            return reply_draft
+
+        except Exception as e:
+            self.logger.error(f"メール返信下書き生成に失敗: {str(e)}")
+            return None
+
+    async def _generate_reply_draft_from_email(
+        self, email_content: dict, task_source: TaskSource
+    ) -> EmailReplyDraftResponse | None:
+        """
+        メール内容とタスク情報から返信下書きを生成
+
+        Args:
+            email_content: 元のメール内容
+            task_source: タスクソース情報
+
+        Returns:
+            生成された返信下書き、または None（生成失敗）
+        """
+        try:
+            # メール情報を整理
+            original_subject = email_content.get("subject", "")
+            original_body = email_content.get("body", "")
+            sender = email_content.get("from", "")
+            date = email_content.get("date", "")
+
+            # タスク情報
+            task_title = task_source.title or ""
+            task_content = task_source.content or ""
+
+            # 件名にRe:を追加（既にある場合は追加しない）
+            reply_subject = (
+                original_subject
+                if original_subject.startswith("Re:")
+                else f"Re: {original_subject}"
+            )
+
+            # LLMへのプロンプトを作成
+            prompts = [
+                {
+                    "role": "system",
+                    "content": """あなたは丁寧で効率的なメール返信を作成するアシスタントです。
+以下のガイドラインに従って返信メールを作成してください：
+
+1. 丁寧で適切なビジネスメールの形式を使用する
+2. 元のメール内容を適切に参照する
+3. 関連するタスク情報があれば適切に組み込む
+4. 簡潔で明確な文章を心がける
+5. 日本語で作成する
+
+返信の構成：
+- 適切な挨拶
+- 元のメールへの応答
+- 必要に応じてタスクに関する情報
+- 適切な結び
+
+件名は「Re:」で始まる適切な件名を返してください。""",
+                },
+                {
+                    "role": "user",
+                    "content": f"""以下の情報を基に返信メールの下書きを作成してください：
+
+【元のメール情報】
+件名: {original_subject}
+送信者: {sender}
+日時: {date}
+本文: {original_body}
+
+【関連タスク情報】
+タスクタイトル: {task_title}
+タスク内容: {task_content}
+
+適切な返信メールの件名と本文を作成してください。""",
+                },
+            ]
+
+            # LLMで返信下書きを生成
+            response = llm_chat_completions_perse(
+                prompts=prompts,
+                response_format=EmailReplyDraftResponse,
+                temperature=0.3,
+                max_tokens=800,
+            )
+
+            # 生成された件名を確認し、必要に応じて調整
+            if response.subject and not response.subject.startswith("Re:"):
+                response.subject = reply_subject
+
+            return response
+
+        except Exception as e:
+            self.logger.error(f"LLMでの返信下書き生成に失敗: {str(e)}")
+            return None
+
+    async def _create_gmail_draft(
+        self, user: User, original_email: dict, reply_draft: EmailReplyDraftResponse
+    ) -> dict | None:
+        """
+        生成した返信下書きをGmailに作成する
+
+        Args:
+            user: ユーザー情報
+            original_email: 元のメール情報
+            reply_draft: 生成された返信下書き
+
+        Returns:
+            Gmail下書き作成結果、または None（エラー）
+        """
+        try:
+            # 元のメールの送信者情報を取得
+            original_sender = original_email.get("from", "")
+
+            # Gmail下書きを作成
+            async with get_authenticated_gmail_service(
+                user, self.session
+            ) as gmail_service:
+                draft_result = await gmail_service.create_draft(
+                    to=original_sender,
+                    subject=reply_draft.subject,
+                    body=reply_draft.body,
+                )
+
+            self.logger.info(
+                f"Gmail下書きを作成しました: {draft_result.get('id', 'unknown')}"
+            )
+            return draft_result
+
+        except Exception as e:
+            self.logger.error(f"Gmail下書き作成に失敗: {str(e)}")
             return None

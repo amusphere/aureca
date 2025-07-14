@@ -1,5 +1,10 @@
 from app.database import get_session
-from app.models.ai_assistant import AIRequestModel, AIResponseModel
+from app.models.ai_assistant import (
+    AIRequestModel,
+    AIResponseModel,
+    EmailReplyDraftResponseModel,
+    GenerateTasksFromEmailsResponseModel,
+)
 from app.schema import User
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai_task_service import AiTaskService
@@ -17,22 +22,18 @@ async def process_ai_request_endpoint(
     user: User = Depends(auth_user),
 ):
     """AIアシスタントにリクエストを送信して処理結果を取得"""
-    try:
-        orchestrator = AIOrchestrator(user.id, session)
-        result = await orchestrator.process_request(
-            prompt=request.prompt, current_user=user
-        )
+    orchestrator = AIOrchestrator(user.id, session)
+    result = await orchestrator.process_request(
+        prompt=request.prompt, current_user=user
+    )
 
-        return AIResponseModel(**result)
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process AI request: {str(e)}",
-        )
+    return result
 
 
-@router.post("/generate-from-emails")
+@router.post(
+    "/generate-from-emails",
+    response_model=GenerateTasksFromEmailsResponseModel,
+)
 async def generate_tasks_from_emails_endpoint(
     max_emails: int = 10,
     session: Session = Depends(get_session),
@@ -48,4 +49,39 @@ async def generate_tasks_from_emails_endpoint(
         "success": True,
         "message": f"{len(generated_tasks)}個のタスクを生成しました",
         "generated_tasks": generated_tasks,
+    }
+
+
+@router.post(
+    "/generate-email-reply-draft/{task_source_uuid}",
+    response_model=EmailReplyDraftResponseModel,
+)
+async def generate_email_reply_draft_endpoint(
+    task_source_uuid: str,
+    create_gmail_draft: bool = False,
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """TaskSourceからメール返信下書きを生成"""
+    ai_task_service = AiTaskService(session=session, user_id=user.id)
+    reply_draft = await ai_task_service.generate_email_reply_draft(
+        task_source_uuid=task_source_uuid,
+        user=user,
+        create_gmail_draft=create_gmail_draft,
+    )
+
+    if not reply_draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="TaskSource not found or not an email source",
+        )
+
+    return {
+        "success": True,
+        "message": "メール返信下書きを生成しました"
+        + ("（Gmailに下書き保存済み）" if create_gmail_draft else ""),
+        "draft": {
+            "subject": reply_draft.subject,
+            "body": reply_draft.body,
+        },
     }
