@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 from app.repositories.tasks import create_task
-from app.schema import User
+from app.schema import User, TaskSource, SourceType
 from app.services.gmail_service import get_authenticated_gmail_service
 from app.utils.llm import llm_chat_completions_perse
 from pydantic import BaseModel
@@ -76,6 +76,20 @@ class AiTaskService:
                             description=task_data.description,
                             expires_at=task_data.expires_at,
                         )
+
+                        # タスクソースを作成
+                        task_source = TaskSource(
+                            task_id=task.id,
+                            source_type=SourceType.EMAIL,
+                            source_id=email["id"],
+                            title=email_content.get("subject", ""),
+                            content=email_content.get("body", "")[:1000],
+                            source_url=None,
+                            extra_data=None,
+                        )
+                        self.session.add(task_source)
+                        self.session.commit()
+                        self.session.refresh(task_source)
 
                         generated_tasks.append(
                             {
