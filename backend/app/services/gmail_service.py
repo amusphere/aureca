@@ -830,6 +830,86 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("get drafts by thread id", e)
 
+    async def delete_draft(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Delete a specific draft
+
+        Args:
+            draft_id: Draft ID to delete
+
+        Returns:
+            Dictionary with deletion result
+        """
+        self._ensure_connected()
+
+        try:
+            # Delete the draft
+            self.gmail_service.users().drafts().delete(
+                userId="me", id=draft_id
+            ).execute()
+
+            logger.info(f"Draft {draft_id} deleted successfully")
+            return {
+                "id": draft_id,
+                "status": "deleted",
+                "message": "Draft deleted successfully",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("delete draft", e)
+
+    async def delete_drafts_by_thread_id(self, thread_id: str) -> Dict[str, Any]:
+        """
+        Delete all drafts for a specific thread
+
+        Args:
+            thread_id: Gmail thread ID to delete drafts for
+
+        Returns:
+            Dictionary with deletion results
+        """
+        self._ensure_connected()
+
+        try:
+            # Get all drafts for the thread
+            thread_drafts = await self.get_drafts_by_thread_id(thread_id)
+
+            if not thread_drafts:
+                logger.info(f"No drafts found for thread {thread_id}")
+                return {
+                    "thread_id": thread_id,
+                    "deleted_count": 0,
+                    "status": "no_drafts_found",
+                    "message": "No drafts found for this thread",
+                }
+
+            # Delete each draft
+            deleted_draft_ids = []
+            failed_deletions = []
+
+            for draft in thread_drafts:
+                try:
+                    await self.delete_draft(draft["id"])
+                    deleted_draft_ids.append(draft["id"])
+                except Exception as e:
+                    logger.error(f"Failed to delete draft {draft['id']}: {str(e)}")
+                    failed_deletions.append({"id": draft["id"], "error": str(e)})
+
+            logger.info(
+                f"Deleted {len(deleted_draft_ids)} drafts for thread {thread_id}"
+            )
+            return {
+                "thread_id": thread_id,
+                "deleted_count": len(deleted_draft_ids),
+                "deleted_draft_ids": deleted_draft_ids,
+                "failed_deletions": failed_deletions,
+                "status": "completed",
+                "message": f"Deleted {len(deleted_draft_ids)} drafts successfully",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("delete drafts by thread id", e)
+
     # Convenience methods for common email operations
 
     async def get_unread_emails(
