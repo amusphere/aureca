@@ -363,7 +363,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 
     async def _create_gmail_draft(
         self, user: User, original_email: dict, reply_draft: EmailReplyDraftResponse
-    ) -> dict | None:
+    ) -> DraftModel | None:
         """
         生成した返信下書きをGmailに作成する
 
@@ -394,7 +394,16 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             self.logger.info(
                 f"Gmail返信下書きを作成しました: {draft_result.get('id', 'unknown')}, スレッドID: {draft_result.get('threadId', 'unknown')}"
             )
-            return draft_result
+
+            # DraftModelに変換して返す
+            return DraftModel(
+                id=draft_result.get("id", ""),
+                subject=reply_draft.subject,
+                body=reply_draft.body,
+                to=original_sender,
+                thread_id=draft_result.get("threadId"),
+                snippet=draft_result.get("message", {}).get("snippet"),
+            )
 
         except Exception as e:
             self.logger.error(f"Gmail返信下書き作成に失敗: {str(e)}")
