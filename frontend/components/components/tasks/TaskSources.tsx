@@ -1,7 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/components/ui/badge";
-import { Card, CardContent } from "@/components/components/ui/card";
 import { TaskSource } from "@/types/Task";
 import { Calendar, Clipboard, ExternalLink, Github, Mail, MessageSquare } from "lucide-react";
 import { MarkdownContent } from "../chat/MarkdownContent";
@@ -54,50 +52,45 @@ export function TaskSources({ sources }: TaskSourcesProps) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-sm font-medium text-muted-foreground">
+    <div className="space-y-1">
+      <div className="text-xs font-medium text-muted-foreground mb-2">
         関連情報
       </div>
-      <div className="pl-3 sm:pl-6 space-y-3">
+      <div className="space-y-1">
         {sources.map((source) => (
-          <Card key={source.uuid} className="border-l-4 border-l-blue-500 overflow-hidden">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 space-y-2 min-w-0 overflow-hidden">
-                  <div className="flex items-center gap-2">
-                    {getSourceIcon(source.source_type)}
-                    <Badge variant="secondary" className="text-xs">
-                      {getSourceDisplayName(source.source_type)}
-                    </Badge>
-                  </div>
-
-                  {source.title && (
-                    <div className="font-medium text-sm break-words">
-                      {source.title}
-                    </div>
-                  )}
-
-                  {source.content && (
-                    <div className="text-sm text-muted-foreground prose prose-sm max-w-none overflow-hidden">
-                      <MarkdownContent content={source.content} className="break-words" />
-                    </div>
-                  )}
-                </div>
-
-                {source.source_url && (
-                  <a
-                    href={source.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0 p-1 touch-manipulation"
-                    aria-label="外部リンクを開く"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
+          <div key={source.uuid} className="py-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-1">
+                {getSourceIcon(source.source_type)}
+                <span className="text-xs text-muted-foreground">
+                  {getSourceDisplayName(source.source_type)}
+                </span>
               </div>
-            </CardContent>
-          </Card>
+              {source.source_url && (
+                <a
+                  href={source.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0"
+                  aria-label="外部リンクを開く"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+
+            {source.title && (
+              <div className="font-medium text-xs text-gray-900 break-words line-clamp-1 mb-1">
+                {source.title}
+              </div>
+            )}
+
+            {source.content && (
+              <div className="text-xs text-muted-foreground prose prose-xs max-w-none overflow-hidden line-clamp-2">
+                <MarkdownContent content={source.content} className="break-words" />
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
