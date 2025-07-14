@@ -85,7 +85,8 @@ class AiTaskService:
                             expires_at=task_data.expires_at,
                         )
 
-                        # タスクソースを作成
+                        # TaskSourceを作成（メール情報と直接リンクを保存）
+                        gmail_url = self._generate_gmail_url(email["id"])
                         create_task_source(
                             session=self.session,
                             task_id=task.id,
@@ -93,7 +94,7 @@ class AiTaskService:
                             source_id=email["id"],
                             title=email_content.get("subject", ""),
                             content=email_content.get("body", ""),
-                            source_url=None,
+                            source_url=gmail_url,
                             extra_data=None,
                         )
 
@@ -120,6 +121,10 @@ class AiTaskService:
         except Exception as e:
             self.logger.error(f"新着メールからのタスク生成に失敗: {str(e)}")
             raise
+
+    def _generate_gmail_url(self, email_id: str) -> str:
+        """GmailメールIDから直接リンクURLを生成"""
+        return f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
 
     async def _get_email_detail(self, user: User, email_id: str) -> dict:
         """メールの詳細情報を取得"""
