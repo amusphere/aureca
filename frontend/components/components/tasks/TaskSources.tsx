@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { EmailDraft } from "@/types/EmailDraft";
 import { TaskSource } from "@/types/Task";
-import { Calendar, Clipboard, ExternalLink, Github, Mail, MessageSquare, PenTool } from "lucide-react";
+import { Calendar, Clipboard, ExternalLink, GitBranch, Mail, MessageSquare, PenTool } from "lucide-react";
 import { useState } from "react";
 import { MarkdownContent } from "../chat/MarkdownContent";
 
@@ -28,7 +28,7 @@ const getSourceIcon = (sourceType: string) => {
       return <MessageSquare className="w-4 h-4" />;
     case "github_issue":
     case "github_pr":
-      return <Github className="w-4 h-4" />;
+      return <GitBranch className="w-4 h-4" />;
     default:
       return <Clipboard className="w-4 h-4" />;
   }
