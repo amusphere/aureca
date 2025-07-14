@@ -4,10 +4,12 @@ import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
 import { ArrowLeft, FileText } from "lucide-react";
+import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { ErrorDisplay } from "../components/commons/ErrorDisplay";
 import { TaskHeader } from "../components/commons/TaskHeader";
 import { TaskExpiryDisplay } from "../components/tasks/TaskExpiryDisplay";
 import { TaskForm } from "../components/tasks/TaskForm";
+import { TaskSources } from "../components/tasks/TaskSources";
 import { useTaskDetail } from "../hooks/useTaskDetail";
 
 interface TaskDetailPageProps {
@@ -60,8 +62,8 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
                 <FileText className="w-4 h-4" />
                 説明
               </div>
-              <div className="pl-6 text-sm whitespace-pre-wrap">
-                {currentTask.description}
+              <div className="pl-6 text-sm">
+                <MarkdownContent content={currentTask.description} />
               </div>
             </div>
           )}
@@ -81,6 +83,9 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
               </div>
             </div>
           )}
+
+          {/* Task sources section */}
+          <TaskSources sources={currentTask.sources || []} />
 
           {/* Action buttons */}
           <div className="flex gap-3 pt-4 border-t">
