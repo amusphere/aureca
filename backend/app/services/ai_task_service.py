@@ -1,15 +1,17 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List
-from zoneinfo import ZoneInfo
 
 from app.models.google_mail import DraftModel
 from app.repositories.task_source import create_task_source, get_task_source_by_uuid
 from app.repositories.tasks import create_task
 from app.schema import SourceType, TaskSource, User
-from app.services.ai.spokes.google_calendar.spoke import GoogleCalendarSpoke
 from app.services.gmail_service import get_authenticated_gmail_service
+from app.services.google_calendar_service import (
+    CalendarFreeTimeResponse,
+    get_authenticated_google_calendar_service,
+)
 from app.utils.llm import llm_chat_completions_perse
 from pydantic import BaseModel
 from sqlmodel import Session
@@ -36,22 +38,6 @@ class EmailReplyDraftResponse(BaseModel):
 
     subject: str
     body: str
-
-
-class AvailableTimeSlot(BaseModel):
-    """利用可能な時間スロット"""
-
-    start_time: datetime
-    end_time: datetime
-    duration_minutes: int
-
-
-class CalendarFreeTimeResponse(BaseModel):
-    """カレンダー空き時間情報"""
-
-    available_slots: List[AvailableTimeSlot]
-    search_period: str
-    total_free_hours: float
 
 
 class ScheduleJudgment(BaseModel):
@@ -401,165 +387,15 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             空き時間情報、または None（取得失敗）
         """
         try:
-            # Google Calendarスポークを初期化
-            calendar_spoke = GoogleCalendarSpoke(
-                session=self.session, current_user=user
-            )
-
-            # 検索期間を設定（現在時刻から指定日数後まで）
-            jst = ZoneInfo("Asia/Tokyo")
-            now = datetime.now(jst)
-            start_date = now.replace(
-                hour=9, minute=0, second=0, microsecond=0
-            )  # 9時から開始
-            end_date = (now + timedelta(days=days_ahead)).replace(
-                hour=18, minute=0, second=0, microsecond=0
-            )  # 18時まで
-
-            # カレンダーイベントを取得
-            response = await calendar_spoke.action_get_calendar_events(
-                {
-                    "start_date": start_date.isoformat(),
-                    "end_date": end_date.isoformat(),
-                    "max_results": 100,
-                }
-            )
-
-            if not response.success:
-                self.logger.error(f"Google Calendar取得エラー: {response.error}")
-                return None
-
-            # 既存のイベントを解析
-            events = response.data or []
-            occupied_slots = []
-
-            for event in events:
-                if event.get("start_time") and event.get("end_time"):
-                    start = event["start_time"]
-                    end = event["end_time"]
-
-                    # datetime オブジェクトでない場合は変換
-                    if isinstance(start, str):
-                        start = datetime.fromisoformat(start.replace("Z", "+00:00"))
-                    if isinstance(end, str):
-                        end = datetime.fromisoformat(end.replace("Z", "+00:00"))
-
-                    occupied_slots.append((start, end))
-
-            # 空き時間スロットを計算
-            available_slots = self._calculate_free_time_slots(
-                start_date, end_date, occupied_slots
-            )
-
-            # 合計空き時間を計算
-            total_free_hours = (
-                sum(slot.duration_minutes for slot in available_slots) / 60.0
-            )
-
-            return CalendarFreeTimeResponse(
-                available_slots=available_slots,
-                search_period=f"{start_date.strftime('%Y-%m-%d')} から {end_date.strftime('%Y-%m-%d')}",
-                total_free_hours=total_free_hours,
-            )
+            # Google Calendarサービスを使用して空き時間を取得
+            async with get_authenticated_google_calendar_service(
+                user, self.session
+            ) as calendar_service:
+                return await calendar_service.get_free_time(days_ahead=days_ahead)
 
         except Exception as e:
             self.logger.error(f"Google Calendar空き時間取得に失敗: {str(e)}")
             return None
-
-    def _calculate_free_time_slots(
-        self,
-        start_date: datetime,
-        end_date: datetime,
-        occupied_slots: List[tuple],
-        min_slot_minutes: int = 30,
-        work_start_hour: int = 9,
-        work_end_hour: int = 18,
-    ) -> List[AvailableTimeSlot]:
-        """
-        空き時間スロットを計算する
-
-        Args:
-            start_date: 検索開始日時
-            end_date: 検索終了日時
-            occupied_slots: 既存の予定のタイムスロット
-            min_slot_minutes: 最小スロット時間（分）
-            work_start_hour: 業務開始時間
-            work_end_hour: 業務終了時間
-
-        Returns:
-            利用可能な時間スロットのリスト
-        """
-
-        available_slots = []
-        current_date = start_date.date()
-        end_date_only = end_date.date()
-
-        # タイムゾーンを統一（JSTを使用）
-        jst = ZoneInfo("Asia/Tokyo")
-
-        while current_date <= end_date_only:
-            # 平日のみ対象（土日は除外）
-            if current_date.weekday() < 5:  # 0-4が月-金
-                day_start = datetime.combine(
-                    current_date, datetime.min.time().replace(hour=work_start_hour)
-                ).replace(tzinfo=jst)
-                day_end = datetime.combine(
-                    current_date, datetime.min.time().replace(hour=work_end_hour)
-                ).replace(tzinfo=jst)
-
-                # その日の予定を取得（タイムゾーンを統一）
-                day_occupied = []
-                for start, end in occupied_slots:
-                    # タイムゾーン情報がない場合はJSTとして扱う
-                    if start.tzinfo is None:
-                        start = start.replace(tzinfo=jst)
-                    if end.tzinfo is None:
-                        end = end.replace(tzinfo=jst)
-
-                    # その日の範囲内の予定のみを対象とする
-                    if (
-                        start.date() == current_date
-                        and end > day_start
-                        and start < day_end
-                    ):
-                        day_occupied.append((max(start, day_start), min(end, day_end)))
-
-                # 予定を時間順にソート
-                day_occupied.sort(key=lambda x: x[0])
-
-                # 空き時間を計算
-                current_time = day_start
-                for occupied_start, occupied_end in day_occupied:
-                    # 空き時間があるかチェック
-                    if current_time < occupied_start:
-                        slot_duration = (
-                            occupied_start - current_time
-                        ).total_seconds() / 60
-                        if slot_duration >= min_slot_minutes:
-                            available_slots.append(
-                                AvailableTimeSlot(
-                                    start_time=current_time,
-                                    end_time=occupied_start,
-                                    duration_minutes=int(slot_duration),
-                                )
-                            )
-                    current_time = max(current_time, occupied_end)
-
-                # 最後の予定から終業時間までの空き時間
-                if current_time < day_end:
-                    slot_duration = (day_end - current_time).total_seconds() / 60
-                    if slot_duration >= min_slot_minutes:
-                        available_slots.append(
-                            AvailableTimeSlot(
-                                start_time=current_time,
-                                end_time=day_end,
-                                duration_minutes=int(slot_duration),
-                            )
-                        )
-
-            current_date += timedelta(days=1)
-
-        return available_slots
 
     def _format_available_times_for_prompt(
         self, free_time_response: CalendarFreeTimeResponse
@@ -573,6 +409,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
         Returns:
             プロンプト用にフォーマットされた文字列
         """
+        # GoogleCalendarServiceのロジックをここに移行
         if not free_time_response.available_slots:
             return (
                 "申し訳ございませんが、現在の予定では空き時間が見つかりませんでした。"
