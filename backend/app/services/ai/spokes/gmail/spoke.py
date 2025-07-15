@@ -1,8 +1,8 @@
 import logging
 from typing import Any, Dict
 
-from app.services.ai.models import SpokeResponse
-from app.services.ai.spokes.spoke_interface import BaseSpoke
+from app.services.ai.core.models import SpokeResponse
+from app.services.ai.spokes.base import BaseSpoke
 from app.services.gmail_service import (
     GmailAPIError,
     GmailAuthenticationError,
