@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from app.models.google_mail import DraftModel
@@ -134,6 +134,97 @@ class AiTaskService:
             self.logger.error(f"新着メールからのタスク生成に失敗: {str(e)}")
             raise
 
+    async def generate_tasks_from_calendar_events(
+        self, user: User, days_ahead: int = 7, max_events: int = 20
+    ) -> List[dict]:
+        """
+        カレンダーイベントからタスクを生成してデータベースに保存する
+
+        Args:
+            user: ユーザー情報
+            days_ahead: 未来何日間のイベントを対象にするか
+            max_events: 取得する最大イベント数
+
+        Returns:
+            生成されたタスクのリスト
+        """
+        try:
+            # カレンダーから今後のイベントを取得
+            async with get_authenticated_google_calendar_service(
+                user, self.session
+            ) as calendar_service:
+                # 現在から指定日数後までのイベントを取得
+                start_date = datetime.now()
+                end_date = start_date + timedelta(days=days_ahead)
+
+                events = await calendar_service.get_events(
+                    start_date=start_date,
+                    end_date=end_date,
+                    max_results=max_events,
+                )
+
+            if not events:
+                self.logger.info("対象期間内にカレンダーイベントが見つかりませんでした")
+                return []
+
+            generated_tasks = []
+
+            for event in events:
+                try:
+                    # イベント内容からタスクを生成
+                    task_data = await self._generate_task_from_calendar_event(event)
+
+                    if task_data:
+                        # データベースに保存
+                        task = create_task(
+                            session=self.session,
+                            user_id=user.id,
+                            title=task_data.title,
+                            description=task_data.description,
+                            expires_at=task_data.expires_at,
+                        )
+
+                        # TaskSourceを作成（カレンダーイベント情報を保存）
+                        event_url = self._generate_calendar_event_url(
+                            event.get("id", ""), event.get("htmlLink", "")
+                        )
+                        create_task_source(
+                            session=self.session,
+                            task_id=task.id,
+                            source_type=SourceType.CALENDAR,
+                            source_id=event.get("id", ""),
+                            title=event.get("summary", ""),
+                            content=event.get("description", ""),
+                            source_url=event_url,
+                            extra_data=None,
+                        )
+
+                        generated_tasks.append(
+                            {
+                                "uuid": str(task.uuid),
+                                "title": task.title,
+                                "description": task.description,
+                                "expires_at": task.expires_at,
+                                "source_event_id": event.get("id", ""),
+                            }
+                        )
+
+                        self.logger.info(
+                            f"カレンダーイベントからタスクを生成しました: {task.title}"
+                        )
+
+                except Exception as e:
+                    self.logger.error(
+                        f"カレンダーイベント {event.get('id', 'unknown')} からのタスク生成に失敗: {str(e)}"
+                    )
+                    continue
+
+            return generated_tasks
+
+        except Exception as e:
+            self.logger.error(f"カレンダーイベントからのタスク生成に失敗: {str(e)}")
+            raise
+
     def _generate_gmail_url(self, email_id: str) -> str:
         """GmailメールIDから直接リンクURLを生成"""
         return f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
@@ -232,6 +323,87 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 
         except Exception:
             return None
+
+    async def _generate_task_from_calendar_event(
+        self, event: dict
+    ) -> TaskGenerationResponse | None:
+        """
+        カレンダーイベント内容からLLMを使ってタスクを生成
+
+        Args:
+            event: カレンダーイベントの詳細内容
+
+        Returns:
+            生成されたタスク情報、または None（タスクに適さない場合）
+        """
+        try:
+            # イベント情報を整理
+            summary = event.get("summary", "")
+            description = event.get("description", "")
+            location = event.get("location", "")
+            start_time = event.get("start", {})
+            end_time = event.get("end", {})
+
+            # 開始時刻と終了時刻の文字列を取得
+            start_str = start_time.get("dateTime", start_time.get("date", ""))
+            end_str = end_time.get("dateTime", end_time.get("date", ""))
+
+            # LLMへのプロンプトを作成
+            prompts = [
+                {
+                    "role": "system",
+                    "content": """あなたはカレンダーイベントを分析してタスクを生成するアシスタントです。
+カレンダーイベントを分析し、以下の条件に当てはまる場合のみタスクを生成してください：
+
+1. 会議やイベントの準備が必要
+2. 会議後のフォローアップが必要
+3. 資料作成や確認などの事前作業が必要
+4. 何らかのアクションアイテムが発生する可能性がある
+
+単純な定期会議や個人的な予定など、特別な準備やアクションが不要な場合は、title を空文字列で返してください。
+
+expires_at は UNIX タイムスタンプで返してください。通常はイベント開始時刻より前に設定してください。
+期限が明確でない場合は null を返してください。""",
+                },
+                {
+                    "role": "user",
+                    "content": f"""以下のカレンダーイベントを分析してタスクを生成してください：
+
+イベント名: {summary}
+説明: {description}
+場所: {location}
+開始時刻: {start_str}
+終了時刻: {end_str}
+
+このイベントに関連して、事前準備やフォローアップのための適切なタスクのタイトル、説明、期限を生成してください。""",
+                },
+            ]
+
+            # LLMでタスクを生成
+            response = llm_chat_completions_perse(
+                prompts=prompts,
+                response_format=TaskGenerationResponse,
+                temperature=0.3,
+                max_tokens=500,
+            )
+
+            # タスクに適さない場合（titleが空）は None を返す
+            if not response.title.strip():
+                return None
+
+            return response
+
+        except Exception as e:
+            self.logger.error(f"LLMでのカレンダータスク生成に失敗: {str(e)}")
+            return None
+
+    def _generate_calendar_event_url(self, event_id: str, html_link: str) -> str:
+        """カレンダーイベントIDから直接リンクURLを生成"""
+        # Google CalendarのhtmlLinkが利用可能な場合はそれを使用
+        if html_link:
+            return html_link
+        # フォールバックとして基本的なカレンダーURLを返す
+        return f"https://calendar.google.com/calendar/event?eid={event_id}"
 
     async def generate_email_reply_draft(
         self, task_source_uuid: str, user: User

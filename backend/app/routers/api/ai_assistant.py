@@ -2,7 +2,7 @@ from app.database import get_session
 from app.models.ai_assistant import (
     AIRequestModel,
     AIResponseModel,
-    GenerateTasksFromEmailsResponseModel,
+    GeneratedTaskModel,
 )
 from app.schema import User
 from app.services.ai.orchestrator import AIOrchestrator
@@ -29,10 +29,7 @@ async def process_ai_request_endpoint(
     return result
 
 
-@router.post(
-    "/generate-from-emails",
-    response_model=GenerateTasksFromEmailsResponseModel,
-)
+@router.post("/generate-from-emails", response_model=GeneratedTaskModel)
 async def generate_tasks_from_emails_endpoint(
     max_emails: int = 10,
     session: Session = Depends(get_session),
@@ -44,8 +41,20 @@ async def generate_tasks_from_emails_endpoint(
         user=user, max_emails=max_emails
     )
 
-    return {
-        "success": True,
-        "message": f"{len(generated_tasks)}個のタスクを生成しました",
-        "generated_tasks": generated_tasks,
-    }
+    return generated_tasks
+
+
+@router.post("/generate-from-calendar", response_model=GeneratedTaskModel)
+async def generate_tasks_from_calendar_endpoint(
+    days_ahead: int = 7,
+    max_events: int = 20,
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """カレンダーイベントからタスクを自動生成"""
+    ai_task_service = AiTaskService(session=session, user_id=user.id)
+    generated_tasks = await ai_task_service.generate_tasks_from_calendar_events(
+        user=user, days_ahead=days_ahead, max_events=max_events
+    )
+
+    return generated_tasks

@@ -27,11 +27,3 @@ class GeneratedTaskModel(BaseModel):
     description: str | None = None
     completed: bool = False
     expires_at: float | None = None
-
-
-class GenerateTasksFromEmailsResponseModel(BaseModel):
-    """メールからのタスク生成レスポンスモデル"""
-
-    success: bool
-    message: str
-    generated_tasks: list[GeneratedTaskModel]
