@@ -185,25 +185,30 @@ class AiTaskService:
                         )
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
-                        event_url = self._generate_calendar_event_url(
-                            event.get("id", ""),
-                            event.get("htmlLink", ""),
-                            event.get("alternateLink", ""),
+                        event_id = event.get("id", "")
+                        html_link = event.get("html_link", "")  # Google Calendar Serviceでhtml_linkにマッピングされている
+                        alternate_link = event.get("alternateLink", "")
+
+                        # デバッグログ - より詳細な情報を出力
+                        self.logger.info(
+                            f"カレンダーイベント処理中: "
+                            f"id='{event_id}', "
+                            f"html_link='{html_link}', "
+                            f"alternateLink='{alternate_link}', "
+                            f"summary='{event.get('summary', '')}'"
                         )
 
-                        # デバッグログ
-                        self.logger.debug(
-                            f"カレンダーイベント情報: id={event.get('id')}, "
-                            f"htmlLink={event.get('htmlLink')}, "
-                            f"alternateLink={event.get('alternateLink')}, "
-                            f"generated_url={event_url}"
+                        event_url = self._generate_calendar_event_url(
+                            event_id, html_link, alternate_link
                         )
+
+                        self.logger.info(f"生成されたURL: {event_url}")
 
                         create_task_source(
                             session=self.session,
                             task_id=task.id,
                             source_type=SourceType.CALENDAR,
-                            source_id=event.get("id", ""),
+                            source_id=event_id,
                             title=event.get("summary", ""),
                             content=event.get("description", ""),
                             source_url=event_url,
@@ -238,10 +243,19 @@ class AiTaskService:
 
     def _generate_gmail_url(self, email_id: str) -> str:
         """GmailメールIDから直接リンクURLを生成"""
-        if not email_id:
+        try:
+            if not email_id or not email_id.strip():
+                self.logger.warning("Empty email_id provided, using fallback URL")
+                return "https://mail.google.com/mail/u/0/#inbox"
+
+            # Gmail の新しいURL形式を使用
+            gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
+            self.logger.debug(f"Generated Gmail URL: {gmail_url}")
+            return gmail_url
+
+        except Exception as e:
+            self.logger.error(f"Error generating Gmail URL: {str(e)}")
             return "https://mail.google.com/mail/u/0/#inbox"
-        # Gmail の新しいURL形式を使用
-        return f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
 
     async def _get_email_detail(self, user: User, email_id: str) -> dict:
         """メールの詳細情報を取得"""
@@ -415,22 +429,32 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         self, event_id: str, html_link: str, alternate_link: str = ""
     ) -> str:
         """カレンダーイベントIDから直接リンクURLを生成"""
-        # alternateLink（通常、これが最も確実なリンク）
-        if alternate_link and alternate_link.startswith("https://"):
-            return alternate_link
+        try:
+            # Google Calendar APIのドキュメントによると、htmlLinkがイベントの正しいWebリンクを提供する
+            if html_link and html_link.startswith("https://"):
+                self.logger.debug(f"Using htmlLink: {html_link}")
+                return html_link
 
-        # Google CalendarのhtmlLinkが利用可能な場合はそれを使用
-        if html_link and html_link.startswith("https://"):
-            return html_link
+            # 他の可能なリンクフィールド（legacy support）
+            if alternate_link and alternate_link.startswith("https://"):
+                self.logger.debug(f"Using alternateLink: {alternate_link}")
+                return alternate_link
 
-        # event_idが利用可能な場合、Google Calendar URLを生成
-        if event_id:
-            # Google Calendar の基本URL形式を使用
-            # イベントIDを直接使用する場合の形式
-            return f"https://calendar.google.com/calendar/u/0/r/eventedit/{event_id}"
+            # event_idが利用可能な場合、Google Calendar URLを生成
+            if event_id and event_id.strip():
+                # Google Calendar の標準URL形式を使用
+                # 参考: https://developers.google.com/calendar/api/guides/web-ui-links
+                event_url = f"https://calendar.google.com/calendar/event?eid={event_id}"
+                self.logger.debug(f"Generated event URL from ID: {event_url}")
+                return event_url
 
-        # フォールバックとして基本的なカレンダーURLを返す
-        return "https://calendar.google.com/calendar"
+            # フォールバックとして基本的なカレンダーURLを返す
+            self.logger.warning("No valid event link found, using fallback URL")
+            return "https://calendar.google.com/calendar"
+
+        except Exception as e:
+            self.logger.error(f"Error generating calendar event URL: {str(e)}")
+            return "https://calendar.google.com/calendar"
 
     async def generate_email_reply_draft(
         self, task_source_uuid: str, user: User
