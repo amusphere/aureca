@@ -186,23 +186,13 @@ class AiTaskService:
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
                         event_id = event.get("id", "")
-                        html_link = event.get("html_link", "")  # Google Calendar Serviceでhtml_linkにマッピングされている
-                        alternate_link = event.get("alternateLink", "")
-
-                        # デバッグログ - より詳細な情報を出力
-                        self.logger.info(
-                            f"カレンダーイベント処理中: "
-                            f"id='{event_id}', "
-                            f"html_link='{html_link}', "
-                            f"alternateLink='{alternate_link}', "
-                            f"summary='{event.get('summary', '')}'"
-                        )
+                        html_link = event.get(
+                            "htmlLink", ""
+                        )  # Google Calendar APIの正式フィールド名
 
                         event_url = self._generate_calendar_event_url(
-                            event_id, html_link, alternate_link
+                            event_id, html_link
                         )
-
-                        self.logger.info(f"生成されたURL: {event_url}")
 
                         create_task_source(
                             session=self.session,
@@ -250,7 +240,6 @@ class AiTaskService:
 
             # Gmail の新しいURL形式を使用
             gmail_url = f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
-            self.logger.debug(f"Generated Gmail URL: {gmail_url}")
             return gmail_url
 
         except Exception as e:
@@ -425,27 +414,18 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             self.logger.error(f"LLMでのカレンダータスク生成に失敗: {str(e)}")
             return None
 
-    def _generate_calendar_event_url(
-        self, event_id: str, html_link: str, alternate_link: str = ""
-    ) -> str:
+    def _generate_calendar_event_url(self, event_id: str, html_link: str) -> str:
         """カレンダーイベントIDから直接リンクURLを生成"""
         try:
-            # Google Calendar APIのドキュメントによると、htmlLinkがイベントの正しいWebリンクを提供する
+            # Google Calendar APIのhtmlLinkフィールドが正しいWebリンクを提供する
             if html_link and html_link.startswith("https://"):
-                self.logger.debug(f"Using htmlLink: {html_link}")
                 return html_link
-
-            # 他の可能なリンクフィールド（legacy support）
-            if alternate_link and alternate_link.startswith("https://"):
-                self.logger.debug(f"Using alternateLink: {alternate_link}")
-                return alternate_link
 
             # event_idが利用可能な場合、Google Calendar URLを生成
             if event_id and event_id.strip():
                 # Google Calendar の標準URL形式を使用
                 # 参考: https://developers.google.com/calendar/api/guides/web-ui-links
                 event_url = f"https://calendar.google.com/calendar/event?eid={event_id}"
-                self.logger.debug(f"Generated event URL from ID: {event_url}")
                 return event_url
 
             # フォールバックとして基本的なカレンダーURLを返す
