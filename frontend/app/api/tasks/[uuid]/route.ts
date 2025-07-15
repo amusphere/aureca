@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { uuid: string } }
+  { params }: { params: Promise<{ uuid: string }> }
 ) {
   try {
-    const { uuid } = params;
+    const { uuid } = await params;
     const body = await request.json();
 
     // バックエンドのPATCH /{task_uuid}エンドポイントを使用
@@ -32,10 +32,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { uuid: string } }
+  { params }: { params: Promise<{ uuid: string }> }
 ) {
   try {
-    const { uuid } = params;
+    const { uuid } = await params;
 
     // バックエンドのDELETE /{task_uuid}エンドポイントを使用
     const response = await apiDelete(`/tasks/${uuid}`);
