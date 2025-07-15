@@ -54,16 +54,27 @@ class GoogleCalendarSpoke(BaseSpoke):
             calendar_id = parameters.get("calendar_id", "primary")
             max_results = parameters.get("max_results", 100)
 
+            # タイムゾーンが設定されていない場合は日本時間として扱う
+            jst = ZoneInfo("Asia/Tokyo")
+            if start_date.tzinfo is None:
+                start_date = start_date.replace(tzinfo=jst)
+            if end_date.tzinfo is None:
+                end_date = end_date.replace(tzinfo=jst)
+
             # Google Calendar APIサービスを取得
             service = self._get_calendar_service(self.current_user.id)
+
+            # RFC3339形式でタイムスタンプを作成
+            time_min = start_date.isoformat()
+            time_max = end_date.isoformat()
 
             # イベントを取得
             events_result = (
                 service.events()
                 .list(
                     calendarId=calendar_id,
-                    timeMin=start_date.isoformat(),
-                    timeMax=end_date.isoformat(),
+                    timeMin=time_min,
+                    timeMax=time_max,
                     maxResults=max_results,
                     singleEvents=True,
                     orderBy="startTime",
@@ -81,9 +92,15 @@ class GoogleCalendarSpoke(BaseSpoke):
 
                 # 日付のみの場合の処理
                 if "T" not in start:
-                    start += "T00:00:00Z"
+                    start += "T00:00:00"
                 if "T" not in end:
-                    end += "T23:59:59Z"
+                    end += "T23:59:59"
+
+                # Z suffixを適切に処理
+                if start.endswith("Z"):
+                    start = start[:-1] + "+00:00"
+                if end.endswith("Z"):
+                    end = end[:-1] + "+00:00"
 
                 attendees = []
                 if "attendees" in event:
@@ -113,10 +130,18 @@ class GoogleCalendarSpoke(BaseSpoke):
             )
 
         except HttpError as e:
+            # より詳細なエラー情報をログに出力
+            error_details = {
+                "status_code": e.resp.status,
+                "reason": e.reason,
+                "content": e.content.decode() if e.content else None,
+                "parameters": parameters,
+            }
+
             return SpokeResponse(
                 success=False,
                 error=f"Google Calendar API error: {e.reason}",
-                metadata={"status_code": e.resp.status},
+                metadata={"status_code": e.resp.status, "details": error_details},
             )
         except ValueError as e:
             return SpokeResponse(success=False, error=f"Authentication error: {str(e)}")

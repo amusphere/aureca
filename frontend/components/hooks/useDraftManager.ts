@@ -64,14 +64,13 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
             }));
           } else if (response.status === 404) {
             // 404は正常なケース（ドラフトが存在しない）
-            console.log('No existing draft found for this email');
+            // No existing draft found for this email
           } else {
             throw new Error(`Failed to fetch draft: ${response.statusText}`);
           }
         },
         {
-          retryable: true,
-          onError: (error) => console.error('Error fetching existing draft:', error.message)
+          retryable: true
         }
       );
     } finally {
@@ -111,8 +110,7 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
           }));
         },
         {
-          retryable: true,
-          onError: (error) => console.error('Error generating draft:', error.message)
+          retryable: true
         }
       );
     } finally {
@@ -143,12 +141,9 @@ export function useDraftManager(sources: TaskSource[]): UseDraftManagerReturn {
           });
         },
         {
-          retryable: true,
-          onError: (error) => console.error('Error deleting draft:', error.message)
+          retryable: true
         }
       );
-    } catch (error) {
-      console.error('Failed to delete draft:', error);
     } finally {
       setIsDeletingDraft(false);
     }

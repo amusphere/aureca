@@ -107,7 +107,6 @@ class GmailService:
     async def connect(self) -> None:
         """Connect to Gmail API service"""
         if self._is_connected:
-            logger.debug("Already connected to Gmail API")
             return
 
         try:
@@ -150,8 +149,6 @@ class GmailService:
                 scopes=GmailConfig.SCOPES,
             )
 
-            logger.debug("Google OAuth credentials have been set")
-
         except Exception as e:
             logger.error(f"Authentication setup error: {e}")
             raise GmailAuthenticationError(f"Failed to set up authentication: {e}")
@@ -161,7 +158,6 @@ class GmailService:
         self.gmail_service = None
         self._credentials = None
         self._is_connected = False
-        logger.debug("Disconnected from Gmail API")
 
     def _ensure_connected(self) -> None:
         """Ensure Gmail service is connected and raise exception if not"""
@@ -304,7 +300,6 @@ class GmailService:
             # Merge header information into main dict for backward compatibility
             email_data.update(headers_dict)
 
-            logger.debug(f"Retrieved content for email {email_id}")
             return email_data
 
         except Exception as e:
@@ -661,7 +656,6 @@ class GmailService:
             elif add_labels and "UNREAD" in add_labels:
                 status = "marked_as_unread"
 
-            logger.debug(f"Modified labels for email {email_id}: {status}")
             return {"id": result["id"], "status": status}
 
         except Exception as e:
