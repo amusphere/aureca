@@ -131,6 +131,43 @@
       }
     },
     {
+      "action_type": "create_reply_draft",
+      "display_name": "Create Reply Draft",
+      "description": "Create a reply draft that is threaded to the original email",
+      "parameters": {
+        "original_email_id": {
+          "type": "string",
+          "required": true,
+          "description": "ID of the original email to reply to"
+        },
+        "to": {
+          "type": "string",
+          "required": true,
+          "description": "Recipient email address"
+        },
+        "subject": {
+          "type": "string",
+          "required": true,
+          "description": "Email subject"
+        },
+        "body": {
+          "type": "string",
+          "required": true,
+          "description": "Email body content"
+        },
+        "cc": {
+          "type": "string",
+          "required": false,
+          "description": "CC email address (optional)"
+        },
+        "bcc": {
+          "type": "string",
+          "required": false,
+          "description": "BCC email address (optional)"
+        }
+      }
+    },
+    {
       "action_type": "mark_as_read",
       "display_name": "Mark as Read",
       "description": "Mark an email as read",

@@ -107,7 +107,6 @@ class GmailService:
     async def connect(self) -> None:
         """Connect to Gmail API service"""
         if self._is_connected:
-            logger.debug("Already connected to Gmail API")
             return
 
         try:
@@ -150,8 +149,6 @@ class GmailService:
                 scopes=GmailConfig.SCOPES,
             )
 
-            logger.debug("Google OAuth credentials have been set")
-
         except Exception as e:
             logger.error(f"Authentication setup error: {e}")
             raise GmailAuthenticationError(f"Failed to set up authentication: {e}")
@@ -161,7 +158,6 @@ class GmailService:
         self.gmail_service = None
         self._credentials = None
         self._is_connected = False
-        logger.debug("Disconnected from Gmail API")
 
     def _ensure_connected(self) -> None:
         """Ensure Gmail service is connected and raise exception if not"""
@@ -182,7 +178,7 @@ class GmailService:
         result = {}
         for header in headers:
             name = header["name"].lower()
-            if name in ["from", "to", "subject", "date", "cc", "bcc"]:
+            if name in ["from", "to", "subject", "date", "cc", "bcc", "message-id"]:
                 result[name] = header["value"]
         return result
 
@@ -291,17 +287,19 @@ class GmailService:
 
             # Extract header information
             headers = msg["payload"].get("headers", [])
+            headers_dict = self._extract_headers_to_dict(headers)
+
             email_data = {
                 "id": msg["id"],
                 "threadId": msg["threadId"],
                 "body": body,
                 "snippet": msg.get("snippet", ""),
+                "headers": headers_dict,  # Add headers separately for easier access
             }
 
-            # Merge header information
-            email_data.update(self._extract_headers_to_dict(headers))
+            # Merge header information into main dict for backward compatibility
+            email_data.update(headers_dict)
 
-            logger.debug(f"Retrieved content for email {email_id}")
             return email_data
 
         except Exception as e:
@@ -441,6 +439,79 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("create draft", e)
 
+    async def create_reply_draft(
+        self,
+        original_email_id: str,
+        to: str,
+        subject: str,
+        body: str,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a reply draft that is threaded to the original email
+
+        Args:
+            original_email_id: ID of the original email to reply to
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
+            cc: CC email address (optional)
+            bcc: BCC email address (optional)
+
+        Returns:
+            Dictionary with draft creation result
+        """
+        self._ensure_connected()
+        self._validate_email_parameters(to, subject, body)
+
+        try:
+            # Get original email details for threading
+            original_email = await self.get_email_content(original_email_id)
+            thread_id = original_email.get("threadId")
+
+            # Extract Message-ID from original email for proper threading
+            original_message_id = None
+            original_headers = original_email.get("headers", {})
+            if isinstance(original_headers, dict):
+                original_message_id = original_headers.get("message-id")
+
+            # Create message with proper threading headers
+            raw_message = self._create_reply_message(
+                to=to,
+                subject=subject,
+                body=body,
+                cc=cc,
+                bcc=bcc,
+                original_message_id=original_message_id,
+                thread_id=thread_id,
+            )
+
+            # Create draft with threadId
+            draft_body = {"message": {"raw": raw_message}}
+            if thread_id:
+                draft_body["message"]["threadId"] = thread_id
+
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .create(userId="me", body=draft_body)
+                .execute()
+            )
+
+            logger.info(
+                f"Reply draft created successfully for {to} in thread {thread_id}"
+            )
+            return {
+                "id": result["id"],
+                "message": result["message"],
+                "threadId": thread_id,
+                "status": "reply_draft_created",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("create reply draft", e)
+
     def _create_message(
         self,
         to: str,
@@ -470,6 +541,48 @@ class GmailService:
             message["cc"] = cc
         if bcc:
             message["bcc"] = bcc
+
+        # Base64 URL-safe encoding
+        return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+
+    def _create_reply_message(
+        self,
+        to: str,
+        subject: str,
+        body: str,
+        original_message_id: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        cc: Optional[str] = None,
+        bcc: Optional[str] = None,
+    ) -> str:
+        """
+        Create reply email message with proper threading headers
+
+        Args:
+            to: Recipient email address
+            subject: Email subject
+            body: Email body content
+            original_message_id: Message-ID of the original email
+            thread_id: Thread ID of the original email
+            cc: CC email address (optional)
+            bcc: BCC email address (optional)
+
+        Returns:
+            Base64 URL-safe encoded message with threading headers
+        """
+        message = email.mime.text.MIMEText(body, "plain", "utf-8")
+        message["to"] = to
+        message["subject"] = subject
+
+        if cc:
+            message["cc"] = cc
+        if bcc:
+            message["bcc"] = bcc
+
+        # Add threading headers for proper reply chain
+        if original_message_id:
+            message["In-Reply-To"] = original_message_id
+            message["References"] = original_message_id
 
         # Base64 URL-safe encoding
         return base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
@@ -543,11 +656,253 @@ class GmailService:
             elif add_labels and "UNREAD" in add_labels:
                 status = "marked_as_unread"
 
-            logger.debug(f"Modified labels for email {email_id}: {status}")
             return {"id": result["id"], "status": status}
 
         except Exception as e:
             self._handle_gmail_api_error("modify labels", e)
+
+    async def get_drafts(
+        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of email drafts
+
+        Args:
+            max_results: Maximum number of drafts to retrieve
+
+        Returns:
+            List of draft dictionaries with metadata
+        """
+        self._ensure_connected()
+
+        try:
+            # Validate max_results
+            max_results = min(max_results, GmailConfig.MAX_RESULTS_LIMIT)
+
+            # Get drafts list
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .list(userId="me", maxResults=max_results)
+                .execute()
+            )
+
+            drafts = result.get("drafts", [])
+            drafts_data = []
+
+            # Get metadata for each draft
+            for draft in drafts:
+                draft_id = draft["id"]
+                draft_detail = await self._get_draft_metadata(draft_id)
+                drafts_data.append(draft_detail)
+
+            logger.info(f"Retrieved {len(drafts_data)} drafts")
+            return drafts_data
+
+        except Exception as e:
+            self._handle_gmail_api_error("get drafts", e)
+
+    async def get_draft(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Get specific draft details
+
+        Args:
+            draft_id: Draft ID to retrieve
+
+        Returns:
+            Dictionary with complete draft information
+        """
+        self._ensure_connected()
+
+        try:
+            # Get draft details
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .get(userId="me", id=draft_id)
+                .execute()
+            )
+
+            message = result.get("message", {})
+            payload = message.get("payload", {})
+
+            # Extract headers
+            headers = self._extract_headers_to_dict(payload.get("headers", []))
+
+            # Extract body
+            body = self._extract_message_body(payload)
+
+            draft_data = {
+                "id": result["id"],
+                "subject": headers.get("subject", ""),
+                "body": body,
+                "to": headers.get("to", ""),
+                "cc": headers.get("cc", ""),
+                "bcc": headers.get("bcc", ""),
+                "thread_id": message.get("threadId"),
+                "snippet": message.get("snippet", ""),
+                "created_at": headers.get("date", ""),
+                "updated_at": headers.get("date", ""),
+            }
+
+            logger.info(f"Retrieved draft {draft_id}")
+            return draft_data
+
+        except Exception as e:
+            self._handle_gmail_api_error("get draft", e)
+
+    async def _get_draft_metadata(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Get draft metadata without full body content
+
+        Args:
+            draft_id: Draft ID to retrieve metadata for
+
+        Returns:
+            Dictionary with draft metadata
+        """
+        try:
+            result = (
+                self.gmail_service.users()
+                .drafts()
+                .get(userId="me", id=draft_id, format="metadata")
+                .execute()
+            )
+
+            message = result.get("message", {})
+            payload = message.get("payload", {})
+
+            # Extract headers
+            headers = self._extract_headers_to_dict(payload.get("headers", []))
+
+            return {
+                "id": result["id"],
+                "message_id": message.get("id"),
+                "thread_id": message.get("threadId"),
+                "to": headers.get("to", ""),
+                "from": headers.get("from", ""),
+                "subject": headers.get("subject", ""),
+                "date": headers.get("date", ""),
+                "cc": headers.get("cc", ""),
+                "snippet": message.get("snippet", ""),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get draft metadata for {draft_id}: {str(e)}")
+            return {"id": draft_id, "error": str(e)}
+
+    async def get_drafts_by_thread_id(self, thread_id: str) -> List[Dict[str, Any]]:
+        """
+        Get drafts for a specific thread
+
+        Args:
+            thread_id: Gmail thread ID to get drafts for
+
+        Returns:
+            List of draft dictionaries for the specified thread
+        """
+        self._ensure_connected()
+
+        try:
+            # Get all drafts first
+            result = self.gmail_service.users().drafts().list(userId="me").execute()
+
+            drafts = result.get("drafts", [])
+            thread_drafts = []
+
+            # Filter drafts by thread ID
+            for draft in drafts:
+                draft_detail = await self._get_draft_metadata(draft["id"])
+                if draft_detail.get("thread_id") == thread_id:
+                    # Get full draft details for thread matches
+                    full_draft = await self.get_draft(draft["id"])
+                    thread_drafts.append(full_draft)
+
+            logger.info(f"Found {len(thread_drafts)} drafts for thread {thread_id}")
+            return thread_drafts
+
+        except Exception as e:
+            self._handle_gmail_api_error("get drafts by thread id", e)
+
+    async def delete_draft(self, draft_id: str) -> Dict[str, Any]:
+        """
+        Delete a specific draft
+
+        Args:
+            draft_id: Draft ID to delete
+
+        Returns:
+            Dictionary with deletion result
+        """
+        self._ensure_connected()
+
+        try:
+            # Delete the draft
+            self.gmail_service.users().drafts().delete(
+                userId="me", id=draft_id
+            ).execute()
+
+            logger.info(f"Draft {draft_id} deleted successfully")
+            return {
+                "id": draft_id,
+                "status": "deleted",
+                "message": "Draft deleted successfully",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("delete draft", e)
+
+    async def delete_drafts_by_thread_id(self, thread_id: str) -> Dict[str, Any]:
+        """
+        Delete all drafts for a specific thread
+
+        Args:
+            thread_id: Gmail thread ID to delete drafts for
+
+        Returns:
+            Dictionary with deletion results
+        """
+        self._ensure_connected()
+
+        try:
+            # Get all drafts for the thread
+            thread_drafts = await self.get_drafts_by_thread_id(thread_id)
+
+            if not thread_drafts:
+                logger.info(f"No drafts found for thread {thread_id}")
+                return {
+                    "thread_id": thread_id,
+                    "deleted_count": 0,
+                    "status": "no_drafts_found",
+                    "message": "No drafts found for this thread",
+                }
+
+            # Delete each draft
+            deleted_draft_ids = []
+            failed_deletions = []
+
+            for draft in thread_drafts:
+                try:
+                    await self.delete_draft(draft["id"])
+                    deleted_draft_ids.append(draft["id"])
+                except Exception as e:
+                    logger.error(f"Failed to delete draft {draft['id']}: {str(e)}")
+                    failed_deletions.append({"id": draft["id"], "error": str(e)})
+
+            logger.info(
+                f"Deleted {len(deleted_draft_ids)} drafts for thread {thread_id}"
+            )
+            return {
+                "thread_id": thread_id,
+                "deleted_count": len(deleted_draft_ids),
+                "deleted_draft_ids": deleted_draft_ids,
+                "failed_deletions": failed_deletions,
+                "status": "completed",
+                "message": f"Deleted {len(deleted_draft_ids)} drafts successfully",
+            }
+
+        except Exception as e:
+            self._handle_gmail_api_error("delete drafts by thread id", e)
 
     # Convenience methods for common email operations
 

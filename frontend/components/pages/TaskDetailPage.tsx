@@ -4,10 +4,12 @@ import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
 import { ArrowLeft, FileText } from "lucide-react";
+import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { ErrorDisplay } from "../components/commons/ErrorDisplay";
 import { TaskHeader } from "../components/commons/TaskHeader";
 import { TaskExpiryDisplay } from "../components/tasks/TaskExpiryDisplay";
 import { TaskForm } from "../components/tasks/TaskForm";
+import { TaskSources } from "../components/tasks/TaskSources";
 import { useTaskDetail } from "../hooks/useTaskDetail";
 
 interface TaskDetailPageProps {
@@ -33,7 +35,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   } = useTaskDetail(task);
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-2xl">
+    <div className="w-full max-w-2xl mx-auto px-3 py-3 sm:px-6 sm:py-8 min-h-screen">
       {/* Error display */}
       {error && (
         <ErrorDisplay
@@ -43,8 +45,8 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
         />
       )}
 
-      <Card className="w-full">
-        <CardHeader className="pb-4">
+      <Card className="w-full overflow-hidden shadow-sm">
+        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-3 sm:pt-6">
           <TaskHeader
             task={currentTask}
             onEdit={editTask}
@@ -52,16 +54,16 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
           />
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
           {/* Description section */}
           {currentTask.description && (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-hidden">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 flex-shrink-0" />
                 説明
               </div>
-              <div className="pl-6 text-sm whitespace-pre-wrap">
-                {currentTask.description}
+              <div className="pl-3 sm:pl-6 text-sm prose prose-sm max-w-none overflow-hidden">
+                <MarkdownContent content={currentTask.description} className="break-words" />
               </div>
             </div>
           )}
@@ -72,7 +74,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
               <div className="text-sm font-medium text-muted-foreground">
                 期限
               </div>
-              <div className="pl-6">
+              <div className="pl-3 sm:pl-6">
                 <TaskExpiryDisplay
                   task={currentTask}
                   formatString="yyyy年M月d日 HH:mm"
@@ -82,12 +84,15 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
             </div>
           )}
 
+          {/* Task sources section */}
+          <TaskSources sources={currentTask.sources || []} />
+
           {/* Action buttons */}
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
             <Button
               onClick={goBack}
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11 sm:h-9"
               disabled={isToggling}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -96,7 +101,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
             <Button
               onClick={toggleComplete}
               disabled={isToggling}
-              className="flex-1"
+              className="flex-1 h-11 sm:h-9"
               variant={currentTask.completed ? "outline" : "default"}
             >
               {isToggling

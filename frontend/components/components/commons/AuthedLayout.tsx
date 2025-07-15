@@ -18,7 +18,7 @@ export default async function AuthedLayout({ children }: { children: ReactNode }
         <div className="flex-shrink-0">
           <SidebarTrigger />
         </div>
-        <div className="flex-1 overflow-hidden">{children}</div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </main>
     </SidebarProvider>
   );
