@@ -112,11 +112,11 @@ class AiTaskService:
 
                         generated_tasks.append(
                             {
-                                "uuid": str(task.uuid),
+                                "uuid": task.uuid,
                                 "title": task.title,
                                 "description": task.description,
+                                "completed": task.completed,
                                 "expires_at": task.expires_at,
-                                "source_email_id": email["id"],
                             }
                         )
 
@@ -186,8 +186,19 @@ class AiTaskService:
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
                         event_url = self._generate_calendar_event_url(
-                            event.get("id", ""), event.get("htmlLink", "")
+                            event.get("id", ""),
+                            event.get("htmlLink", ""),
+                            event.get("alternateLink", ""),
                         )
+
+                        # デバッグログ
+                        self.logger.debug(
+                            f"カレンダーイベント情報: id={event.get('id')}, "
+                            f"htmlLink={event.get('htmlLink')}, "
+                            f"alternateLink={event.get('alternateLink')}, "
+                            f"generated_url={event_url}"
+                        )
+
                         create_task_source(
                             session=self.session,
                             task_id=task.id,
@@ -201,11 +212,11 @@ class AiTaskService:
 
                         generated_tasks.append(
                             {
-                                "uuid": str(task.uuid),
+                                "uuid": task.uuid,
                                 "title": task.title,
                                 "description": task.description,
+                                "completed": task.completed,
                                 "expires_at": task.expires_at,
-                                "source_event_id": event.get("id", ""),
                             }
                         )
 
@@ -227,6 +238,9 @@ class AiTaskService:
 
     def _generate_gmail_url(self, email_id: str) -> str:
         """GmailメールIDから直接リンクURLを生成"""
+        if not email_id:
+            return "https://mail.google.com/mail/u/0/#inbox"
+        # Gmail の新しいURL形式を使用
         return f"https://mail.google.com/mail/u/0/#inbox/{email_id}"
 
     async def _get_email_detail(self, user: User, email_id: str) -> dict:
@@ -397,13 +411,26 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             self.logger.error(f"LLMでのカレンダータスク生成に失敗: {str(e)}")
             return None
 
-    def _generate_calendar_event_url(self, event_id: str, html_link: str) -> str:
+    def _generate_calendar_event_url(
+        self, event_id: str, html_link: str, alternate_link: str = ""
+    ) -> str:
         """カレンダーイベントIDから直接リンクURLを生成"""
+        # alternateLink（通常、これが最も確実なリンク）
+        if alternate_link and alternate_link.startswith("https://"):
+            return alternate_link
+
         # Google CalendarのhtmlLinkが利用可能な場合はそれを使用
-        if html_link:
+        if html_link and html_link.startswith("https://"):
             return html_link
+
+        # event_idが利用可能な場合、Google Calendar URLを生成
+        if event_id:
+            # Google Calendar の基本URL形式を使用
+            # イベントIDを直接使用する場合の形式
+            return f"https://calendar.google.com/calendar/u/0/r/eventedit/{event_id}"
+
         # フォールバックとして基本的なカレンダーURLを返す
-        return f"https://calendar.google.com/calendar/event?eid={event_id}"
+        return "https://calendar.google.com/calendar"
 
     async def generate_email_reply_draft(
         self, task_source_uuid: str, user: User

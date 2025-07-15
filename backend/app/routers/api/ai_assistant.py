@@ -29,7 +29,7 @@ async def process_ai_request_endpoint(
     return result
 
 
-@router.post("/generate-from-emails", response_model=GeneratedTaskModel)
+@router.post("/generate-from-emails", response_model=list[GeneratedTaskModel])
 async def generate_tasks_from_emails_endpoint(
     max_emails: int = 10,
     session: Session = Depends(get_session),
@@ -44,7 +44,7 @@ async def generate_tasks_from_emails_endpoint(
     return generated_tasks
 
 
-@router.post("/generate-from-calendar", response_model=GeneratedTaskModel)
+@router.post("/generate-from-calendar", response_model=list[GeneratedTaskModel])
 async def generate_tasks_from_calendar_endpoint(
     days_ahead: int = 7,
     max_events: int = 20,
