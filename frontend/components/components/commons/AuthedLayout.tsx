@@ -7,7 +7,7 @@ import AppSidebar from "./AppSidebar";
 
 export default async function AuthedLayout({ children }: { children: ReactNode }) {
   const { data, error } = await apiGet<User>("/users/me");
-  if (error && error.status === 401) {
+  if (error && error.status === 401 || !data) {
     return redirect("/");
   }
 

@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useClerkSafe } from "@/components/hooks/useClerkSafe";
 
 // Force dynamic rendering to avoid prerendering during build
 export const dynamic = 'force-dynamic';
 
 export default function SignOutPage() {
-    const clerk = useClerkSafe();
     const [isSigningOut, setIsSigningOut] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -15,17 +13,35 @@ export default function SignOutPage() {
         const performSignOut = async () => {
             try {
                 setIsSigningOut(true);
-                
-                if (clerk && clerk.signOut) {
-                    // Use Clerk signOut if available
-                    await clerk.signOut();
-                    return;
+
+                // Check auth system type
+                const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
+
+                if (authSystem === 'clerk') {
+                    // Try to use Clerk signout
+                    try {
+                        // Check if Clerk is available in the global scope
+                        const clerk = (window as { Clerk?: { signOut: () => Promise<void> } }).Clerk;
+                        if (clerk && clerk.signOut) {
+                            await clerk.signOut();
+                            return;
+                        }
+                    } catch (clerkError) {
+                        console.log("Clerk not available:", clerkError);
+                    }
+                } else if (authSystem === 'email_password') {
+                    // Use API endpoint for email/password auth
+                    try {
+                        await fetch('/api/auth/signout');
+                    } catch (apiError) {
+                        console.log("API signout failed:", apiError);
+                    }
                 }
 
                 // Fallback: redirect to home page
-                console.log("Clerk not available, using fallback signout - redirecting to home");
+                console.log("Using fallback signout - redirecting to home");
                 window.location.href = "/";
-                
+
             } catch (error) {
                 console.error("Sign out error:", error);
                 setError("Failed to sign out. Redirecting to home...");
@@ -36,7 +52,7 @@ export default function SignOutPage() {
         };
 
         performSignOut();
-    }, [clerk]);
+    }, []);
 
     if (error) {
         return (
