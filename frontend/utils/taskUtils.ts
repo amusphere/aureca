@@ -1,3 +1,4 @@
+import { BadgeVariant } from "@/components/components/ui/badge";
 import { Task } from "@/types/Task";
 import { fromUnixTime } from "date-fns";
 
@@ -80,7 +81,7 @@ export function getTaskStatus(task: Task): {
   isExpiringSoon: boolean;
   isCompleted: boolean;
   statusText: string;
-  variant: 'default' | 'secondary' | 'destructive' | 'warning';
+  variant: BadgeVariant;
 } {
   const isExpired = isTaskExpired(task);
   const isExpiringSoon = isTaskExpiringSoon(task);
