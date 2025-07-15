@@ -1,7 +1,7 @@
 from app.database import get_session
 from app.models.ai_assistant import AIRequestModel, AIResponseModel
 from app.schema import User
-from app.services.ai.orchestrator import AIOrchestrator
+from app.services.ai import AIHub
 from app.services.auth import auth_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
@@ -17,8 +17,8 @@ async def process_ai_request_endpoint(
 ):
     """AIアシスタントにリクエストを送信して処理結果を取得"""
     try:
-        orchestrator = AIOrchestrator(user.id, session)
-        result = await orchestrator.process_request(
+        hub = AIHub(user.id, session)
+        result = await hub.process_request(
             prompt=request.prompt, current_user=user
         )
 
