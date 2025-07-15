@@ -6,6 +6,7 @@ from app.models.ai_assistant import (
 )
 from app.schema import User
 from app.services.ai import AIHub
+from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
@@ -21,9 +22,7 @@ async def process_ai_request_endpoint(
 ):
     """AIアシスタントにリクエストを送信して処理結果を取得"""
     hub = AIHub(user.id, session)
-    result = await hub.process_request(
-        prompt=request.prompt, current_user=user
-    )
+    result = await hub.process_request(prompt=request.prompt, current_user=user)
 
     return result
 
