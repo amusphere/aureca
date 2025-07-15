@@ -7,6 +7,9 @@ import { apiGet } from "@/utils/api";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 
+// Force dynamic rendering since this route uses cookies for auth
+export const dynamic = 'force-dynamic';
+
 
 export default async function RootPage() {
   const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;

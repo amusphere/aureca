@@ -6,12 +6,12 @@ import { useClerk } from "@clerk/nextjs";
  * A safe wrapper around useClerk that handles cases where ClerkProvider is not available
  */
 export function useClerkSafe() {
-    try {
-        const clerk = useClerk();
-        return clerk;
-    } catch (error) {
-        // ClerkProvider is not available
-        console.warn("ClerkProvider not available:", error);
-        return null;
-    }
+  try {
+    const clerk = useClerk();
+    return clerk;
+  } catch (error) {
+    // ClerkProvider is not available
+    console.warn("ClerkProvider not available:", error);
+    return null;
+  }
 }
