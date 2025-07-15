@@ -4,9 +4,12 @@ from typing import Any, Dict, Optional
 from app.schema import User
 from app.services.ai.core.models import SpokeResponse
 from app.services.ai.spokes.base import BaseSpoke
-from app.services.google_oauth import GoogleOauthService
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from app.services.google_calendar_service import (
+    GoogleCalendarAPIError,
+    GoogleCalendarAuthenticationError,
+    GoogleCalendarService,
+    GoogleCalendarServiceError,
+)
 from sqlmodel import Session
 
 
