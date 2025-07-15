@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timedelta
 from typing import List
 from zoneinfo import ZoneInfo
@@ -351,9 +352,15 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             Gmail下書き作成結果、または None（エラー）
         """
         try:
-            # 元のメールの送信者情報を取得
-            original_sender = original_email.get("from", "")
+            # 元のメールの送信者情報を取得・正規化
+            original_sender = self._extract_email_address(
+                original_email.get("from", "")
+            )
             original_email_id = original_email.get("id", "")
+
+            if not original_sender:
+                self.logger.error("送信者のメールアドレスが取得できませんでした")
+                return None
 
             # Gmail返信下書きを作成（スレッドに紐づけ）
             async with get_authenticated_gmail_service(
@@ -365,10 +372,6 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
                     subject=reply_draft.subject,
                     body=reply_draft.body,
                 )
-
-            self.logger.info(
-                f"Gmail返信下書きを作成しました: {draft_result.get('id', 'unknown')}, スレッドID: {draft_result.get('threadId', 'unknown')}"
-            )
 
             # DraftModelに変換して返す
             return DraftModel(
@@ -423,10 +426,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             )
 
             if not response.success:
-                error_message = f"Google Calendar取得エラー: {response.error}"
-                if hasattr(response, "metadata") and response.metadata:
-                    error_message += f" (詳細: {response.metadata})"
-                self.logger.error(error_message)
+                self.logger.error(f"Google Calendar取得エラー: {response.error}")
                 return None
 
             # 既存のイベントを解析
@@ -622,6 +622,34 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             "content": task_source.content or "",
         }
 
+    def _extract_email_address(self, email_field: str) -> str:
+        """
+        メールフィールドからメールアドレスのみを抽出
+
+        Args:
+            email_field: "Name <email@example.com>" 形式の文字列
+
+        Returns:
+            抽出されたメールアドレス
+        """
+        if not email_field:
+            return ""
+
+        # <email@example.com> 形式からメールアドレスを抽出
+        angle_bracket_match = re.search(r"<([^>]+)>", email_field)
+        if angle_bracket_match:
+            return angle_bracket_match.group(1).strip()
+
+        # 単純なメールアドレス形式の場合
+        email_match = re.search(
+            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", email_field
+        )
+        if email_match:
+            return email_match.group(0).strip()
+
+        # そのまま返す（既に正しい形式の場合）
+        return email_field.strip()
+
     async def _determine_schedule_context(
         self, email_content: dict, task_source: TaskSource
     ) -> dict:
@@ -649,9 +677,6 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 
             # 会議調整が必要な場合のみ、空き時間を取得
             if needs_scheduling:
-                self.logger.info(
-                    "会議調整が必要。Google Calendarから空き時間を取得中..."
-                )
                 context = await self._add_calendar_availability(
                     context, task_source.task.user
                 )
@@ -722,9 +747,6 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
                 max_tokens=50,
             )
 
-            self.logger.info(
-                f"LLMによる会議時間調整判定結果: {response.needs_scheduling}"
-            )
             return response.needs_scheduling
 
         except Exception as e:
@@ -740,11 +762,6 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
                 context["available_times"] = self._format_available_times_for_prompt(
                     free_time_response
                 )
-                self.logger.info(
-                    f"空き時間を取得成功: {len(free_time_response.available_slots)}件のスロット"
-                )
-            else:
-                self.logger.warning("空き時間が見つかりませんでした")
         except Exception as calendar_error:
             self.logger.warning(f"Google Calendar取得中にエラー: {str(calendar_error)}")
             context["calendar_error"] = str(calendar_error)
