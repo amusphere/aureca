@@ -1,35 +1,41 @@
 """
-AIアシスタント用のカスタム例外クラス
+Custom exception classes for AI assistant
 """
 
 
 class AIAssistantError(Exception):
-    """AIアシスタントの基底例外クラス"""
+    """Base exception class for AI assistant"""
+
     pass
 
 
 class PromptAnalysisError(AIAssistantError):
-    """プロンプト解析エラー"""
+    """Prompt analysis error"""
+
     pass
 
 
 class ActionExecutionError(AIAssistantError):
-    """アクション実行エラー"""
+    """Action execution error"""
+
     pass
 
 
 class AuthenticationError(AIAssistantError):
-    """認証エラー"""
+    """Authentication error"""
+
     pass
 
 
 class InvalidParameterError(AIAssistantError):
-    """無効なパラメータエラー"""
+    """Invalid parameter error"""
+
     pass
 
 
 class ExternalServiceError(AIAssistantError):
-    """外部サービス（Google Calendar等）エラー"""
+    """External service (Google Calendar, etc.) error"""
+
     def __init__(self, message: str, service_name: str, status_code: int = None):
         super().__init__(message)
         self.service_name = service_name
@@ -37,7 +43,8 @@ class ExternalServiceError(AIAssistantError):
 
 
 class RateLimitError(AIAssistantError):
-    """レート制限エラー"""
+    """Rate limit error"""
+
     def __init__(self, message: str, retry_after: int = None):
         super().__init__(message)
         self.retry_after = retry_after

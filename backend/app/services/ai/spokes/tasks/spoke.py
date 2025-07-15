@@ -9,8 +9,8 @@ from app.repositories.tasks import (
     incomplete_task,
     update_task,
 )
-from app.services.ai.models import SpokeResponse
-from app.services.ai.spokes.spoke_interface import BaseSpoke
+from app.services.ai.core.models import SpokeResponse
+from app.services.ai.spokes.base import BaseSpoke
 
 
 class TasksSpoke(BaseSpoke):

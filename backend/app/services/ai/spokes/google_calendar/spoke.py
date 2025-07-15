@@ -3,8 +3,8 @@ from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
 from app.schema import User
-from app.services.ai.models import SpokeResponse
-from app.services.ai.spokes.spoke_interface import BaseSpoke
+from app.services.ai.core.models import SpokeResponse
+from app.services.ai.spokes.base import BaseSpoke
 from app.services.google_oauth import GoogleOauthService
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError

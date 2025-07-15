@@ -1,55 +1,68 @@
+"""
+Main AI Hub - Consolidated orchestrator and operator functionality
+"""
+
+import os
+from datetime import datetime
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from app.schema import User
-from app.utils.llm import llm_chat_completions
+from app.utils.llm import llm_chat_completions, llm_chat_completions_perse
 from sqlmodel import Session
 
-from .executor import ActionExecutor
-from .models import OperatorResponse, SpokeResponse
-from .operator import OperatorHub
+from ..spokes.manager import SpokeManager
+from ..utils.exceptions import InvalidParameterError, PromptAnalysisError
+from ..utils.logger import AIAssistantLogger
+from .models import NextAction, OperatorResponse, SpokeResponse
 
 
-class AIOrchestrator:
-    """AIアシスタントのオーケストレーター（統合レイヤー）"""
+class AIHub:
+    """
+    Main AI Hub - Central controller for the hub-and-spoke AI system
+
+    Combines the functionality of orchestrator and operator into a single,
+    simplified interface that maintains the hub-and-spoke architecture.
+    """
 
     def __init__(
         self,
         user_id: int,
         session: Optional[Session] = None,
     ):
+        self.user_id = user_id
         self.session = session
-        self.operator_hub = OperatorHub(user_id, session)
+        self.logger = AIAssistantLogger("ai_hub")
+
+        # Initialize spoke manager
+        spokes_dir = os.path.join(os.path.dirname(__file__), "..", "spokes")
+        self.spoke_manager = SpokeManager(spokes_dir, session)
 
     async def process_request(
         self,
         prompt: str,
         current_user: User,
     ) -> Dict[str, Any]:
-        """ユーザーリクエストを処理して結果を返す
+        """
+        Process user request through the hub-and-spoke system
 
         Args:
-            prompt: ユーザーのプロンプト
-            temperature: LLMの温度パラメータ
+            prompt: User's natural language prompt
+            current_user: Current user object
 
         Returns:
-            Dict containing:
-                - operator_response: オペレーターの解析結果
-                - execution_results: 各アクションの実行結果
-                - summary: 実行サマリー
+            Dictionary containing analysis, execution results, and summary
         """
         try:
-            # Step 1: プロンプトを解析してアクション計画を取得
-            operator_response: OperatorResponse = (
-                await self.operator_hub.analyze_prompt(prompt)
-            )
+            # Step 1: Analyze prompt and generate action plan
+            operator_response = await self._analyze_prompt(prompt)
 
-            # Step 2: アクション計画を実行
-            executor = ActionExecutor(self.session)
-            execution_results: List[SpokeResponse] = await executor.execute_actions(
+            # Step 2: Execute action plan through spokes
+            execution_results = await self._execute_actions(
                 operator_response.actions, current_user
             )
 
-            # Step 3: 実行結果をサマリー
+            # Step 3: Create summary
             summary = self._create_execution_summary(
                 prompt, operator_response, execution_results
             )
@@ -74,6 +87,7 @@ class AIOrchestrator:
             }
 
         except Exception as e:
+            self.logger.log_error(e, {"user_id": self.user_id, "prompt": prompt})
             return {
                 "success": False,
                 "error": f"Processing error: {str(e)}",
@@ -87,21 +101,131 @@ class AIOrchestrator:
                 },
             }
 
+    async def _analyze_prompt(self, prompt: str) -> OperatorResponse:
+        """Analyze user prompt and generate action plan"""
+        system_prompt = self._generate_system_prompt()
+
+        self.logger.info(
+            f"Analyzing prompt with system prompt length: {len(system_prompt)}"
+        )
+
+        try:
+            operator_response = llm_chat_completions_perse(
+                prompts=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format=OperatorResponse,
+                temperature=0.7,
+                max_tokens=1500,
+            )
+
+            # Validate actions against supported actions
+            supported_actions = self.spoke_manager.get_all_action_types()
+            for action in operator_response.actions:
+                if (
+                    action.action_type not in supported_actions
+                    and action.action_type != "unknown"
+                ):
+                    raise InvalidParameterError(
+                        f"Unsupported action type: {action.action_type}"
+                    )
+
+            self.logger.info(
+                f"Prompt analysis complete: {len(operator_response.actions)} actions planned"
+            )
+            return operator_response
+
+        except Exception as e:
+            self.logger.log_error(e, {"user_id": self.user_id, "prompt": prompt})
+            return OperatorResponse(
+                actions=[
+                    NextAction(
+                        spoke_name="unknown",
+                        action_type="unknown",
+                        description=f"Error: {str(e)}",
+                    )
+                ],
+                analysis=f"Prompt analysis error: {str(e)}",
+                confidence=0.0,
+            )
+
+    async def _execute_actions(
+        self,
+        actions: List[NextAction],
+        current_user: User,
+    ) -> List[SpokeResponse]:
+        """Execute actions through spoke system"""
+        # Sort by priority (lower numbers = higher priority)
+        sorted_actions = sorted(actions, key=lambda x: x.priority)
+
+        results = []
+        for action in sorted_actions:
+            try:
+                result = await self.spoke_manager.execute_action(action, current_user)
+                results.append(result)
+
+                # Stop execution on critical errors (priority 1 failures)
+                if not result.success and action.priority == 1:
+                    self.logger.warning(
+                        f"Critical action failed, stopping execution: {action.action_type}"
+                    )
+                    break
+
+            except Exception as e:
+                self.logger.log_error(
+                    e,
+                    {
+                        "action_type": action.action_type,
+                        "spoke_name": action.spoke_name,
+                    },
+                )
+                results.append(
+                    SpokeResponse(success=False, error=f"Execution error: {str(e)}")
+                )
+
+        return results
+
+    def _generate_system_prompt(self) -> str:
+        """Generate system prompt with available actions"""
+        # Get current time in JST
+        jst = ZoneInfo("Asia/Tokyo")
+        current_time = datetime.now(jst).isoformat()
+
+        # Get available actions from spoke manager
+        actions_list = self.spoke_manager.get_actions_description()
+
+        return f"""
+あなたはユーザーのリクエストを解析し、適切なアクションを決定するAIアシスタントです。
+
+利用可能なアクション:
+{actions_list}
+
+現在の日時: {current_time} (JST)
+ユーザーID: {self.user_id}
+
+## 重要な指示:
+- parameters に user_id: {self.user_id} を必ず含めてください
+- 相対的な日時表現（「明日」「来週」「今日」「次の金曜日」など）は具体的な日時に変換してください
+- 日時に関することは基本的に日本時間（JST）で処理を行ってください
+- オプショナルなパラメータが存在しない場合は、`null` または `None` を返してください
+"""
+
     def _create_execution_summary(
         self,
         prompt: str,
         operator_response: OperatorResponse,
         execution_results: List[SpokeResponse],
     ) -> Dict[str, Any]:
-        """実行サマリーを作成"""
+        """Create execution summary"""
         total_actions = len(execution_results)
         successful_actions = sum(1 for result in execution_results if result.success)
         failed_actions = total_actions - successful_actions
 
-        # 全体の成功率を計算
+        # Calculate success rate
         success_rate = successful_actions / total_actions if total_actions > 0 else 0
 
-        # 実行ステータスを決定
+        # Determine overall status
         if success_rate == 1.0:
             overall_status = "completed"
         elif success_rate > 0.5:
@@ -111,7 +235,7 @@ class AIOrchestrator:
         else:
             overall_status = "failed"
 
-        # 主要な結果データを抽出
+        # Extract results data
         results_data = []
         for i, result in enumerate(execution_results):
             action = (
@@ -134,7 +258,7 @@ class AIOrchestrator:
                 }
             )
 
-        # ユーザーの元の質問に対する適切な返答を生成
+        # Generate natural language response
         results_text = llm_chat_completions(
             prompts=[
                 {
