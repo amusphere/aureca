@@ -27,6 +27,18 @@ async def process_ai_request_endpoint(
     return result
 
 
+@router.post("/generate-from-all", response_model=list[GeneratedTaskModel])
+async def generate_tasks_from_all_endpoint(
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """全ての情報源からタスクを自動生成"""
+    ai_task_service = AiTaskService(session=session, user_id=user.id)
+    generated_tasks = await ai_task_service.generate_tasks_from_all_sources(user=user)
+
+    return generated_tasks
+
+
 @router.post("/generate-from-emails", response_model=list[GeneratedTaskModel])
 async def generate_tasks_from_emails_endpoint(
     max_emails: int = 10,
