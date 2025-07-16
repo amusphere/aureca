@@ -3,6 +3,8 @@
 import { apiPost } from "@/utils/api";
 import { NextRequest, NextResponse } from "next/server";
 
+const DOMAIN = process.env.FRONTEND_URL || "http://localhost:3000";
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -13,16 +15,14 @@ export async function GET(request: NextRequest) {
     // エラーの場合
     if (error) {
       console.error("Google OAuth error:", error);
-      const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL(`/home?error=${encodeURIComponent(error)}`, domain);
+      const redirectUrl = new URL(`/home?error=${encodeURIComponent(error)}`, DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // 認証コードがない場合
     if (!code || !state) {
       console.error("Missing code or state parameter");
-      const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL("/home?error=missing_parameters", domain);
+      const redirectUrl = new URL("/home?error=missing_parameters", DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
@@ -34,20 +34,17 @@ export async function GET(request: NextRequest) {
 
     if (apiError) {
       console.error("Backend callback error:", apiError);
-      const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-      const redirectUrl = new URL(`/home?error=${encodeURIComponent(apiError.message)}`, domain);
+      const redirectUrl = new URL(`/home?error=${encodeURIComponent(apiError.message)}`, DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // 成功時はダッシュボードにリダイレクト
-    const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-    const redirectUrl = new URL("/home?connected=true", domain);
+    const redirectUrl = new URL("/home?connected=true", DOMAIN);
     return NextResponse.redirect(redirectUrl.toString(), 302);
 
   } catch (error) {
     console.error("Callback processing error:", error);
-    const domain = process.env.FRONTEND_URL || "http://localhost:3000";
-    const redirectUrl = new URL("/home?error=callback_failed", domain);
+    const redirectUrl = new URL("/home?error=callback_failed", DOMAIN);
     return NextResponse.redirect(redirectUrl.toString(), 302);
   }
 }
