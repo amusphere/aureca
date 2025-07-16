@@ -3,7 +3,6 @@ import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
 // Configuration
 const AUTH_SYSTEM = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
 const LOGIN_URL = '/';
-const AUTHENTICATED_REDIRECT_URL = '/home';
 
 // Initialize Clerk middleware if needed
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +32,10 @@ function isEmailPasswordAuthenticated(request: NextRequest): boolean {
 export default async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === LOGIN_URL) {
+    return NextResponse.next();
+  }
+
   // Handle Clerk authentication
   if (AUTH_SYSTEM === 'clerk' && clerkMiddleware) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,43 +43,23 @@ export default async function middleware(request: NextRequest, event: NextFetchE
       const { userId } = auth();
       const isUserAuthenticated = !!userId;
 
-      // If authenticated user tries to access login page, redirect to home
-      if (pathname === LOGIN_URL && isUserAuthenticated) {
-        return NextResponse.redirect(new URL(AUTHENTICATED_REDIRECT_URL, request.url));
+      if (isUserAuthenticated) {
+        return NextResponse.next();
       }
 
-      // If unauthenticated user tries to access protected route, redirect to login
-      if (pathname !== LOGIN_URL && !isUserAuthenticated) {
-        return NextResponse.redirect(new URL(LOGIN_URL, request.url));
-      }
-
-      return NextResponse.next();
+      return NextResponse.redirect(new URL(LOGIN_URL, request.url));
     })(request, event);
   }
 
   // Handle email_password authentication
   if (AUTH_SYSTEM === 'email_password') {
     const isUserAuthenticated = isEmailPasswordAuthenticated(request);
-
-    // If authenticated user tries to access login page, redirect to home
-    if (pathname === LOGIN_URL && isUserAuthenticated) {
-      return NextResponse.redirect(new URL(AUTHENTICATED_REDIRECT_URL, request.url));
+    if (isUserAuthenticated) {
+      return NextResponse.next();
     }
-
-    // If unauthenticated user tries to access protected route, redirect to login
-    if (pathname !== LOGIN_URL && !isUserAuthenticated) {
-      return NextResponse.redirect(new URL(LOGIN_URL, request.url));
-    }
-
-    return NextResponse.next();
   }
 
-  // Fallback: treat all routes as protected if auth system is not configured
-  if (pathname !== LOGIN_URL) {
-    return NextResponse.redirect(new URL(LOGIN_URL, request.url));
-  }
-
-  return NextResponse.next();
+  return NextResponse.redirect(new URL(LOGIN_URL, request.url));
 }
 
 export const config = {
