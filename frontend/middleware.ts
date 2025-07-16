@@ -27,7 +27,7 @@ if (AUTH_SYSTEM === 'clerk') {
  */
 async function isEmailPasswordAuthenticated(request: NextRequest): Promise<boolean> {
   const accessToken = request.cookies.get('access_token');
-  const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:8000/api';
+  const apiBaseUrl = process.env.API_BASE_URL;
   const res = await fetch(`${apiBaseUrl}/users/me`, {
     headers: { 'Authorization': `Bearer ${accessToken?.value}` }
   })

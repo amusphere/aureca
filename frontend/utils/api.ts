@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // APIのベースURL
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.API_BASE_URL;
 
 // API呼び出し時のデフォルトオプション
 const defaultOptions: RequestInit = {
