@@ -3,16 +3,6 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-// Temporarily disable Google Fonts due to network issues in build environment
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
 
 export const metadata: Metadata = {
   title: process.env.APP_NAME,
@@ -20,7 +10,6 @@ export const metadata: Metadata = {
 };
 
 const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
-const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function RootLayout({
   children,
@@ -38,8 +27,7 @@ export default function RootLayout({
     </html>
   );
 
-  // Only use ClerkProvider if we have clerk auth system AND a valid publishable key
-  if (authSystem === 'clerk' && clerkPublishableKey && clerkPublishableKey !== 'your-clerk-publishable-key') {
+  if (authSystem === 'clerk') {
     return <ClerkProvider>{content}</ClerkProvider>;
   }
 
