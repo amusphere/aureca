@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-import { auth } from '@clerk/nextjs/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -60,8 +59,15 @@ const getAccessToken = async (): Promise<string | null> => {
     return accessToken?.value || null;
   }
   if (authSystem === 'clerk') {
-    const { getToken } = await auth();
-    return getToken();
+    // Dynamic import to avoid loading Clerk when not needed
+    try {
+      const { auth } = await import('@clerk/nextjs/server');
+      const { getToken } = await auth();
+      return getToken();
+    } catch (error) {
+      console.error('Failed to load Clerk auth:', error);
+      return null;
+    }
   }
   return null;
 };
