@@ -17,11 +17,8 @@ services:
       dockerfile: Dockerfile
     command: uv run fastapi dev --host 0.0.0.0
     env_file: ./backend/.env
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/development
-      FRONTEND_URL: http://localhost:3000
     volumes:
-        - ./backend:/app
+      - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
