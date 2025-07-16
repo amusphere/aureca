@@ -1,4 +1,5 @@
 import { NextFetchEvent, NextRequest, NextResponse } from 'next/server';
+import { User } from './types/User';
 
 // Configuration
 const AUTH_SYSTEM = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
@@ -24,9 +25,17 @@ if (AUTH_SYSTEM === 'clerk') {
 /**
  * Check if user is authenticated (email_password only)
  */
-function isEmailPasswordAuthenticated(request: NextRequest): boolean {
+async function isEmailPasswordAuthenticated(request: NextRequest): Promise<boolean> {
   const accessToken = request.cookies.get('access_token');
-  return !!accessToken?.value;
+  const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:8000/api';
+  const res = await fetch(`${apiBaseUrl}/users/me`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken?.value}`,
+    },
+  })
+  const user = await res.json() as User;
+
+  return user && user.uuid ? true : false;
 }
 
 export default async function middleware(request: NextRequest, event: NextFetchEvent) {
