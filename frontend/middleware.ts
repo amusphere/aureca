@@ -29,13 +29,10 @@ async function isEmailPasswordAuthenticated(request: NextRequest): Promise<boole
   const accessToken = request.cookies.get('access_token');
   const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:8000/api';
   const res = await fetch(`${apiBaseUrl}/users/me`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken?.value}`,
-    },
+    headers: { 'Authorization': `Bearer ${accessToken?.value}` }
   })
   const user = await res.json() as User;
-
-  return user && user.uuid ? true : false;
+  return !!accessToken?.value && user && user.uuid ? true : false;
 }
 
 export default async function middleware(request: NextRequest, event: NextFetchEvent) {
@@ -62,7 +59,7 @@ export default async function middleware(request: NextRequest, event: NextFetchE
 
   // Handle email_password authentication
   if (AUTH_SYSTEM === 'email_password') {
-    const isUserAuthenticated = isEmailPasswordAuthenticated(request);
+    const isUserAuthenticated = await isEmailPasswordAuthenticated(request);
     if (isUserAuthenticated) {
       return NextResponse.next();
     }
