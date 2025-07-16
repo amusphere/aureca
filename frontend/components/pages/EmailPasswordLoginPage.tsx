@@ -11,7 +11,7 @@ export default function EmailPasswordLoginPage() {
               {process.env.APP_NAME}
             </CardTitle>
             <CardDescription className="text-sm sm:text-base">
-              A template for building Next.js applications.
+              Your AI assistant is here to support you.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
