@@ -7,8 +7,6 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
-// Force dynamic rendering since this route uses cookies for auth
-export const dynamic = 'force-dynamic';
 
 export default function AppSidebarFooterContent() {
   const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
@@ -39,7 +37,15 @@ export default function AppSidebarFooterContent() {
 
   return (
     <div className="flex items-center gap-4 p-2 w-full">
-      {authSystem === "email_password" && (
+      {authSystem === "clerk" ? (
+        <UserButton appearance={{
+          elements: {
+            userButtonBox: {
+              flexDirection: "row-reverse",
+            },
+          },
+        }} showName={true} />
+      ) : (
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 w-full">
             <Avatar>
@@ -61,15 +67,6 @@ export default function AppSidebarFooterContent() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )}
-      {authSystem === "clerk" && (
-        <UserButton appearance={{
-          elements: {
-            userButtonBox: {
-              flexDirection: "row-reverse",
-            },
-          },
-        }} showName={true} />
       )}
     </div>
   )
