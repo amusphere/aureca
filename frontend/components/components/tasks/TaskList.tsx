@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent } from "@/components/components/ui/card";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
-import { PlusIcon, RefreshCwIcon } from "lucide-react";
+import { PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
 import { useState } from "react";
 import { useTasks } from "../../hooks/useTasks";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
@@ -19,6 +19,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   const [activeTab, setActiveTab] = useState("active");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
 
   const {
     activeTasks,
@@ -52,6 +53,26 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     if (editingTask) {
       await updateTask(editingTask.uuid, taskData);
       setEditingTask(null);
+    }
+  };
+
+  const handleGenerateTasks = async () => {
+    setIsGeneratingTasks(true);
+    try {
+      const response = await fetch('/api/ai/generate-tasks', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        // タスクが生成されたら一覧を更新
+        await fetchTasks();
+      } else {
+        console.error('タスク生成に失敗しました');
+      }
+    } catch (error) {
+      console.error('タスク生成エラー:', error);
+    } finally {
+      setIsGeneratingTasks(false);
     }
   };
 
@@ -89,6 +110,16 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
             className="h-8 w-8 p-0"
           >
             <RefreshCwIcon className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateTasks}
+            disabled={isGeneratingTasks}
+            aria-label="自動生成"
+            className="h-8 w-8 p-0"
+          >
+            <SparklesIcon className="w-4 h-4" />
           </Button>
           <Button
             onClick={() => setIsTaskFormOpen(true)}
