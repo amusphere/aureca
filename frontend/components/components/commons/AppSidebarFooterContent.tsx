@@ -3,15 +3,29 @@
 import { User } from "@/types/User";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
-type Props = {
-  user: User;
-};
 
-export default function AppSidebarFooterContent({ user }: Props) {
+export default function AppSidebarFooterContent() {
   const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
+
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetch("/api/users/me").then(async response => {
+      if (response.ok) {
+        const user = await response.json();
+        setUser(user);
+      } else {
+        console.error("Failed to fetch user data");
+        setUser(null);
+      }
+    }).catch(error => {
+      console.error("Error fetching user data:", error);
+    });
+  }, []);
 
   if (!user) {
     return (

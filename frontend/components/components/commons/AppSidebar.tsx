@@ -1,6 +1,5 @@
 "use client"
 
-import { User } from "@/types/User";
 import { Home, Settings } from "lucide-react";
 
 import {
@@ -16,9 +15,6 @@ import {
 } from "@/components/components/ui/sidebar";
 import AppSidebarFooterContent from "./AppSidebarFooterContent";
 
-type Props = {
-  user: User;
-};
 
 const items = [
   {
@@ -33,7 +29,7 @@ const items = [
   },
 ]
 
-export default function AppSidebar({ user }: Props) {
+export default function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
@@ -58,7 +54,7 @@ export default function AppSidebar({ user }: Props) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <AppSidebarFooterContent user={user} />
+        <AppSidebarFooterContent />
       </SidebarFooter>
     </Sidebar>
   )
