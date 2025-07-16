@@ -66,11 +66,16 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       if (response.ok) {
         // タスクが生成されたら一覧を更新
         await fetchTasks();
+        console.log('タスクが自動生成され、一覧を更新しました');
       } else {
-        console.error('タスク生成に失敗しました');
+        console.error('タスク生成に失敗しました:', response.status);
+        // エラーでもタスク一覧をリフレッシュして最新状態を確認
+        await fetchTasks();
       }
     } catch (error) {
       console.error('タスク生成エラー:', error);
+      // エラーが発生してもタスク一覧をリフレッシュ
+      await fetchTasks();
     } finally {
       setIsGeneratingTasks(false);
     }
