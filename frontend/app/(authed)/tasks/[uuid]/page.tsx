@@ -3,6 +3,9 @@ import { Task } from "@/types/Task";
 import { apiGet } from "@/utils/api";
 import { notFound } from "next/navigation";
 
+// Force dynamic rendering since this route uses cookies for auth
+export const dynamic = 'force-dynamic';
+
 interface TaskDetailRouteProps {
   params: Promise<{ uuid: string }>;
 }
