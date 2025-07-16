@@ -28,13 +28,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: npm run dev
+    command: npm run dev -- --port 8080
     env_file: ./frontend/.env
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "3000:3000"
+      - "3000:8080"
     depends_on:
       - backend
 
