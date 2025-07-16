@@ -14,4 +14,4 @@ RUN uv sync
 COPY . .
 
 EXPOSE 8000
-CMD ["uv", "run", "fastapi", "dev", "--host", "0.0.0.0"]
+CMD ["fastapi", "run", "--host", "0.0.0.0"]
