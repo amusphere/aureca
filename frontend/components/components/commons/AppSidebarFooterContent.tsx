@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
+// Force dynamic rendering since this route uses cookies for auth
+export const dynamic = 'force-dynamic';
 
 export default function AppSidebarFooterContent() {
   const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
