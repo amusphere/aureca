@@ -11,10 +11,6 @@ export const dynamic = 'force-dynamic';
 export default async function RootPage() {
   const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
 
-  if (authSystem === "email_password") {
-    return <EmailPasswordLoginPage />;
-  }
-
   if (authSystem === "clerk") {
     return (
       <>
@@ -30,7 +26,5 @@ export default async function RootPage() {
     );
   }
 
-  // フォールバック: 環境変数が設定されていない場合
-  console.error("NEXT_PUBLIC_AUTH_SYSTEM environment variable is not properly set:", authSystem);
   return <EmailPasswordLoginPage />;
 }
