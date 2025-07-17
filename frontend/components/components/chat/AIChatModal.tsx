@@ -19,12 +19,12 @@ interface AIChatModalProps {
 
 const CHAT_MODAL_CONFIG = {
   // モバイル: フルスクリーン、デスクトップ: 固定サイズ
-  width: "w-full sm:w-96",
-  height: "h-full sm:h-[600px]",
-  position: "inset-0 sm:bottom-6 sm:right-6 sm:top-auto sm:left-auto",
+  width: "w-full sm:w-[420px]",
+  height: "h-full sm:h-[680px]",
+  position: "inset-0 sm:bottom-8 sm:right-8 sm:top-auto sm:left-auto",
   animation: {
-    enter: "animate-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-2 sm:slide-in-from-right-2",
-    exit: "animate-out slide-out-to-bottom duration-200 sm:slide-out-to-bottom-2 sm:slide-out-to-right-2",
+    enter: "animate-in slide-in-from-bottom duration-300 ease-out sm:slide-in-from-bottom-4 sm:slide-in-from-right-4",
+    exit: "animate-out slide-out-to-bottom duration-200 ease-in sm:slide-out-to-bottom-4 sm:slide-out-to-right-4",
   },
 } as const;
 
@@ -72,7 +72,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-md transition-opacity duration-300"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -84,8 +84,9 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           CHAT_MODAL_CONFIG.width,
           CHAT_MODAL_CONFIG.height,
           CHAT_MODAL_CONFIG.position,
-          "bg-background border-0 sm:border sm:rounded-2xl shadow-2xl",
-          "flex flex-col",
+          "bg-background/95 backdrop-blur-xl border-0 sm:border sm:border-border/50 sm:rounded-3xl",
+          "shadow-2xl sm:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.25)]",
+          "flex flex-col overflow-hidden",
           isOpen ? CHAT_MODAL_CONFIG.animation.enter : CHAT_MODAL_CONFIG.animation.exit
         )}
         role="dialog"
@@ -93,21 +94,24 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         aria-labelledby="chat-title"
       >
         {/* Header */}
-        <header className="flex items-center justify-between p-4 sm:p-4 py-4 border-b rounded-t-none sm:rounded-t-2xl bg-background">
-          <h2
-            id="chat-title"
-            className="text-lg font-semibold text-foreground"
-          >
-            {EMPTY_STATE_MESSAGES.title}
-          </h2>
+        <header className="flex items-center justify-between px-6 py-5 border-b border-border/30 bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <h2
+              id="chat-title"
+              className="text-xl font-semibold text-foreground tracking-tight"
+            >
+              {EMPTY_STATE_MESSAGES.title}
+            </h2>
+          </div>
           <Button
             onClick={onClose}
             variant="ghost"
             size="icon"
-            className="h-10 w-10 sm:h-8 sm:w-8"
+            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200"
             aria-label="チャットを閉じる"
           >
-            <X size={20} className="sm:size-4" />
+            <X size={18} />
           </Button>
         </header>
 
@@ -125,9 +129,9 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/50 to-background/80">
             <ScrollArea className="h-full">
-              <div className="px-4">
+              <div className="px-6 py-2">
                 {messages.length === 0 && !isLoading ? (
                   <EmptyState
                     type="no-data"
@@ -135,10 +139,10 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                     description={EMPTY_STATE_MESSAGES.description}
                     size="sm"
                     showIcon={false}
-                    className="min-h-[300px]"
+                    className="min-h-[320px] flex items-center justify-center"
                   />
                 ) : (
-                  <div className="space-y-4 py-4 pb-6">
+                  <div className="space-y-6 py-6">
                     {messages.map((message) => (
                       <ChatMessage
                         key={message.id}
@@ -152,10 +156,10 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
             </ScrollArea>
           </div>
 
-          <Separator />
+          <Separator className="bg-border/20" />
 
           {/* Input Area */}
-          <div className="p-4 sm:p-4 pb-6 sm:pb-4">
+          <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
             <AIChatInput onSendMessage={sendMessage} isLoading={isLoading} />
           </div>
         </div>

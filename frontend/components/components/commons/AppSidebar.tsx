@@ -80,11 +80,10 @@ export default function AppSidebar() {
                       `}
                     >
                       <a href={item.url} className="flex items-center gap-4 w-full">
-                        <item.icon className={`h-4 w-4 transition-all duration-300 ${
-                          isActive
-                            ? 'text-primary scale-110'
-                            : 'text-sidebar-foreground/70 group-hover:text-sidebar-foreground group-hover:scale-105'
-                        }`} />
+                        <item.icon className={`h-4 w-4 transition-all duration-300 ${isActive
+                          ? 'text-primary scale-110'
+                          : 'text-sidebar-foreground/70 group-hover:text-sidebar-foreground group-hover:scale-105'
+                          }`} />
                         <span className="text-sm font-medium tracking-tight leading-none">{item.title}</span>
                         {isActive && (
                           <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-gradient-to-b from-primary to-primary-hover rounded-r-full shadow-sm" />

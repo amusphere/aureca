@@ -6,17 +6,17 @@ interface MessageAvatarProps {
   className?: string;
 }
 
-const AVATAR_SIZE = "w-8 h-8";
+const AVATAR_SIZE = "w-9 h-9";
 const ICON_SIZE = "w-5 h-5";
 
 const avatarStyles = {
   user: {
-    container: "bg-gray-300",
-    icon: "text-gray-600"
+    container: "bg-primary/10 border border-primary/20",
+    icon: "text-primary"
   },
   ai: {
-    container: "bg-gray-200",
-    icon: "text-gray-500"
+    container: "bg-muted border border-border/40",
+    icon: "text-muted-foreground"
   }
 } as const;
 
