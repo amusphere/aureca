@@ -1,22 +1,22 @@
-# Design Document
+# 設計書
 
-## Overview
+## 概要
 
-This design document outlines a comprehensive visual refresh for the task management application, focusing on creating a modern, stylish, and cohesive user interface. The design will enhance the existing functionality while providing a more polished and professional appearance through improved color schemes, typography, spacing, and visual hierarchy.
+この設計書は、タスク管理アプリケーションの包括的なビジュアルリフレッシュについて概説し、モダンでスタイリッシュで統一されたユーザーインターフェースの作成に焦点を当てています。この設計は、改良された配色、タイポグラフィ、間隔、視覚的階層を通じて、より洗練されたプロフェッショナルな外観を提供しながら、既存の機能を強化します。
 
-## Architecture
+## アーキテクチャ
 
-### Design System Approach
-- **Token-based Design**: Utilize CSS custom properties and Tailwind CSS for consistent design tokens
-- **Component-driven**: Update existing shadcn/ui components with enhanced styling
-- **Theme Support**: Maintain and enhance both light and dark theme support
-- **Responsive Design**: Ensure all improvements work across different screen sizes
+### デザインシステムアプローチ
+- **トークンベースデザイン**: 一貫したデザイントークンのためにCSS カスタムプロパティとTailwind CSSを活用
+- **コンポーネント駆動**: 既存のshadcn/uiコンポーネントを強化されたスタイリングで更新
+- **テーマサポート**: ライトテーマとダークテーマの両方を維持・強化
+- **レスポンシブデザイン**: すべての改善が異なる画面サイズで動作することを保証
 
-### Color Palette Strategy
-- **Primary Colors**: Modern blue-based palette with improved contrast ratios
-- **Semantic Colors**: Enhanced success, warning, error, and info colors
-- **Neutral Colors**: Refined gray scale with better visual hierarchy
-- **Accent Colors**: Subtle accent colors for interactive elements
+### カラーパレット戦略
+- **プライマリカラー**: 改良されたコントラスト比を持つモダンなブルーベースのパレット
+- **セマンティックカラー**: 強化された成功、警告、エラー、情報カラー
+- **ニュートラルカラー**: より良い視覚的階層を持つ洗練されたグレースケール
+- **アクセントカラー**: インタラクティブ要素のための微細なアクセントカラー
 
 ## Components and Interfaces
 

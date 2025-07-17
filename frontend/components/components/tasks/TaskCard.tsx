@@ -49,12 +49,12 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
         <div className="flex items-start sm:items-center gap-3">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon-xs"
             className={`
-              p-0 h-6 w-6 rounded-full border shrink-0 mt-0.5 sm:mt-0
+              rounded-full border shrink-0 mt-0.5 sm:mt-0 transition-all duration-300 ease-out
               ${task.completed
-                ? 'bg-green-100 text-green-600 border-green-300'
-                : 'border-gray-300 hover:border-green-400'
+                ? 'bg-success/20 text-success border-success/30 hover:bg-success/30 hover:border-success/40'
+                : 'border-border/60 hover:border-success/40 hover:bg-success/10'
               }
             `}
             onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
@@ -76,12 +76,12 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
 
               <div className="flex items-center gap-1 flex-wrap shrink-0">
                 {task.completed && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="status-completed" size="sm">
                     完了
                   </Badge>
                 )}
                 {isExpired && !task.completed && (
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge variant="destructive" size="sm">
                     期限切れ
                   </Badge>
                 )}
@@ -114,21 +114,21 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
               {onEdit && (
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                  size="icon-sm"
+                  className="hover:bg-accent/80 hover:text-accent-foreground transition-all duration-300 ease-out"
                   onClick={() => onEdit(task)}
                 >
-                  <EditIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <EditIcon className="w-3.5 h-3.5" />
                 </Button>
               )}
               {onDelete && (
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:text-destructive"
+                  size="icon-sm"
+                  className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300 ease-out"
                   onClick={() => onDelete(task.uuid)}
                 >
-                  <TrashIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <TrashIcon className="w-3.5 h-3.5" />
                 </Button>
               )}
             </div>

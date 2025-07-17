@@ -60,13 +60,15 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-9 items-center gap-2 border-b px-3"
+      className="flex h-10 items-center gap-3 border-b border-border/60 px-4 py-2"
     >
-      <SearchIcon className="size-4 shrink-0 opacity-50" />
+      <SearchIcon className="size-4 shrink-0 opacity-50 text-muted-foreground" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-full w-full bg-transparent text-sm outline-hidden transition-all duration-200",
+          "placeholder:text-muted-foreground/70 placeholder:font-normal",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
@@ -140,7 +142,11 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-2 rounded-md px-3 py-2 text-sm outline-hidden select-none transition-all duration-200",
+        "hover:bg-accent/50 hover:text-accent-foreground",
+        "data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground data-[selected=true]:shadow-sm",
+        "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        "[&_svg:not([class*='text-'])]:text-muted-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
