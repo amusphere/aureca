@@ -36,12 +36,14 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
   return (
     <Card
       className={`
-        cursor-pointer group transition-all duration-200
+        cursor-pointer group transition-all duration-300 ease-out hover-lift
         ${task.completed ? 'opacity-75' : ''}
         ${isExpired && !task.completed ? 'border-destructive/50' : ''}
         ${isCompleting ? 'animate-[completion_0.6s_ease-out_forwards]' : ''}
         ${isUncompleting ? 'animate-[uncompletion_0.6s_ease-out_forwards]' : ''}
-        hover:shadow-md
+        hover:shadow-lg hover:border-border/80 hover:scale-[1.01]
+        active:scale-[0.99] active:shadow-sm
+        animate-fade-in-up
       `}
       onClick={handleCardClick}
     >
@@ -52,14 +54,15 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
             size="icon-xs"
             className={`
               rounded-full border shrink-0 mt-0.5 sm:mt-0 transition-all duration-300 ease-out
+              hover:scale-110 active:scale-95 hover:shadow-sm
               ${task.completed
-                ? 'bg-success/20 text-success border-success/30 hover:bg-success/30 hover:border-success/40'
+                ? 'bg-success/20 text-success border-success/30 hover:bg-success/30 hover:border-success/40 animate-gentle-bounce'
                 : 'border-border/60 hover:border-success/40 hover:bg-success/10'
               }
             `}
             onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
           >
-            {task.completed && <CheckIcon className="w-3 h-3" />}
+            {task.completed && <CheckIcon className="w-3 h-3 transition-transform duration-200" />}
           </Button>
 
           <div className="flex-1 min-w-0">
@@ -110,25 +113,25 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
           </div>
 
           {(onEdit || onDelete) && (
-            <div className="flex flex-col sm:flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="flex flex-col sm:flex-row gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out shrink-0">
               {onEdit && (
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="hover:bg-accent/80 hover:text-accent-foreground transition-all duration-300 ease-out"
+                  className="hover:bg-accent/80 hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-110 active:scale-95 hover:shadow-sm"
                   onClick={() => onEdit(task)}
                 >
-                  <EditIcon className="w-3.5 h-3.5" />
+                  <EditIcon className="w-3.5 h-3.5 transition-transform duration-200" />
                 </Button>
               )}
               {onDelete && (
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300 ease-out"
+                  className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300 ease-out hover:scale-110 active:scale-95 hover:shadow-sm"
                   onClick={() => onDelete(task.uuid)}
                 >
-                  <TrashIcon className="w-3.5 h-3.5" />
+                  <TrashIcon className="w-3.5 h-3.5 transition-transform duration-200" />
                 </Button>
               )}
             </div>

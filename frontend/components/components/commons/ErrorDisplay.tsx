@@ -147,7 +147,7 @@ export function ErrorDisplay({
   return (
     <Alert
       className={cn(
-        "mb-6 border-l-4 shadow-sm",
+        "mb-6 border-l-4 shadow-sm animate-fade-in-up",
         config.bgColor,
         config.borderColor,
         "border-l-current",
@@ -155,7 +155,7 @@ export function ErrorDisplay({
       )}
     >
       <div className="flex items-start gap-3">
-        <IconComponent className={cn("h-5 w-5 mt-0.5 flex-shrink-0", config.iconColor)} />
+        <IconComponent className={cn("h-5 w-5 mt-0.5 flex-shrink-0 animate-gentle-bounce", config.iconColor)} />
         <div className="flex-1 min-w-0">
           <AlertTitle className={cn(
             "text-base font-semibold mb-2 flex items-center justify-between",
@@ -169,13 +169,13 @@ export function ErrorDisplay({
                   size="sm"
                   onClick={onRetry}
                   className={cn(
-                    "h-8 px-3 text-xs font-medium transition-all duration-200",
-                    "hover:scale-105 hover:shadow-sm",
+                    "h-8 px-3 text-xs font-medium transition-all duration-300 ease-out",
+                    "hover:scale-105 hover:shadow-sm active:scale-95",
                     "border-current/20 hover:border-current/40",
                     "bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
                   )}
                 >
-                  <RefreshCw className="h-3 w-3 mr-2" />
+                  <RefreshCw className="h-3 w-3 mr-2 transition-transform duration-200" />
                   再試行
                 </Button>
               )}
@@ -185,11 +185,11 @@ export function ErrorDisplay({
                   size="sm"
                   onClick={onDismiss}
                   className={cn(
-                    "h-8 w-8 p-0 transition-all duration-200",
-                    "hover:scale-105 hover:bg-white/50 dark:hover:bg-black/20"
+                    "h-8 w-8 p-0 transition-all duration-300 ease-out",
+                    "hover:scale-105 hover:bg-white/50 dark:hover:bg-black/20 active:scale-95"
                   )}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 transition-transform duration-200" />
                 </Button>
               )}
             </div>

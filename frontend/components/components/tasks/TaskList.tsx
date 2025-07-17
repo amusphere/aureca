@@ -148,15 +148,15 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg border border-border/30">
+      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg border border-border/30 animate-fade-in-down">
         <Button
           variant="ghost"
           size="sm"
           onClick={fetchTasks}
           disabled={isGeneratingTasks}
-          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
         >
-          <RefreshCwIcon className="w-3 h-3 mr-1.5" />
+          <RefreshCwIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-spin' : ''}`} />
           更新
         </Button>
         <div className="w-px h-4 bg-border/50" />
@@ -165,9 +165,9 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           size="sm"
           onClick={handleGenerateTasks}
           disabled={isGeneratingTasks}
-          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
         >
-          <SparklesIcon className="w-3 h-3 mr-1.5" />
+          <SparklesIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-pulse' : ''}`} />
           自動生成
         </Button>
         <div className="w-px h-4 bg-border/50" />
@@ -175,9 +175,9 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           onClick={() => setIsTaskFormOpen(true)}
           size="sm"
           disabled={isGeneratingTasks}
-          className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:shadow-md"
         >
-          <PlusIcon className="w-3 h-3 mr-1.5" />
+          <PlusIcon className="w-3 h-3 mr-1.5 transition-transform duration-200" />
           新規作成
         </Button>
       </div>
@@ -187,17 +187,17 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         <button
           onClick={() => setActiveTab("active")}
           className={`
-            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors min-w-0
+            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300 ease-out min-w-0 hover:scale-105 active:scale-95
             ${activeTab === "active"
               ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             }
           `}
         >
-          <ClipboardList className="w-3 h-3 flex-shrink-0" />
+          <ClipboardList className="w-3 h-3 flex-shrink-0 transition-transform duration-200" />
           <span className="truncate">アクティブ</span>
           <span className={`
-            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0
+            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0 transition-all duration-200
             ${activeTab === "active"
               ? "bg-primary/10 text-primary"
               : "bg-muted text-muted-foreground"
@@ -209,17 +209,17 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         <button
           onClick={() => setActiveTab("completed")}
           className={`
-            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors min-w-0
+            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300 ease-out min-w-0 hover:scale-105 active:scale-95
             ${activeTab === "completed"
               ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             }
           `}
         >
-          <CheckCheck className="w-3 h-3 flex-shrink-0" />
+          <CheckCheck className="w-3 h-3 flex-shrink-0 transition-transform duration-200" />
           <span className="truncate">完了済み</span>
           <span className={`
-            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0
+            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0 transition-all duration-200
             ${activeTab === "completed"
               ? "bg-green-100 text-green-700"
               : "bg-muted text-muted-foreground"
@@ -241,7 +241,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
               className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 stagger-children">
               {activeTasks.map((task) => (
                 <TaskCard
                   key={task.uuid}
@@ -266,7 +266,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
               className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
             />
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 stagger-children">
               {completedTasks.map((task) => (
                 <TaskCard
                   key={task.uuid}
