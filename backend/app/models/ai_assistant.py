@@ -27,3 +27,10 @@ class GeneratedTaskModel(BaseModel):
     description: str | None = None
     completed: bool = False
     expires_at: float | None = None
+
+
+class GeneratedTasksBySourceModel(BaseModel):
+    """サービス別生成タスクモデル"""
+
+    Gmail: list[GeneratedTaskModel] = []
+    GoogleCalendar: list[GeneratedTaskModel] = []

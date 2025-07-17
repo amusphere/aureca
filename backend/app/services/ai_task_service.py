@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List
 
 from app.models.google_mail import DraftModel
-from app.repositories.task_source import create_task_source, get_task_source_by_uuid
+from app.repositories.task_source import create_task_source, get_task_source_by_uuid, get_task_source_by_source_id
 from app.repositories.tasks import create_task
 from app.schema import SourceType, TaskSource, User
 from app.services.gmail_service import get_authenticated_gmail_service
@@ -53,7 +53,7 @@ class AiTaskService:
         self.user_id = user_id
         self.logger = logging.getLogger(__name__)
 
-    async def generate_tasks_from_all_sources(self, user: User) -> List[dict]:
+    async def generate_tasks_from_all_sources(self, user: User) -> dict:
         """
         全ての情報源からタスクを生成してデータベースに保存する
 
@@ -61,7 +61,7 @@ class AiTaskService:
             user: ユーザー情報
 
         Returns:
-            生成されたタスクのリスト
+            サービス別の生成されたタスクの辞書
         """
         try:
             # メールからタスクを生成
@@ -70,10 +70,13 @@ class AiTaskService:
             # カレンダーからタスクを生成
             calendar_tasks = await self.generate_tasks_from_calendar_events(user)
 
-            # 全てのタスクを統合
-            all_tasks = email_tasks + calendar_tasks
+            # サービス別にタスクを整理
+            tasks_by_source = {
+                "Gmail": email_tasks,
+                "GoogleCalendar": calendar_tasks
+            }
 
-            return all_tasks
+            return tasks_by_source
 
         except Exception as e:
             self.logger.error(f"全ての情報源からのタスク生成に失敗: {str(e)}")
@@ -107,8 +110,21 @@ class AiTaskService:
 
             for email in new_emails:
                 try:
+                    email_id = email["id"]
+
+                    # 既に同じsource_idでタスクが存在するかチェック
+                    existing_task_source = get_task_source_by_source_id(
+                        session=self.session,
+                        source_id=email_id,
+                        source_type=SourceType.EMAIL
+                    )
+
+                    if existing_task_source:
+                        self.logger.info(f"メール {email_id} は既にタスクが生成済みです。スキップします。")
+                        continue
+
                     # メール内容を詳細取得
-                    email_content = await self._get_email_detail(user, email["id"])
+                    email_content = await self._get_email_detail(user, email_id)
 
                     # LLMでタスクを生成
                     task_data = await self._generate_task_from_email(email_content)
@@ -124,12 +140,12 @@ class AiTaskService:
                         )
 
                         # TaskSourceを作成（メール情報と直接リンクを保存）
-                        gmail_url = self._generate_gmail_url(email["id"])
+                        gmail_url = self._generate_gmail_url(email_id)
                         create_task_source(
                             session=self.session,
                             task_id=task.id,
                             source_type=SourceType.EMAIL,
-                            source_id=email["id"],
+                            source_id=email_id,
                             title=email_content.get("subject", ""),
                             content=email_content.get("body", ""),
                             source_url=gmail_url,
@@ -197,6 +213,19 @@ class AiTaskService:
 
             for event in events:
                 try:
+                    event_id = event.get("id", "")
+
+                    # 既に同じsource_idでタスクが存在するかチェック
+                    existing_task_source = get_task_source_by_source_id(
+                        session=self.session,
+                        source_id=event_id,
+                        source_type=SourceType.CALENDAR
+                    )
+
+                    if existing_task_source:
+                        self.logger.info(f"カレンダーイベント {event_id} は既にタスクが生成済みです。スキップします。")
+                        continue
+
                     # イベント内容からタスクを生成
                     task_data = await self._generate_task_from_calendar_event(event)
 
@@ -211,7 +240,6 @@ class AiTaskService:
                         )
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
-                        event_id = event.get("id", "")
                         html_link = event.get(
                             "htmlLink", ""
                         )  # Google Calendar APIの正式フィールド名

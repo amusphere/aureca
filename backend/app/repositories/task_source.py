@@ -112,3 +112,15 @@ def find_task_sources_by_source_type(
     """Find all task sources by source type"""
     stmt = select(TaskSource).where(TaskSource.source_type == source_type)
     return list(session.exec(stmt).all())
+
+
+def get_task_source_by_source_id(
+    session: Session,
+    source_id: str,
+    source_type: str | None = None,
+) -> TaskSource | None:
+    """Get a task source by source_id and optionally source_type"""
+    stmt = select(TaskSource).where(TaskSource.source_id == source_id)
+    if source_type:
+        stmt = stmt.where(TaskSource.source_type == source_type)
+    return session.exec(stmt).first()
