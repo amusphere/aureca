@@ -22,4 +22,6 @@ class TaskModel(BaseModel):
     description: str | None = None
     completed: bool = False
     expires_at: float | None = None
+    created_at: float | None = None
+    updated_at: float | None = None
     sources: list[TaskSourceModel] = []
