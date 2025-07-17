@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent } from "@/components/components/ui/card";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
-import { PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
+import { PlusIcon, RefreshCwIcon, SparklesIcon, Loader2, ClipboardList, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { useTasks } from "../../hooks/useTasks";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
@@ -110,122 +110,230 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     }
   };
 
+  // Enhanced loading state with better visual feedback
   if (isLoading || isGeneratingTasks) {
     return (
-      <Card className="w-full">
-        <CardContent className="flex items-center justify-center py-6">
-          <RefreshCwIcon className="w-5 h-5 animate-spin mr-2" />
-          <span className="text-sm">
-            {isGeneratingTasks ? 'タスクを自動生成中...' : '読み込み中...'}
-          </span>
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-none">
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/20">
+          <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="relative mb-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-pulse"></div>
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-base font-medium text-foreground">
+                {isGeneratingTasks ? 'タスクを自動生成中' : '読み込み中'}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {isGeneratingTasks
+                  ? 'メールやカレンダーからタスクを作成しています...'
+                  : 'タスクデータを取得しています...'
+                }
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="w-full max-w-none">
-      {/* Error Display */}
+    <div className="w-full max-w-none space-y-6">
+      {/* Error Display with improved spacing */}
       {error && (
-        <ErrorDisplay
-          error={error}
-          onDismiss={clearError}
-          onRetry={fetchTasks}
-        />
+        <div className="mb-6">
+          <ErrorDisplay
+            error={error}
+            onDismiss={clearError}
+            onRetry={fetchTasks}
+          />
+        </div>
       )}
 
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">タスク</h2>
-        <div className="flex gap-1">
+      {/* Enhanced Header with better visual hierarchy */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">タスク</h2>
+          <p className="text-sm text-muted-foreground">
+            {activeTasks.length + completedTasks.length > 0
+              ? `${activeTasks.length}件のアクティブタスク、${completedTasks.length}件完了`
+              : 'タスクを作成して始めましょう'
+            }
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchTasks}
             disabled={isGeneratingTasks}
-            aria-label="更新"
-            className="h-8 w-8 p-0"
+            className="h-9 px-3 hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <RefreshCwIcon className="w-4 h-4" />
+            <RefreshCwIcon className="w-4 h-4 mr-2" />
+            更新
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleGenerateTasks}
             disabled={isGeneratingTasks}
-            aria-label="自動生成"
-            className="h-8 w-8 p-0"
+            className="h-9 px-3 hover:bg-accent hover:text-accent-foreground transition-colors"
           >
-            <SparklesIcon className="w-4 h-4" />
+            <SparklesIcon className="w-4 h-4 mr-2" />
+            自動生成
           </Button>
           <Button
             onClick={() => setIsTaskFormOpen(true)}
             size="sm"
             disabled={isGeneratingTasks}
-            aria-label="新規作成"
-            className="h-8 w-8 p-0"
+            className="h-9 px-3 bg-primary hover:bg-primary-hover text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <PlusIcon className="w-4 h-4" />
+            <PlusIcon className="w-4 h-4 mr-2" />
+            新規作成
           </Button>
         </div>
       </div>
 
-      {/* タブボタン */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-2">
-        <Button
-          variant={activeTab === "active" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("active")}
-          className="flex-1 h-8 text-xs"
-        >
-          アクティブ ({activeTasks.length})
-        </Button>
-        <Button
-          variant={activeTab === "completed" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("completed")}
-          className="flex-1 h-8 text-xs"
-        >
-          完了済み ({completedTasks.length})
-        </Button>
+      {/* Modern Tab Navigation with enhanced styling */}
+      <div className="relative">
+        <div className="flex space-x-1 bg-muted/50 p-1.5 rounded-xl border border-border/50 backdrop-blur-sm">
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`
+              flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+              ${activeTab === "active"
+                ? "bg-background text-foreground shadow-sm border border-border/50"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }
+            `}
+          >
+            <ClipboardList className="w-4 h-4" />
+            <span>アクティブ</span>
+            <span className={`
+              px-2 py-0.5 rounded-full text-xs font-medium
+              ${activeTab === "active"
+                ? "bg-primary/10 text-primary"
+                : "bg-muted text-muted-foreground"
+              }
+            `}>
+              {activeTasks.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`
+              flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+              ${activeTab === "completed"
+                ? "bg-background text-foreground shadow-sm border border-border/50"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }
+            `}
+          >
+            <CheckCheck className="w-4 h-4" />
+            <span>完了済み</span>
+            <span className={`
+              px-2 py-0.5 rounded-full text-xs font-medium
+              ${activeTab === "completed"
+                ? "bg-success/10 text-success"
+                : "bg-muted text-muted-foreground"
+              }
+            `}>
+              {completedTasks.length}
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* タスクコンテンツ */}
-      <div className="space-y-2">
+      {/* Enhanced Task Content with improved spacing */}
+      <div className="space-y-3">
         {activeTab === "active" ? (
           activeTasks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              📝 タスクがありません
-            </div>
+            <Card className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20">
+              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                  <ClipboardList className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <div className="text-center space-y-2 max-w-sm">
+                  <h3 className="text-lg font-medium text-foreground">アクティブなタスクがありません</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    新しいタスクを作成するか、自動生成機能を使ってメールやカレンダーからタスクを作成しましょう。
+                  </p>
+                </div>
+                <div className="flex gap-2 mt-6">
+                  <Button
+                    onClick={() => setIsTaskFormOpen(true)}
+                    size="sm"
+                    className="bg-primary hover:bg-primary-hover text-primary-foreground"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    タスクを作成
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGenerateTasks}
+                    disabled={isGeneratingTasks}
+                  >
+                    <SparklesIcon className="w-4 h-4 mr-2" />
+                    自動生成
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
-            activeTasks.map((task) => (
-              <TaskCard
-                key={task.uuid}
-                task={task}
-                isCompleting={completingTasks.has(task.uuid)}
-                onToggleComplete={toggleTaskComplete}
-                onEdit={handleEditTask}
-                onDelete={onDeleteTask || deleteTask}
-              />
-            ))
+            <div className="space-y-3">
+              {activeTasks.map((task) => (
+                <TaskCard
+                  key={task.uuid}
+                  task={task}
+                  isCompleting={completingTasks.has(task.uuid)}
+                  onToggleComplete={toggleTaskComplete}
+                  onEdit={handleEditTask}
+                  onDelete={onDeleteTask || deleteTask}
+                />
+              ))}
+            </div>
           )
         ) : (
           completedTasks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              ✅ 完了したタスクがありません
-            </div>
+            <Card className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20">
+              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                  <CheckCheck className="w-8 h-8 text-success" />
+                </div>
+                <div className="text-center space-y-2 max-w-sm">
+                  <h3 className="text-lg font-medium text-foreground">完了したタスクがありません</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setActiveTab("active")}
+                  variant="outline"
+                  size="sm"
+                  className="mt-6"
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  アクティブタスクを見る
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
-            completedTasks.map((task) => (
-              <TaskCard
-                key={task.uuid}
-                task={task}
-                isCompleting={false}
-                isUncompleting={uncompletingTasks.has(task.uuid)}
-                onToggleComplete={toggleTaskComplete}
-                onEdit={handleEditTask}
-                onDelete={onDeleteTask || deleteTask}
-              />
-            ))
+            <div className="space-y-3">
+              {completedTasks.map((task) => (
+                <TaskCard
+                  key={task.uuid}
+                  task={task}
+                  isCompleting={false}
+                  isUncompleting={uncompletingTasks.has(task.uuid)}
+                  onToggleComplete={toggleTaskComplete}
+                  onEdit={handleEditTask}
+                  onDelete={onDeleteTask || deleteTask}
+                />
+              ))}
+            </div>
           )
         )}
       </div>
