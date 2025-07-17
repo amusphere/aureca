@@ -3,10 +3,12 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent } from "@/components/components/ui/card";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
-import { PlusIcon, RefreshCwIcon, SparklesIcon, Loader2, ClipboardList, CheckCheck } from "lucide-react";
+import { PlusIcon, RefreshCwIcon, SparklesIcon, ClipboardList, CheckCheck } from "lucide-react";
 import { useState } from "react";
 import { useTasks } from "../../hooks/useTasks";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
+import { LoadingSpinner } from "../commons/LoadingSpinner";
+import { EmptyState } from "../commons/EmptyState";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 
@@ -115,24 +117,17 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     return (
       <div className="w-full max-w-none">
         <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/20">
-          <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-            <div className="relative mb-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-primary animate-spin" />
-              </div>
-              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-pulse"></div>
-            </div>
-            <div className="text-center space-y-2">
-              <p className="text-base font-medium text-foreground">
-                {isGeneratingTasks ? 'タスクを自動生成中' : '読み込み中'}
-              </p>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                {isGeneratingTasks
-                  ? 'メールやカレンダーからタスクを作成しています...'
-                  : 'タスクデータを取得しています...'
-                }
-              </p>
-            </div>
+          <CardContent className="py-12 px-6">
+            <LoadingSpinner
+              size="lg"
+              variant="default"
+              color="primary"
+              text={isGeneratingTasks
+                ? 'メールやカレンダーからタスクを作成しています...'
+                : 'タスクデータを取得しています...'
+              }
+              className="flex-col"
+            />
           </CardContent>
         </Card>
       </div>
@@ -239,38 +234,12 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       <div className="space-y-3">
         {activeTab === "active" ? (
           activeTasks.length === 0 ? (
-            <Card className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20">
-              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <ClipboardList className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div className="text-center space-y-2 max-w-sm">
-                  <h3 className="text-lg font-medium text-foreground">アクティブなタスクがありません</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    新しいタスクを作成するか、自動生成機能を使ってメールやカレンダーからタスクを作成しましょう。
-                  </p>
-                </div>
-                <div className="flex gap-2 mt-6">
-                  <Button
-                    onClick={() => setIsTaskFormOpen(true)}
-                    size="sm"
-                    className="bg-primary hover:bg-primary-hover text-primary-foreground"
-                  >
-                    <PlusIcon className="w-4 h-4 mr-2" />
-                    タスクを作成
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateTasks}
-                    disabled={isGeneratingTasks}
-                  >
-                    <SparklesIcon className="w-4 h-4 mr-2" />
-                    自動生成
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <EmptyState
+              type="no-tasks"
+              onAction={() => setIsTaskFormOpen(true)}
+              size="md"
+              className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
+            />
           ) : (
             <div className="space-y-3">
               {activeTasks.map((task) => (
@@ -287,28 +256,15 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           )
         ) : (
           completedTasks.length === 0 ? (
-            <Card className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20">
-              <CardContent className="flex flex-col items-center justify-center py-16 px-6">
-                <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
-                  <CheckCheck className="w-8 h-8 text-success" />
-                </div>
-                <div className="text-center space-y-2 max-w-sm">
-                  <h3 className="text-lg font-medium text-foreground">完了したタスクがありません</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。
-                  </p>
-                </div>
-                <Button
-                  onClick={() => setActiveTab("active")}
-                  variant="outline"
-                  size="sm"
-                  className="mt-6"
-                >
-                  <ClipboardList className="w-4 h-4 mr-2" />
-                  アクティブタスクを見る
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              type="completed"
+              title="完了したタスクがありません"
+              description="タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。"
+              actionLabel="アクティブタスクを見る"
+              onAction={() => setActiveTab("active")}
+              size="md"
+              className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
+            />
           ) : (
             <div className="space-y-3">
               {completedTasks.map((task) => (
