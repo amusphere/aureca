@@ -15,9 +15,8 @@ export default function HomePage() {
     <div className="relative h-full bg-background">
       {/* Main Content Area */}
       <main className="h-full overflow-y-auto">
-        <div className="container mx-auto px-6 py-8 pb-24">
-          <div className="max-w-7xl mx-auto space-y-8">
-
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24">
+          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
             {/* タスク管理セクション */}
             <TaskList />
           </div>

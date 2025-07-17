@@ -43,12 +43,20 @@ export default function SelectBox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between"
+          className={cn(
+            "w-full justify-between h-10 px-4 py-2.5 text-left font-normal",
+            "hover:bg-background hover:border-border",
+            "focus:ring-4 focus:ring-ring/15 focus:border-ring",
+            "data-[state=open]:ring-4 data-[state=open]:ring-ring/15 data-[state=open]:border-ring",
+            !value && "text-muted-foreground/70"
+          )}
         >
-          {value
-            ? options.find((option) => option.value === value)?.label
-            : placeholder}
-          <ChevronsUpDown className="opacity-50" />
+          <span className="truncate">
+            {value
+              ? options.find((option) => option.value === value)?.label
+              : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 transition-transform duration-200 data-[state=open]:rotate-180" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">

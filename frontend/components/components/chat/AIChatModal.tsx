@@ -4,10 +4,11 @@ import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useMessages } from "../../hooks/useMessages";
 import { cn } from "../../lib/utils";
-import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
+import { ErrorDisplay } from "../commons/ErrorDisplay";
+import { EmptyState } from "../commons/EmptyState";
 import AIChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 
@@ -115,12 +116,11 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           {/* Error Display */}
           {error && (
             <div className="p-4">
-              <Alert variant="destructive">
-                <AlertDescription>
-                  <span className="font-bold">{EMPTY_STATE_MESSAGES.errorTitle}: </span>
-                  {error}
-                </AlertDescription>
-              </Alert>
+              <ErrorDisplay
+                error={error}
+                variant="compact"
+                onRetry={() => window.location.reload()}
+              />
             </div>
           )}
 
@@ -129,12 +129,14 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
             <ScrollArea className="h-full">
               <div className="px-4">
                 {messages.length === 0 && !isLoading ? (
-                  <div className="flex flex-col items-center justify-center text-center text-muted-foreground py-8 min-h-[300px]">
-                    <h3 className="text-xl font-bold text-foreground mb-2">
-                      {EMPTY_STATE_MESSAGES.title}
-                    </h3>
-                    <p className="text-sm">{EMPTY_STATE_MESSAGES.description}</p>
-                  </div>
+                  <EmptyState
+                    type="no-data"
+                    title={EMPTY_STATE_MESSAGES.title}
+                    description={EMPTY_STATE_MESSAGES.description}
+                    size="sm"
+                    showIcon={false}
+                    className="min-h-[300px]"
+                  />
                 ) : (
                   <div className="space-y-4 py-4 pb-6">
                     {messages.map((message) => (

@@ -45,16 +45,17 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
         />
       )}
 
-      <Card className="w-full overflow-hidden shadow-sm">
-        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-3 sm:pt-6">
+      <Card className="w-full overflow-hidden shadow-sm border-0 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="pb-0 px-4 sm:px-6 pt-4 sm:pt-6">
           <TaskHeader
             task={currentTask}
             onEdit={editTask}
             onDelete={deleteTask}
+            subtitle={currentTask.description ? "詳細情報を確認し、タスクを管理できます" : undefined}
           />
         </CardHeader>
 
-        <CardContent className="space-y-4 sm:space-y-6 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden">
+        <CardContent className="space-y-6 sm:space-y-8 px-4 sm:px-6 pb-6 sm:pb-8 overflow-hidden">
           {/* Description section */}
           {currentTask.description && (
             <div className="space-y-2 overflow-hidden">
@@ -87,12 +88,12 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
           {/* Task sources section */}
           <TaskSources sources={currentTask.sources || []} />
 
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+          {/* Enhanced action buttons with improved spacing and styling */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border/50">
             <Button
               onClick={goBack}
               variant="outline"
-              className="flex-1 h-11 sm:h-9"
+              className="flex-1 h-11 sm:h-10 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
               disabled={isToggling}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -101,7 +102,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
             <Button
               onClick={toggleComplete}
               disabled={isToggling}
-              className="flex-1 h-11 sm:h-9"
+              className="flex-1 h-11 sm:h-10 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
               variant={currentTask.completed ? "outline" : "default"}
             >
               {isToggling

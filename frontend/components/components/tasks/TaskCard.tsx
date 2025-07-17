@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/components/ui/badge";
 import { Button } from "@/components/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
+import { Card, CardContent } from "@/components/components/ui/card";
 import { Task } from "@/types/Task";
 import { formatTaskExpiry, getTaskStatus } from "@/utils/taskUtils";
 import { CalendarIcon, CheckIcon, ClockIcon, EditIcon, TrashIcon } from "lucide-react";
@@ -35,89 +35,106 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
 
   return (
     <Card
-      className={`w-full transition-all duration-700 ease-out cursor-pointer hover:shadow-md ${task.completed ? 'opacity-60' : ''} ${isExpired && !task.completed ? 'border-red-200 bg-red-50' : ''} ${isCompleting ? 'transform scale-110 opacity-0 translate-x-8 rotate-3 bg-green-100 border-green-300 shadow-lg' : ''
-        } ${isUncompleting ? 'transform scale-110 opacity-0 -translate-x-8 -rotate-3 bg-blue-100 border-blue-300 shadow-lg' : ''
-        }`}
+      className={`
+        cursor-pointer group transition-all duration-200
+        ${task.completed ? 'opacity-75' : ''}
+        ${isExpired && !task.completed ? 'border-destructive/50' : ''}
+        ${isCompleting ? 'animate-[completion_0.6s_ease-out_forwards]' : ''}
+        ${isUncompleting ? 'animate-[uncompletion_0.6s_ease-out_forwards]' : ''}
+        hover:shadow-md
+      `}
       onClick={handleCardClick}
     >
-      <CardHeader className="p-3 pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-1 h-6 w-6 rounded-full border-2 transition-all duration-200 ${task.completed
-                ? 'bg-green-100 text-green-600 border-green-300'
-                : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
-                }`}
-              onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
-            >
-              {task.completed && <CheckIcon className="w-4 h-4" />}
-            </Button>
-            <div className="flex-1 min-w-0">
-              <CardTitle className={`text-sm font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start sm:items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className={`
+              rounded-full border shrink-0 mt-0.5 sm:mt-0 transition-all duration-300 ease-out
+              ${task.completed
+                ? 'bg-success/20 text-success border-success/30 hover:bg-success/30 hover:border-success/40'
+                : 'border-border/60 hover:border-success/40 hover:bg-success/10'
+              }
+            `}
+            onClick={() => onToggleComplete?.(task.uuid, !task.completed)}
+          >
+            {task.completed && <CheckIcon className="w-3 h-3" />}
+          </Button>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2 sm:mb-1">
+              <h3 className={`
+                text-sm font-medium leading-tight break-words sm:truncate flex-1
+                ${task.completed
+                  ? 'line-through text-muted-foreground'
+                  : 'text-foreground'
+                }
+              `}>
                 {task.title}
-              </CardTitle>
+              </h3>
+
+              <div className="flex items-center gap-1 flex-wrap shrink-0">
+                {task.completed && (
+                  <Badge variant="status-completed" size="sm">
+                    完了
+                  </Badge>
+                )}
+                {isExpired && !task.completed && (
+                  <Badge variant="destructive" size="sm">
+                    期限切れ
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
               {task.description && (
-                <CardDescription className="mt-1 text-xs">
+                <span className="break-words sm:truncate sm:flex-1 max-w-full overflow-hidden">
                   {task.description}
-                </CardDescription>
+                </span>
               )}
               {formattedExpiry && (
-                <div className="flex items-center gap-1 mt-1">
+                <div className="flex items-center gap-1 shrink-0">
                   {isExpired ? (
-                    <ClockIcon className="w-3 h-3 text-red-500" />
+                    <ClockIcon className="w-3 h-3 text-destructive" />
                   ) : (
-                    <CalendarIcon className="w-3 h-3 text-muted-foreground" />
+                    <CalendarIcon className="w-3 h-3" />
                   )}
-                  <span className={`text-xs ${isExpired && !task.completed ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+                  <span className={`whitespace-nowrap ${isExpired && !task.completed ? 'text-destructive' : ''}`}>
                     {formattedExpiry}
                   </span>
                 </div>
               )}
             </div>
           </div>
-          <div className="flex gap-1 ml-2">
-            {task.completed && (
-              <Badge variant="secondary" className="text-xs px-1 py-0">
-                完了
-              </Badge>
-            )}
-            {isExpired && !task.completed && (
-              <Badge variant="destructive" className="text-xs px-1 py-0">
-                期限切れ
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
 
-      {(onEdit || onDelete) && (
-        <CardContent className="p-3 pt-0">
-          <div className="flex justify-end gap-1">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-gray-100"
-                onClick={() => onEdit(task)}
-              >
-                <EditIcon className="w-4 h-4 text-gray-600" />
-              </Button>
-            )}
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-red-50"
-                onClick={() => onDelete(task.uuid)}
-              >
-                <TrashIcon className="w-4 h-4 text-red-600" />
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      )}
+          {(onEdit || onDelete) && (
+            <div className="flex flex-col sm:flex-row gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hover:bg-accent/80 hover:text-accent-foreground transition-all duration-300 ease-out"
+                  onClick={() => onEdit(task)}
+                >
+                  <EditIcon className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="hover:bg-destructive/10 hover:text-destructive transition-all duration-300 ease-out"
+                  onClick={() => onDelete(task.uuid)}
+                >
+                  <TrashIcon className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 }

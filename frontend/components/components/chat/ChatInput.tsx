@@ -1,10 +1,11 @@
 "use client";
 
-import { Loader2, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { LoadingSpinner } from "../commons/LoadingSpinner";
 
 interface AIChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -73,7 +74,7 @@ export default function AIChatInput({
         >
           {isLoading ? (
             <>
-              <Loader2 size={18} className="animate-spin" />
+              <LoadingSpinner size="sm" variant="minimal" color="secondary" />
               <span className="hidden sm:inline">送信中...</span>
             </>
           ) : (

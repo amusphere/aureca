@@ -45,15 +45,17 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState } = useFormContext()
+  const { getFieldState, watch } = useFormContext()
   const formState = useFormState({ name: fieldContext.name })
   const fieldState = getFieldState(fieldContext.name, formState)
+  const fieldValue = watch(fieldContext.name)
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
   }
 
   const { id } = itemContext
+  const isValid = !fieldState.error && fieldValue && fieldState.isDirty
 
   return {
     id,
@@ -61,6 +63,7 @@ const useFormField = () => {
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
+    isValid,
     ...fieldState,
   }
 }
@@ -97,7 +100,11 @@ function FormLabel({
     <Label
       data-slot="form-label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-destructive", className)}
+      className={cn(
+        "transition-colors duration-200",
+        "data-[error=true]:text-destructive data-[error=true]:font-medium",
+        className
+      )}
       htmlFor={formItemId}
       {...props}
     />
@@ -105,11 +112,13 @@ function FormLabel({
 }
 
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  const { error, formItemId, formDescriptionId, formMessageId, isValid } = useFormField()
 
   return (
     <Slot
       data-slot="form-control"
+      data-error={!!error}
+      data-success={isValid && !error}
       id={formItemId}
       aria-describedby={
         !error
@@ -147,7 +156,11 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-destructive text-sm", className)}
+      className={cn(
+        "text-sm font-medium transition-all duration-200",
+        error ? "text-destructive" : "text-success",
+        className
+      )}
       {...props}
     >
       {body}
