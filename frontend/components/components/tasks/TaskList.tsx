@@ -156,12 +156,6 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold tracking-tight text-foreground">タスク</h2>
-          <p className="text-sm text-muted-foreground">
-            {activeTasks.length + completedTasks.length > 0
-              ? `${activeTasks.length}件のアクティブタスク、${completedTasks.length}件完了`
-              : 'タスクを作成して始めましょう'
-            }
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
