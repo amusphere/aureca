@@ -1,8 +1,8 @@
+import AuthedLayout from "@/components/components/commons/AuthedLayout";
+import { Button } from "@/components/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
+import HomePage from "@/components/pages/HomePage";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import AuthedLayout from "../components/commons/AuthedLayout";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import HomePage from "../pages/HomePage";
 
 export default function ClerkLoginPage() {
   return (

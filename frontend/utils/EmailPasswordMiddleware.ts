@@ -17,7 +17,7 @@ async function isEmailPasswordAuthenticated(request: NextRequest): Promise<boole
   return !!accessToken?.value && user && user.uuid ? true : false;
 }
 
-export default async function defaultMiddleware(request: NextRequest) {
+export default async function EmailPasswordMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === LOGIN_URL) {

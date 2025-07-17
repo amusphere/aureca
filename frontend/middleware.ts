@@ -1,5 +1,10 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+// If you want to use EmailPasswordMiddleware instead of Clerk, uncomment the following lines
+// import { NextRequest } from 'next/server';
+// import EmailPasswordMiddleware from '@/utils/EmailPasswordMiddleware';
+// const middleware = (request: NextRequest) => EmailPasswordMiddleware(request);
+// export default middleware;
 
+import { clerkMiddleware } from '@clerk/nextjs/server';
 export default clerkMiddleware();
 
 export const config = {
