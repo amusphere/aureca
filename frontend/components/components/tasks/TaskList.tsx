@@ -152,92 +152,87 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         </div>
       )}
 
-      {/* Enhanced Header with better visual hierarchy */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">タスク</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTasks}
-            disabled={isGeneratingTasks}
-            className="h-9 px-3 hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <RefreshCwIcon className="w-4 h-4 mr-2" />
-            更新
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateTasks}
-            disabled={isGeneratingTasks}
-            className="h-9 px-3 hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <SparklesIcon className="w-4 h-4 mr-2" />
-            自動生成
-          </Button>
-          <Button
-            onClick={() => setIsTaskFormOpen(true)}
-            size="sm"
-            disabled={isGeneratingTasks}
-            className="h-9 px-3 bg-primary hover:bg-primary-hover text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            新規作成
-          </Button>
-        </div>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg border border-border/30">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchTasks}
+          disabled={isGeneratingTasks}
+          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+        >
+          <RefreshCwIcon className="w-3 h-3 mr-1.5" />
+          更新
+        </Button>
+        <div className="w-px h-4 bg-border/50" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleGenerateTasks}
+          disabled={isGeneratingTasks}
+          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground"
+        >
+          <SparklesIcon className="w-3 h-3 mr-1.5" />
+          自動生成
+        </Button>
+        <div className="w-px h-4 bg-border/50" />
+        <Button
+          onClick={() => setIsTaskFormOpen(true)}
+          size="sm"
+          disabled={isGeneratingTasks}
+          className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          <PlusIcon className="w-3 h-3 mr-1.5" />
+          新規作成
+        </Button>
       </div>
 
-      {/* Modern Tab Navigation with enhanced styling */}
-      <div className="relative">
-        <div className="flex space-x-1 bg-muted/50 p-1.5 rounded-xl border border-border/50 backdrop-blur-sm">
-          <button
-            onClick={() => setActiveTab("active")}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-              ${activeTab === "active"
-                ? "bg-background text-foreground shadow-sm border border-border/50"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }
-            `}
-          >
-            <ClipboardList className="w-4 h-4" />
-            <span>アクティブ</span>
-            <span className={`
-              px-2 py-0.5 rounded-full text-xs font-medium
-              ${activeTab === "active"
-                ? "bg-primary/10 text-primary"
-                : "bg-muted text-muted-foreground"
-              }
-            `}>
-              {activeTasks.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("completed")}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-              ${activeTab === "completed"
-                ? "bg-background text-foreground shadow-sm border border-border/50"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              }
-            `}
-          >
-            <CheckCheck className="w-4 h-4" />
-            <span>完了済み</span>
-            <span className={`
-              px-2 py-0.5 rounded-full text-xs font-medium
-              ${activeTab === "completed"
-                ? "bg-success/10 text-success"
-                : "bg-muted text-muted-foreground"
-              }
-            `}>
-              {completedTasks.length}
-            </span>
-          </button>
-        </div>
+      {/* Compact Tab Navigation */}
+      <div className="flex bg-muted/30 p-0.5 rounded-md">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`
+            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors min-w-0
+            ${activeTab === "active"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+            }
+          `}
+        >
+          <ClipboardList className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate">アクティブ</span>
+          <span className={`
+            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0
+            ${activeTab === "active"
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground"
+            }
+          `}>
+            {activeTasks.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("completed")}
+          className={`
+            flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors min-w-0
+            ${activeTab === "completed"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+            }
+          `}
+        >
+          <CheckCheck className="w-3 h-3 flex-shrink-0" />
+          <span className="truncate">完了済み</span>
+          <span className={`
+            px-1 py-0.5 rounded text-xs font-medium flex-shrink-0
+            ${activeTab === "completed"
+              ? "bg-green-100 text-green-700"
+              : "bg-muted text-muted-foreground"
+            }
+          `}>
+            {completedTasks.length}
+          </span>
+        </button>
       </div>
 
       {/* Enhanced Task Content with improved spacing */}
