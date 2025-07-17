@@ -1,5 +1,5 @@
-import LoginForm from "../components/forms/LoginForm";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import LoginForm from "@/components/components/forms/LoginForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 
 export default function EmailPasswordLoginPage() {
   return (

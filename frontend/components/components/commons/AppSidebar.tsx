@@ -1,7 +1,7 @@
-"use client"
-
 import { Home, Settings } from "lucide-react";
 
+import ClerkUserButton from "@/components/auth/ClerkUserButton";
+import EmailPasswordUserButton from "@/components/auth/EmailPasswordUserButton";
 import {
   Sidebar,
   SidebarContent,
@@ -13,8 +13,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/components/ui/sidebar";
-import AppSidebarFooterContent from "./AppSidebarFooterContent";
 
+
+const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
 
 const items = [
   {
@@ -54,7 +55,13 @@ export default function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <AppSidebarFooterContent />
+        <div className="flex items-center gap-4 p-2 w-full">
+          {authSystem === 'clerk' ? (
+            <ClerkUserButton />
+          ) : (
+            <EmailPasswordUserButton />
+          )}
+        </div>
       </SidebarFooter>
     </Sidebar>
   )
