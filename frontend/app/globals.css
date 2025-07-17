@@ -219,6 +219,37 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Enhanced Task Card Animations */
+  @keyframes completion {
+    0% {
+      transform: scale(1) translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05) translateX(3px) rotate(1deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1.1) translateX(24px) rotate(3deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes uncompletion {
+    0% {
+      transform: scale(1) translateX(0) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05) translateX(-3px) rotate(-1deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1.1) translateX(-24px) rotate(-3deg);
+      opacity: 0;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
     /* Enhanced typography system with improved font stack */
