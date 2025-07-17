@@ -53,7 +53,7 @@ class AiTaskService:
         self.user_id = user_id
         self.logger = logging.getLogger(__name__)
 
-    async def generate_tasks_from_all_sources(self, user: User) -> List[dict]:
+    async def generate_tasks_from_all_sources(self, user: User) -> dict:
         """
         全ての情報源からタスクを生成してデータベースに保存する
 
@@ -61,7 +61,7 @@ class AiTaskService:
             user: ユーザー情報
 
         Returns:
-            生成されたタスクのリスト
+            サービス別の生成されたタスクの辞書
         """
         try:
             # メールからタスクを生成
@@ -70,10 +70,13 @@ class AiTaskService:
             # カレンダーからタスクを生成
             calendar_tasks = await self.generate_tasks_from_calendar_events(user)
 
-            # 全てのタスクを統合
-            all_tasks = email_tasks + calendar_tasks
+            # サービス別にタスクを整理
+            tasks_by_source = {
+                "Gmail": email_tasks,
+                "GoogleCalendar": calendar_tasks
+            }
 
-            return all_tasks
+            return tasks_by_source
 
         except Exception as e:
             self.logger.error(f"全ての情報源からのタスク生成に失敗: {str(e)}")

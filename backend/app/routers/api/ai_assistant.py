@@ -2,7 +2,7 @@ from app.database import get_session
 from app.models.ai_assistant import (
     AIRequestModel,
     AIResponseModel,
-    GeneratedTaskModel,
+    GeneratedTasksBySourceModel,
 )
 from app.schema import User
 from app.services.ai import AIHub
@@ -27,7 +27,7 @@ async def process_ai_request_endpoint(
     return result
 
 
-@router.post("/generate-from-all", response_model=list[GeneratedTaskModel])
+@router.post("/generate-from-all", response_model=GeneratedTasksBySourceModel)
 async def generate_tasks_from_all_endpoint(
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),

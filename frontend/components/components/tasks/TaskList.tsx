@@ -64,16 +64,45 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       });
 
       if (response.ok) {
+        const data = await response.json();
+
         // タスクが生成されたら一覧を更新
         await fetchTasks();
+
+        // 自動生成完了メッセージを表示
+        const gmailCount = data.Gmail?.length || 0;
+        const calendarCount = data.GoogleCalendar?.length || 0;
+
+        if (gmailCount > 0 || calendarCount > 0) {
+          let message = '自動生成完了 ';
+          if (gmailCount > 0) {
+            message += `Gmail ${gmailCount}件`;
+          }
+          if (calendarCount > 0) {
+            if (gmailCount > 0) message += ' ';
+            message += `GoogleCalendar ${calendarCount}件`;
+          }
+
+          // トーストメッセージを表示（sonnerを使用）
+          const { toast } = await import('sonner');
+          toast.success(message);
+        } else {
+          const { toast } = await import('sonner');
+          toast.info('新しいタスクはありませんでした');
+        }
+
         console.log('タスクが自動生成され、一覧を更新しました');
       } else {
         console.error('タスク生成に失敗しました:', response.status);
+        const { toast } = await import('sonner');
+        toast.error('タスク生成に失敗しました');
         // エラーでもタスク一覧をリフレッシュして最新状態を確認
         await fetchTasks();
       }
     } catch (error) {
       console.error('タスク生成エラー:', error);
+      const { toast } = await import('sonner');
+      toast.error('タスク生成中にエラーが発生しました');
       // エラーが発生してもタスク一覧をリフレッシュ
       await fetchTasks();
     } finally {
