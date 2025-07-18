@@ -23,7 +23,7 @@ function Input({ className, type, error, success, ...props }: InputProps) {
         "placeholder:text-muted-foreground/70 placeholder:font-normal placeholder:tracking-normal placeholder:transition-colors placeholder:duration-200",
         "focus:placeholder:text-muted-foreground/50",
         // Enhanced focus states with smooth transitions and improved ring
-        "focus:border-ring focus:ring-4 focus:ring-ring/15 focus:shadow-md focus:scale-[1.01] transform-gpu",
+        "focus:border-ring focus:ring-4 focus:ring-ring/20 focus:ring-offset-2 focus:ring-offset-background focus:shadow-md focus:scale-[1.01] transform-gpu",
         // Better validation states with clear visual indicators and animations
         "aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15 aria-invalid:shadow-destructive/10",
         "data-[error=true]:border-destructive data-[error=true]:ring-4 data-[error=true]:ring-destructive/15 data-[error=true]:shadow-destructive/10",
