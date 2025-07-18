@@ -36,7 +36,6 @@ export default function ClerkUserButton() {
           },
         }}
         showName={true}
-        afterSignOutUrl="/"
       />
     </div>
   )
