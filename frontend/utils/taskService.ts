@@ -1,13 +1,5 @@
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 
-export interface ApiResponse<T> {
-  data?: T;
-  error?: {
-    message: string;
-    status: number;
-  };
-}
-
 export class TaskService {
   private static readonly BASE_URL = '/api/tasks';
 
