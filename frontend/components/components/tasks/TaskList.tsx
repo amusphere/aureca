@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 import { CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccessibility } from "../../hooks/useAccessibility";
 import { useTasks } from "../../hooks/useTasks";
 import { EmptyState } from "../commons/EmptyState";
@@ -22,6 +22,9 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+
+  // 初期データ読み込み完了フラグ（チラつき防止）
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
   // アクセシビリティフック
   const { announce } = useAccessibility();
@@ -42,6 +45,13 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     error,
     clearError,
   } = useTasks();
+
+  // 初期データ読み込み完了を管理（チラつき防止）
+  useEffect(() => {
+    if (!isLoading && !isGeneratingTasks) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [isLoading, isGeneratingTasks]);
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTask(taskData);
@@ -131,7 +141,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
       )}
 
       {/* Action Buttons with enhanced accessibility */}
-      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg border border-border/30 animate-fade-in-down" role="toolbar" aria-label="タスク操作">
+      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-lg border border-border/30" role="toolbar" aria-label="タスク操作">
         <Button
           variant="ghost"
           size="sm"
@@ -265,19 +275,19 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
               aria-labelledby="active-tasks-tab"
               aria-hidden={activeTab !== "active"}
               className={`
-                absolute inset-0 transition-opacity duration-150 ease-out
+                absolute inset-0
                 ${activeTab === "active" ? "opacity-100" : "opacity-0 pointer-events-none"}
               `}
             >
-              {activeTasks.length === 0 ? (
+              {activeTasks.length === 0 && hasInitiallyLoaded ? (
                 <EmptyState
                   type="no-tasks"
                   onAction={() => setIsTaskFormOpen(true)}
                   size="md"
                   className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
                 />
-              ) : (
-                <div className="space-y-3 stagger-children" role="list" aria-label="アクティブなタスク一覧">
+              ) : activeTasks.length > 0 ? (
+                <div className="space-y-3" role="list" aria-label="アクティブなタスク一覧">
                   {activeTasks.map((task) => (
                     <div key={task.uuid} role="listitem">
                       <TaskCard
@@ -290,7 +300,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* -- Completed Tasks Panel (kept mounted) -- */}
@@ -300,11 +310,11 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
               aria-labelledby="completed-tasks-tab"
               aria-hidden={activeTab !== "completed"}
               className={`
-                absolute inset-0 transition-opacity duration-150 ease-out
+                absolute inset-0
                 ${activeTab === "completed" ? "opacity-100" : "opacity-0 pointer-events-none"}
               `}
             >
-              {completedTasks.length === 0 ? (
+              {completedTasks.length === 0 && hasInitiallyLoaded ? (
                 <EmptyState
                   type="completed"
                   title="完了したタスクがありません"
@@ -314,8 +324,8 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                   size="md"
                   className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
                 />
-              ) : (
-                <div className="space-y-3 stagger-children" role="list" aria-label="完了済みタスク一覧">
+              ) : completedTasks.length > 0 ? (
+                <div className="space-y-3" role="list" aria-label="完了済みタスク一覧">
                   {completedTasks.map((task) => (
                     <div key={task.uuid} role="listitem">
                       <TaskCard
@@ -329,7 +339,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                     </div>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}
