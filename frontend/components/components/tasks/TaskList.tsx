@@ -257,66 +257,80 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
             />
           </div>
         ) : (
-          <div
-            role="tabpanel"
-            id={activeTab === "active" ? "active-tasks-panel" : "completed-tasks-panel"}
-            aria-labelledby={activeTab === "active" ? "active-tasks-tab" : "completed-tasks-tab"}
-          >
-            {(() => {
-              if (activeTab === "active") {
-                return activeTasks.length === 0 ? (
-                  <EmptyState
-                    key="active-empty"
-                    type="no-tasks"
-                    onAction={() => setIsTaskFormOpen(true)}
-                    size="md"
-                    className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
-                  />
-                ) : (
-                  <div key="active-tasks" className="space-y-3 stagger-children" role="list" aria-label="アクティブなタスク一覧">
-                    {activeTasks.map((task) => (
-                      <div key={task.uuid} role="listitem">
-                        <TaskCard
-                          task={task}
-                          isCompleting={completingTasks.has(task.uuid)}
-                          onToggleComplete={toggleTaskComplete}
-                          onEdit={handleEditTask}
-                          onDelete={onDeleteTask || deleteTask}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                );
-              } else {
-                return completedTasks.length === 0 ? (
-                  <EmptyState
-                    key="completed-empty"
-                    type="completed"
-                    title="完了したタスクがありません"
-                    description="タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。"
-                    actionLabel="アクティブタスクを見る"
-                    onAction={() => setActiveTab("active")}
-                    size="md"
-                    className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
-                  />
-                ) : (
-                  <div key="completed-tasks" className="space-y-3 stagger-children" role="list" aria-label="完了済みタスク一覧">
-                    {completedTasks.map((task) => (
-                      <div key={task.uuid} role="listitem">
-                        <TaskCard
-                          task={task}
-                          isCompleting={false}
-                          isUncompleting={uncompletingTasks.has(task.uuid)}
-                          onToggleComplete={toggleTaskComplete}
-                          onEdit={handleEditTask}
-                          onDelete={onDeleteTask || deleteTask}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-            })()}
+          <div className="relative min-h-[250px]">
+            {/* -- Active Tasks Panel (kept mounted) -- */}
+            <div
+              role="tabpanel"
+              id="active-tasks-panel"
+              aria-labelledby="active-tasks-tab"
+              aria-hidden={activeTab !== "active"}
+              className={`
+                absolute inset-0 transition-opacity duration-150 ease-out
+                ${activeTab === "active" ? "opacity-100" : "opacity-0 pointer-events-none"}
+              `}
+            >
+              {activeTasks.length === 0 ? (
+                <EmptyState
+                  type="no-tasks"
+                  onAction={() => setIsTaskFormOpen(true)}
+                  size="md"
+                  className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
+                />
+              ) : (
+                <div className="space-y-3 stagger-children" role="list" aria-label="アクティブなタスク一覧">
+                  {activeTasks.map((task) => (
+                    <div key={task.uuid} role="listitem">
+                      <TaskCard
+                        task={task}
+                        isCompleting={completingTasks.has(task.uuid)}
+                        onToggleComplete={toggleTaskComplete}
+                        onEdit={handleEditTask}
+                        onDelete={onDeleteTask || deleteTask}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* -- Completed Tasks Panel (kept mounted) -- */}
+            <div
+              role="tabpanel"
+              id="completed-tasks-panel"
+              aria-labelledby="completed-tasks-tab"
+              aria-hidden={activeTab !== "completed"}
+              className={`
+                absolute inset-0 transition-opacity duration-150 ease-out
+                ${activeTab === "completed" ? "opacity-100" : "opacity-0 pointer-events-none"}
+              `}
+            >
+              {completedTasks.length === 0 ? (
+                <EmptyState
+                  type="completed"
+                  title="完了したタスクがありません"
+                  description="タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。"
+                  actionLabel="アクティブタスクを見る"
+                  onAction={() => setActiveTab("active")}
+                  size="md"
+                  className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
+                />
+              ) : (
+                <div className="space-y-3 stagger-children" role="list" aria-label="完了済みタスク一覧">
+                  {completedTasks.map((task) => (
+                    <div key={task.uuid} role="listitem">
+                      <TaskCard
+                        task={task}
+                        isCompleting={false}
+                        isUncompleting={uncompletingTasks.has(task.uuid)}
+                        onToggleComplete={toggleTaskComplete}
+                        onEdit={handleEditTask}
+                        onDelete={onDeleteTask || deleteTask}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
