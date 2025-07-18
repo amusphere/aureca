@@ -43,8 +43,7 @@ export default function GoogleCalendarConnection() {
       const response = await fetch("/api/auth/google/status");
       const data = await response.json();
       setStatus(data);
-    } catch (error) {
-      console.error("Failed to fetch Google connection status:", error);
+    } catch {
       setStatus({ connected: false, error: "状態の取得に失敗しました" });
     } finally {
       setLoading(false);
@@ -76,8 +75,7 @@ export default function GoogleCalendarConnection() {
       } else {
         throw new Error(data.error || "連携解除に失敗しました");
       }
-    } catch (error) {
-      console.error("Failed to disconnect Google account:", error);
+    } catch {
       toast.error("連携解除中にエラーが発生しました。");
     } finally {
       setDisconnecting(false);

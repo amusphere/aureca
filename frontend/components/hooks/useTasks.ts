@@ -62,8 +62,8 @@ export function useTasks(): UseTasksReturn {
           setCompletedTasks(completedData);
         },
         {
-          onError: (error) => {
-            console.error("Error fetching tasks:", error.message);
+          onError: () => {
+            // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
@@ -81,7 +81,6 @@ export function useTasks(): UseTasksReturn {
       },
       {
         onError: (error) => {
-          console.error("Failed to create task:", error.message);
           throw error; // Re-throw for form error handling
         }
       }
@@ -107,8 +106,7 @@ export function useTasks(): UseTasksReturn {
         );
       },
       {
-        onError: (error) => {
-          console.error("Failed to update task:", error.message);
+        onError: () => {
           // Refresh data on error
           fetchTasks();
         }
@@ -163,7 +161,7 @@ export function useTasks(): UseTasksReturn {
         }, ANIMATION_DURATION);
       },
       {
-        onError: (error) => {
+        onError: () => {
           // Clean up animation states on error
           setCompletingTasks(prev => {
             const newSet = new Set(prev);
@@ -176,7 +174,6 @@ export function useTasks(): UseTasksReturn {
             return newSet;
           });
 
-          console.error("Failed to update task:", error.message);
           // Refresh data on error
           fetchTasks();
         }
@@ -198,8 +195,7 @@ export function useTasks(): UseTasksReturn {
         setCompletedTasks(prev => prev.filter(t => t.uuid !== taskUuid));
       },
       {
-        onError: (error) => {
-          console.error("Failed to delete task:", error.message);
+        onError: () => {
           // Refresh data on error
           fetchTasks();
         }

@@ -146,33 +146,34 @@ export function EmptyState({
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center text-center",
+      "flex flex-col items-center justify-center text-center animate-fade-in-up",
       currentSize.container,
       className
     )}>
       {showIcon && (
         <div className={cn(
-          "rounded-full p-4 mb-4",
+          "rounded-full p-4 mb-4 transition-all duration-300 ease-out hover:scale-110 animate-gentle-bounce",
           config.bgColor
         )}>
           <IconComponent className={cn(
             currentSize.icon,
-            config.iconColor
+            config.iconColor,
+            "transition-transform duration-300"
           )} />
         </div>
       )}
 
       <h3 className={cn(
-        "font-semibold text-foreground mb-2",
+        "font-semibold text-foreground mb-2 animate-fade-in-up",
         currentSize.title
-      )}>
+      )} style={{ animationDelay: '0.1s' }}>
         {title || config.title}
       </h3>
 
       <p className={cn(
-        "text-muted-foreground mb-6 max-w-md leading-relaxed",
+        "text-muted-foreground mb-6 max-w-md leading-relaxed animate-fade-in-up",
         currentSize.description
-      )}>
+      )} style={{ animationDelay: '0.2s' }}>
         {description || config.description}
       </p>
 
@@ -180,14 +181,15 @@ export function EmptyState({
         <Button
           onClick={onAction}
           className={cn(
-            "transition-all duration-200 hover:scale-105",
+            "transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:shadow-lg animate-fade-in-up",
             currentSize.button
           )}
+          style={{ animationDelay: '0.3s' }}
         >
           {type === 'error' || type === 'offline' ? (
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2 transition-transform duration-200" />
           ) : (
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 transition-transform duration-200" />
           )}
           {actionLabel || config.actionLabel}
         </Button>

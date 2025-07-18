@@ -69,8 +69,8 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
         form.reset(); // 新規作成時のみリセット
       }
       onClose();
-    } catch (error) {
-      console.error("Failed to submit task:", error);
+    } catch {
+      // エラーハンドリングは上位コンポーネントで処理
     } finally {
       setIsSubmitting(false);
     }

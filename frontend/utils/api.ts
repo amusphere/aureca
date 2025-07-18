@@ -37,7 +37,10 @@ export interface ApiResponse<T = any> {
  * API呼び出しのエラーハンドリング
  */
 const handleError = (error: any): ApiError => {
-  console.error('API Error:', error);
+  // API エラーログは開発環境でのみ出力
+  if (process.env.NODE_ENV === 'development') {
+    console.error('API Error:', error);
+  }
 
   if (error instanceof Response) {
     return {
@@ -65,7 +68,9 @@ const getAccessToken = async (): Promise<string | null> => {
       const { getToken } = await auth();
       return getToken();
     } catch (error) {
-      console.error('Failed to load Clerk auth:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load Clerk auth:', error);
+      }
       return null;
     }
   }

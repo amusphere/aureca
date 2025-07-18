@@ -41,32 +41,50 @@ export default function AIChatInput({
   const canSend = message.trim().length > 0 && !isLoading;
 
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-3", className)}>
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
+      <div className="relative">
         <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="min-h-[80px] max-h-[120px] resize-none w-full text-base"
+          className={cn(
+            "min-h-[88px] max-h-[140px] resize-none w-full",
+            "text-base leading-relaxed",
+            "border-border/50 focus:border-primary/50",
+            "bg-background/80 backdrop-blur-sm",
+            "rounded-2xl px-4 py-3",
+            "transition-all duration-200",
+            "focus:shadow-md focus:shadow-primary/10",
+            "placeholder:text-muted-foreground/70"
+          )}
           disabled={isLoading}
           rows={2}
         />
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          Shift+Enter で送信
-        </p>
+        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+          <p className="text-xs text-muted-foreground/80 hidden sm:block font-medium">
+            Shift+Enter で送信
+          </p>
+        </div>
       </div>
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <div className="text-xs text-muted-foreground/60">
+          {message.length > 0 && (
+            <span className="font-medium">{message.length} 文字</span>
+          )}
+        </div>
         <Button
           type="submit"
           disabled={!canSend}
           className={cn(
-            "h-12 px-6",
-            "bg-primary hover:bg-primary/90 disabled:opacity-50",
-            "text-primary-foreground font-medium",
-            "rounded-full shadow-sm",
-            "transition-all duration-200 ease-in-out",
-            "flex items-center gap-2",
+            "h-11 px-6",
+            "bg-primary hover:bg-primary/90 disabled:opacity-40",
+            "text-primary-foreground font-semibold",
+            "rounded-full shadow-lg hover:shadow-xl",
+            "transition-all duration-200 ease-out",
+            "flex items-center gap-2.5",
+            "hover:scale-105 active:scale-95",
+            "disabled:hover:scale-100",
             // モバイルでのタッチターゲットサイズを確保
             "min-w-[48px] min-h-[48px]"
           )}
@@ -79,7 +97,7 @@ export default function AIChatInput({
             </>
           ) : (
             <>
-              <Send size={18} />
+              <Send size={16} className="transition-transform duration-200" />
               <span className="hidden sm:inline">送信</span>
             </>
           )}

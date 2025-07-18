@@ -45,31 +45,31 @@ export function LoadingSpinner({
 
   if (variant === "dots") {
     return (
-      <div className={cn("flex items-center justify-center gap-2", className)}>
-        <div className="flex space-x-1">
+      <div className={cn("flex items-center justify-center gap-2 animate-fade-in-up", className)}>
+        <div className="flex space-x-1 animate-loading-dots">
           <div className={cn(
-            "rounded-full animate-pulse",
+            "rounded-full dot",
             sizeClasses[size],
             colorClasses[color],
-            "bg-current opacity-75"
-          )} style={{ animationDelay: "0ms" }} />
+            "bg-current"
+          )} />
           <div className={cn(
-            "rounded-full animate-pulse",
+            "rounded-full dot",
             sizeClasses[size],
             colorClasses[color],
-            "bg-current opacity-75"
-          )} style={{ animationDelay: "150ms" }} />
+            "bg-current"
+          )} />
           <div className={cn(
-            "rounded-full animate-pulse",
+            "rounded-full dot",
             sizeClasses[size],
             colorClasses[color],
-            "bg-current opacity-75"
-          )} style={{ animationDelay: "300ms" }} />
+            "bg-current"
+          )} />
         </div>
         {text && (
           <span className={cn(
             textSizeClasses[size],
-            "text-muted-foreground font-medium"
+            "text-muted-foreground font-medium animate-subtle-pulse"
           )}>
             {text}
           </span>
@@ -80,9 +80,9 @@ export function LoadingSpinner({
 
   if (variant === "pulse") {
     return (
-      <div className={cn("flex items-center justify-center gap-3", className)}>
+      <div className={cn("flex items-center justify-center gap-3 animate-fade-in-up", className)}>
         <div className={cn(
-          "rounded-full animate-pulse",
+          "rounded-full animate-subtle-pulse",
           sizeClasses[size],
           colorClasses[color],
           "bg-current"
@@ -90,7 +90,7 @@ export function LoadingSpinner({
         {text && (
           <span className={cn(
             textSizeClasses[size],
-            "text-muted-foreground font-medium animate-pulse"
+            "text-muted-foreground font-medium animate-subtle-pulse"
           )}>
             {text}
           </span>
@@ -101,16 +101,16 @@ export function LoadingSpinner({
 
   if (variant === "minimal") {
     return (
-      <div className={cn("flex items-center justify-center gap-2", className)}>
+      <div className={cn("flex items-center justify-center gap-2 animate-fade-in-up", className)}>
         <div className={cn(
-          "border-2 border-current border-t-transparent rounded-full animate-spin",
+          "border-2 border-current border-t-transparent rounded-full animate-spin transition-all duration-300 ease-out",
           sizeClasses[size],
           colorClasses[color]
         )} />
         {text && (
           <span className={cn(
             textSizeClasses[size],
-            "text-muted-foreground"
+            "text-muted-foreground transition-all duration-300"
           )}>
             {text}
           </span>
@@ -121,16 +121,16 @@ export function LoadingSpinner({
 
   // Default variant
   return (
-    <div className={cn("flex items-center justify-center gap-3", className)}>
+    <div className={cn("flex items-center justify-center gap-3 animate-fade-in-up", className)}>
       <Loader2 className={cn(
-        "animate-spin transition-all duration-200",
+        "animate-spin transition-all duration-300 ease-out",
         sizeClasses[size],
         colorClasses[color]
       )} />
       {text && (
         <span className={cn(
           textSizeClasses[size],
-          "text-muted-foreground font-medium"
+          "text-muted-foreground font-medium transition-all duration-300"
         )}>
           {text}
         </span>

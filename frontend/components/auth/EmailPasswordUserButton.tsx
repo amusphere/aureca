@@ -16,11 +16,10 @@ export default function EmailPasswordUserButton() {
         const user = await response.json();
         setUser(user);
       } else {
-        console.error("Failed to fetch user data");
         setUser(null);
       }
-    }).catch(error => {
-      console.error("Error fetching user data:", error);
+    }).catch(() => {
+      // エラーハンドリングは上位コンポーネントで処理
     });
   }, []);
 

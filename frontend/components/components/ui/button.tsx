@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/components/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-300 ease-out disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:border-ring active:scale-[0.97] transform-gpu relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:opacity-0 before:transition-all before:duration-300 hover:before:opacity-15 after:absolute after:inset-0 after:bg-gradient-to-t after:from-white/10 after:to-transparent after:opacity-0 after:transition-all after:duration-300 hover:after:opacity-100 backdrop-blur-sm",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-300 ease-out disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-4 focus-visible:ring-ring/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:border-ring focus-visible:shadow-lg active:scale-[0.97] transform-gpu relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:opacity-0 before:transition-all before:duration-300 hover:before:opacity-15 after:absolute after:inset-0 after:bg-gradient-to-t after:from-white/10 after:to-transparent after:opacity-0 after:transition-all after:duration-300 hover:after:opacity-100 backdrop-blur-sm",
   {
     variants: {
       variant: {
