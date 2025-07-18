@@ -5,15 +5,9 @@
 import {
   announceToScreenReader,
   auditAccessibility,
-  checkWCAGCompliance,
-  enableKeyboardNavigation,
-  getCurrentBreakpoint,
-  manageFocus,
-  trapFocus,
-  watchBreakpointChanges
+  enableKeyboardNavigation
 } from '@/utils/accessibility';
-import { startPerformanceMonitoring } from '@/utils/performanceTest';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export function useAccessibility() {
   // キーボードナビゲーションの初期化
@@ -66,92 +60,5 @@ export function useAccessibility() {
   return {
     announce,
     runAudit
-  };
-}
-
-// レスポンシブデザイン対応のフック
-export function useResponsiveDesign() {
-  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
-
-  useEffect(() => {
-    // 初期ブレークポイントを設定
-    setBreakpoint(getCurrentBreakpoint());
-
-    // ブレークポイントの変更を監視
-    const cleanup = watchBreakpointChanges((newBreakpoint) => {
-      setBreakpoint(newBreakpoint as 'mobile' | 'tablet' | 'desktop');
-    });
-
-    return cleanup;
-  }, []);
-
-  return {
-    breakpoint,
-    isMobile: breakpoint === 'mobile',
-    isTablet: breakpoint === 'tablet',
-    isDesktop: breakpoint === 'desktop'
-  };
-}
-
-// パフォーマンス監視のフック
-export function usePerformanceMonitoring() {
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      const stopMonitoring = startPerformanceMonitoring();
-      return stopMonitoring;
-    }
-  }, []);
-
-  const measureComponentRender = useCallback((componentName: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      performance.mark(`${componentName}-start`);
-
-      return () => {
-        performance.mark(`${componentName}-end`);
-        performance.measure(
-          `${componentName}-render`,
-          `${componentName}-start`,
-          `${componentName}-end`
-        );
-      };
-    }
-
-    return () => { }; // 本番環境では何もしない
-  }, []);
-
-  return {
-    measureComponentRender
-  };
-}
-
-// WCAG準拠チェックのフック
-export function useWCAGCompliance() {
-  const checkColorContrast = useCallback((foreground: string, background: string) => {
-    return checkWCAGCompliance(foreground, background);
-  }, []);
-
-  const auditPageAccessibility = useCallback(() => {
-    return auditAccessibility();
-  }, []);
-
-  return {
-    checkColorContrast,
-    auditPageAccessibility
-  };
-}
-
-// フォーカス管理のフック
-export function useFocusManagement() {
-  const trapFocusInContainer = useCallback((container: HTMLElement) => {
-    return trapFocus(container);
-  }, []);
-
-  const manageFocusElement = useCallback((element: HTMLElement | null) => {
-    manageFocus(element);
-  }, []);
-
-  return {
-    trapFocus: trapFocusInContainer,
-    manageFocus: manageFocusElement
   };
 }

@@ -28,8 +28,6 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
 
   // アクセシビリティフック
   const { announce } = useAccessibility();
-  // レスポンシブデザインフック（将来の拡張用）
-  // const { isMobile, isTablet } = useResponsiveDesign();
 
   const {
     activeTasks,
