@@ -1,10 +1,9 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/components/ui/alert";
 import { Button } from "@/components/components/ui/button";
-import { AlertCircle, RefreshCw, X, WifiOff, AlertTriangle, Server } from "lucide-react";
-import { ErrorState } from "../../hooks/useErrorHandling";
 import { cn } from "@/components/lib/utils";
+import { AlertCircle, AlertTriangle, RefreshCw, Server, WifiOff, X } from "lucide-react";
+import { ErrorState } from "../../hooks/useErrorHandling";
 
 interface ErrorDisplayProps {
   error: ErrorState | string;
@@ -145,60 +144,35 @@ export function ErrorDisplay({
   }
 
   return (
-    <Alert
+    <div
       className={cn(
-        "mb-6 border-l-4 shadow-sm animate-fade-in-up",
+        "flex items-center gap-2 p-2 mb-2 rounded-md border-l-4 text-sm relative",
         config.bgColor,
         config.borderColor,
         "border-l-current",
         className
       )}
     >
-      <div className="flex items-start gap-3">
-        <IconComponent className={cn("h-5 w-5 mt-0.5 flex-shrink-0 animate-gentle-bounce", config.iconColor)} />
-        <div className="flex-1 min-w-0">
-          <AlertTitle className={cn(
-            "text-base font-semibold mb-2 flex items-center justify-between",
-            config.titleColor
-          )}>
-            <span>{config.title}</span>
-            <div className="flex items-center gap-2">
-              {errorState.retryable && onRetry && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onRetry}
-                  className={cn(
-                    "h-8 px-3 text-xs font-medium transition-all duration-300 ease-out",
-                    "hover:scale-105 hover:shadow-sm active:scale-95",
-                    "border-current/20 hover:border-current/40",
-                    "bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
-                  )}
-                >
-                  <RefreshCw className="h-3 w-3 mr-2 transition-transform duration-200" />
-                  再試行
-                </Button>
-              )}
-              {onDismiss && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDismiss}
-                  className={cn(
-                    "h-8 w-8 p-0 transition-all duration-300 ease-out",
-                    "hover:scale-105 hover:bg-white/50 dark:hover:bg-black/20 active:scale-95"
-                  )}
-                >
-                  <X className="h-4 w-4 transition-transform duration-200" />
-                </Button>
-              )}
-            </div>
-          </AlertTitle>
-          <AlertDescription className="text-sm leading-relaxed text-muted-foreground">
-            {errorState.message || config.description}
-          </AlertDescription>
-        </div>
+      <IconComponent className={cn("h-4 w-4 flex-shrink-0", config.iconColor)} />
+      <div className="flex-1 min-w-0 pr-6">
+        <span className={cn("font-medium", config.titleColor)}>
+          {config.title}:
+        </span>{" "}
+        <span className="text-muted-foreground">
+          {errorState.message || config.description}
+        </span>
       </div>
-    </Alert>
+      {onDismiss && (
+        <button
+          onClick={onDismiss}
+          className={cn(
+            "absolute top-1 right-1 h-5 w-5 flex items-center justify-center rounded transition-colors",
+            "hover:bg-black/10 dark:hover:bg-white/10"
+          )}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }
