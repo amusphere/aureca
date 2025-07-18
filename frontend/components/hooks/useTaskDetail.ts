@@ -49,7 +49,7 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
           return updatedTask;
         },
         {
-          onError: (error) => {
+          onError: () => {
             // エラーハンドリングは上位コンポーネントで処理
           }
         }
@@ -75,12 +75,12 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
           return updatedTask;
         },
         {
-          onError: (error) => {
+          onError: () => {
             // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
-    } catch (error) {
+    } catch {
       // エラーハンドリングは上位コンポーネントで処理
     }
   }, [currentTask.uuid, withErrorHandling]);
@@ -98,12 +98,12 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
           router.push('/home');
         },
         {
-          onError: (error) => {
+          onError: () => {
             // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
-    } catch (error) {
+    } catch {
       // エラーハンドリングは上位コンポーネントで処理
     }
   }, [currentTask.uuid, withErrorHandling, router]);

@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
       } else {
         toast.error(responseData.error || "An error occurred while processing your request.");
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred while sending your request.");
     } finally {
       setIsSubmitting(false);

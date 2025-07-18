@@ -18,7 +18,7 @@ export default function EmailPasswordUserButton() {
       } else {
         setUser(null);
       }
-    }).catch(error => {
+    }).catch(() => {
       // エラーハンドリングは上位コンポーネントで処理
     });
   }, []);

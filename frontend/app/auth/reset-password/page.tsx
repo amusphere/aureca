@@ -91,7 +91,7 @@ function ResetPasswordForm() {
         }
         toast.error(errorMessage);
       }
-    } catch (error) {
+    } catch {
       toast.error("An error occurred while sending your request.");
     } finally {
       setIsSubmitting(false);

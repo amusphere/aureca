@@ -26,14 +26,14 @@ export default function SignOutPage() {
               await clerk.signOut();
               return;
             }
-          } catch (clerkError) {
+          } catch {
             // Clerk not available - continue with fallback
           }
         } else if (authSystem === 'email_password') {
           // Use API endpoint for email/password auth
           try {
             await fetch('/api/auth/signout');
-          } catch (apiError) {
+          } catch {
             // API signout failed - continue with fallback
           }
         }
@@ -41,7 +41,7 @@ export default function SignOutPage() {
         // Fallback: redirect to home page
         window.location.href = "/";
 
-      } catch (error) {
+      } catch {
         setError("Failed to sign out. Redirecting to home...");
         setTimeout(() => {
           window.location.href = "/";

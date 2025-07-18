@@ -37,7 +37,7 @@ export default async function TaskDetailRoute({ params }: TaskDetailRouteProps) 
     const task = response.data as Task;
 
     return <TaskDetailPage task={task} />;
-  } catch (error) {
+  } catch {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="text-center text-red-600">

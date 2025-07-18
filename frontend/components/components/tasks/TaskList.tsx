@@ -113,7 +113,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         // エラーでもタスク一覧をリフレッシュして最新状態を確認
         await fetchTasks();
       }
-    } catch (error) {
+    } catch {
       const { toast } = await import('sonner');
       toast.error('タスク生成中にエラーが発生しました');
       // エラーが発生してもタスク一覧をリフレッシュ

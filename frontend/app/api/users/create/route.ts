@@ -5,7 +5,7 @@ export async function GET() {
   // Redirect from clerk in signin flow
   try {
     await apiPost("/users/create");
-  } catch (error) {
+  } catch {
     // エラーハンドリングは上位で処理
   }
 

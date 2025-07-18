@@ -56,7 +56,7 @@ export function EmailSourceComponent({
       try {
         await onDeleteDraft(source);
         await onGenerateDraft(source);
-      } catch (error) {
+      } catch {
         // エラーハンドリングは上位コンポーネントで処理
       }
     };
