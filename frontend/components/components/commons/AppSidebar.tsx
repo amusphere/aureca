@@ -88,7 +88,7 @@ export default function AppSidebar() {
                           className={`h-4 w-4 transition-all duration-300 ${isActive
                             ? 'text-primary scale-110'
                             : 'text-sidebar-foreground/70 group-hover:text-sidebar-foreground group-hover:scale-105'
-                          }`}
+                            }`}
                           aria-hidden="true"
                         />
                         <span className="text-sm font-medium tracking-tight leading-none truncate">{item.title}</span>
@@ -113,7 +113,7 @@ export default function AppSidebar() {
       <SidebarFooter className="px-4 sm:px-7 py-4 sm:py-5 border-t border-sidebar-border/25 bg-gradient-to-r from-sidebar/90 to-sidebar/95 backdrop-blur-sm">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-            <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg bg-sidebar-accent/40 border border-sidebar-border/20 backdrop-blur-sm">
+            <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg bg-sidebar-accent/40 border border-sidebar-border/20 backdrop-blur-sm relative z-10">
               {authSystem === 'clerk' ? (
                 <ClerkUserButton />
               ) : (
