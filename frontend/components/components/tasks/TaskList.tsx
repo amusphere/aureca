@@ -1,15 +1,14 @@
 "use client";
 
 import { Button } from "@/components/components/ui/button";
-import { Card, CardContent } from "@/components/components/ui/card";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
-import { PlusIcon, RefreshCwIcon, SparklesIcon, ClipboardList, CheckCheck } from "lucide-react";
+import { CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
 import { useState } from "react";
-import { useTasks } from "../../hooks/useTasks";
 import { useAccessibility } from "../../hooks/useAccessibility";
+import { useTasks } from "../../hooks/useTasks";
+import { EmptyState } from "../commons/EmptyState";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { LoadingSpinner } from "../commons/LoadingSpinner";
-import { EmptyState } from "../commons/EmptyState";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 
@@ -118,28 +117,6 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
     }
   };
 
-  // Enhanced loading state with better visual feedback
-  if (isLoading || isGeneratingTasks) {
-    return (
-      <div className="w-full max-w-none">
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-background to-muted/20">
-          <CardContent className="py-12 px-6">
-            <LoadingSpinner
-              size="lg"
-              variant="default"
-              color="primary"
-              text={isGeneratingTasks
-                ? 'メールやカレンダーからタスクを作成しています...'
-                : 'タスクデータを取得しています...'
-              }
-              className="flex-col"
-            />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-none space-y-6">
       {/* Error Display with improved spacing */}
@@ -159,11 +136,11 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           variant="ghost"
           size="sm"
           onClick={fetchTasks}
-          disabled={isGeneratingTasks}
+          disabled={isLoading || isGeneratingTasks}
           aria-label="タスク一覧を更新"
           className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
         >
-          <RefreshCwIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-spin' : ''}`} aria-hidden="true" />
+          <RefreshCwIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isLoading || isGeneratingTasks ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span className="hidden sm:inline">更新</span>
           <span className="sr-only sm:hidden">タスク一覧を更新</span>
         </Button>
@@ -172,7 +149,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           variant="ghost"
           size="sm"
           onClick={handleGenerateTasks}
-          disabled={isGeneratingTasks}
+          disabled={isLoading || isGeneratingTasks}
           aria-label="メールやカレンダーからタスクを自動生成"
           aria-busy={isGeneratingTasks}
           className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
@@ -185,7 +162,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
         <Button
           onClick={() => setIsTaskFormOpen(true)}
           size="sm"
-          disabled={isGeneratingTasks}
+          disabled={isLoading || isGeneratingTasks}
           aria-label="新しいタスクを作成"
           className="h-8 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95 hover:shadow-md"
         >
@@ -265,71 +242,83 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
 
       {/* Enhanced Task Content with improved spacing and accessibility */}
       <div className="space-y-3">
-        <div
-          role="tabpanel"
-          id="active-tasks-panel"
-          aria-labelledby="active-tasks-tab"
-          hidden={activeTab !== "active"}
-          className={activeTab === "active" ? "" : "hidden"}
-        >
-          {activeTasks.length === 0 ? (
-            <EmptyState
-              type="no-tasks"
-              onAction={() => setIsTaskFormOpen(true)}
-              size="md"
-              className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
+        {/* Loading state for task content area only */}
+        {isLoading || isGeneratingTasks ? (
+          <div className="py-12 px-6 text-center">
+            <LoadingSpinner
+              size="lg"
+              variant="default"
+              color="primary"
+              text={isGeneratingTasks
+                ? 'メールやカレンダーからタスクを作成しています...'
+                : 'タスクデータを取得しています...'
+              }
+              className="flex-col"
             />
-          ) : (
-            <div className="space-y-3 stagger-children" role="list" aria-label="アクティブなタスク一覧">
-              {activeTasks.map((task) => (
-                <div key={task.uuid} role="listitem">
-                  <TaskCard
-                    task={task}
-                    isCompleting={completingTasks.has(task.uuid)}
-                    onToggleComplete={toggleTaskComplete}
-                    onEdit={handleEditTask}
-                    onDelete={onDeleteTask || deleteTask}
+          </div>
+        ) : (
+          <div
+            role="tabpanel"
+            id={activeTab === "active" ? "active-tasks-panel" : "completed-tasks-panel"}
+            aria-labelledby={activeTab === "active" ? "active-tasks-tab" : "completed-tasks-tab"}
+          >
+            {(() => {
+              if (activeTab === "active") {
+                return activeTasks.length === 0 ? (
+                  <EmptyState
+                    key="active-empty"
+                    type="no-tasks"
+                    onAction={() => setIsTaskFormOpen(true)}
+                    size="md"
+                    className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
                   />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div
-          role="tabpanel"
-          id="completed-tasks-panel"
-          aria-labelledby="completed-tasks-tab"
-          hidden={activeTab !== "completed"}
-          className={activeTab === "completed" ? "" : "hidden"}
-        >
-          {completedTasks.length === 0 ? (
-            <EmptyState
-              type="completed"
-              title="完了したタスクがありません"
-              description="タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。"
-              actionLabel="アクティブタスクを見る"
-              onAction={() => setActiveTab("active")}
-              size="md"
-              className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
-            />
-          ) : (
-            <div className="space-y-3 stagger-children" role="list" aria-label="完了済みタスク一覧">
-              {completedTasks.map((task) => (
-                <div key={task.uuid} role="listitem">
-                  <TaskCard
-                    task={task}
-                    isCompleting={false}
-                    isUncompleting={uncompletingTasks.has(task.uuid)}
-                    onToggleComplete={toggleTaskComplete}
-                    onEdit={handleEditTask}
-                    onDelete={onDeleteTask || deleteTask}
+                ) : (
+                  <div key="active-tasks" className="space-y-3 stagger-children" role="list" aria-label="アクティブなタスク一覧">
+                    {activeTasks.map((task) => (
+                      <div key={task.uuid} role="listitem">
+                        <TaskCard
+                          task={task}
+                          isCompleting={completingTasks.has(task.uuid)}
+                          onToggleComplete={toggleTaskComplete}
+                          onEdit={handleEditTask}
+                          onDelete={onDeleteTask || deleteTask}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              } else {
+                return completedTasks.length === 0 ? (
+                  <EmptyState
+                    key="completed-empty"
+                    type="completed"
+                    title="完了したタスクがありません"
+                    description="タスクを完了すると、ここに表示されます。まずはアクティブなタスクを作成してみましょう。"
+                    actionLabel="アクティブタスクを見る"
+                    onAction={() => setActiveTab("active")}
+                    size="md"
+                    className="border-dashed border-2 border-border/50 bg-gradient-to-br from-background to-muted/20 rounded-lg"
                   />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ) : (
+                  <div key="completed-tasks" className="space-y-3 stagger-children" role="list" aria-label="完了済みタスク一覧">
+                    {completedTasks.map((task) => (
+                      <div key={task.uuid} role="listitem">
+                        <TaskCard
+                          task={task}
+                          isCompleting={false}
+                          isUncompleting={uncompletingTasks.has(task.uuid)}
+                          onToggleComplete={toggleTaskComplete}
+                          onEdit={handleEditTask}
+                          onDelete={onDeleteTask || deleteTask}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            })()}
+          </div>
+        )}
       </div>
 
       {/* タスク作成フォーム */}
