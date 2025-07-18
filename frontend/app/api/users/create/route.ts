@@ -6,7 +6,7 @@ export async function GET() {
   try {
     await apiPost("/users/create");
   } catch (error) {
-    console.error("Error creating user:", error);
+    // エラーハンドリングは上位で処理
   }
 
   const domain = process.env.FRONTEND_URL || "http://localhost:3000";

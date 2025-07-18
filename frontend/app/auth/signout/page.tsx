@@ -27,23 +27,21 @@ export default function SignOutPage() {
               return;
             }
           } catch (clerkError) {
-            console.log("Clerk not available:", clerkError);
+            // Clerk not available - continue with fallback
           }
         } else if (authSystem === 'email_password') {
           // Use API endpoint for email/password auth
           try {
             await fetch('/api/auth/signout');
           } catch (apiError) {
-            console.log("API signout failed:", apiError);
+            // API signout failed - continue with fallback
           }
         }
 
         // Fallback: redirect to home page
-        console.log("Using fallback signout - redirecting to home");
         window.location.href = "/";
 
       } catch (error) {
-        console.error("Sign out error:", error);
         setError("Failed to sign out. Redirecting to home...");
         setTimeout(() => {
           window.location.href = "/";
@@ -53,16 +51,6 @@ export default function SignOutPage() {
 
     performSignOut();
   }, []);
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-red-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (

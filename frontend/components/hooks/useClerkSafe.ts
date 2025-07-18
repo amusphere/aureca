@@ -11,7 +11,9 @@ export function useClerkSafe() {
     return clerk;
   } catch (error) {
     // ClerkProvider is not available
-    console.warn("ClerkProvider not available:", error);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn("ClerkProvider not available:", error);
+    }
     return null;
   }
 }

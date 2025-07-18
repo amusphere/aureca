@@ -50,7 +50,7 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
         },
         {
           onError: (error) => {
-            console.error("Failed to toggle task completion:", error.message);
+            // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
@@ -76,12 +76,12 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
         },
         {
           onError: (error) => {
-            console.error("Failed to update task:", error.message);
+            // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
     } catch (error) {
-      console.error("Update task error:", error);
+      // エラーハンドリングは上位コンポーネントで処理
     }
   }, [currentTask.uuid, withErrorHandling]);
 
@@ -99,12 +99,12 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
         },
         {
           onError: (error) => {
-            console.error("Failed to delete task:", error.message);
+            // エラーハンドリングは上位コンポーネントで処理
           }
         }
       );
     } catch (error) {
-      console.error("Delete task error:", error);
+      // エラーハンドリングは上位コンポーネントで処理
     }
   }, [currentTask.uuid, withErrorHandling, router]);
 

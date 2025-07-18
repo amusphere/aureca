@@ -70,7 +70,7 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
       }
       onClose();
     } catch (error) {
-      console.error("Failed to submit task:", error);
+      // エラーハンドリングは上位コンポーネントで処理
     } finally {
       setIsSubmitting(false);
     }

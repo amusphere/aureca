@@ -50,7 +50,6 @@ export default function ForgotPasswordPage() {
         toast.error(responseData.error || "An error occurred while processing your request.");
       }
     } catch (error) {
-      console.error("Error:", error);
       toast.error("An error occurred while sending your request.");
     } finally {
       setIsSubmitting(false);

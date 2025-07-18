@@ -57,7 +57,7 @@ export function EmailSourceComponent({
         await onDeleteDraft(source);
         await onGenerateDraft(source);
       } catch (error) {
-        console.error('Error deleting and regenerating draft:', error);
+        // エラーハンドリングは上位コンポーネントで処理
       }
     };
 

@@ -106,16 +106,14 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           toast.info('新しいタスクはありませんでした');
         }
 
-        console.log('タスクが自動生成され、一覧を更新しました');
+        // タスクが自動生成され、一覧を更新しました
       } else {
-        console.error('タスク生成に失敗しました:', response.status);
         const { toast } = await import('sonner');
         toast.error('タスク生成に失敗しました');
         // エラーでもタスク一覧をリフレッシュして最新状態を確認
         await fetchTasks();
       }
     } catch (error) {
-      console.error('タスク生成エラー:', error);
       const { toast } = await import('sonner');
       toast.error('タスク生成中にエラーが発生しました');
       // エラーが発生してもタスク一覧をリフレッシュ
