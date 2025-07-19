@@ -12,6 +12,7 @@ AUTH_SYSTEM = os.getenv("AUTH_SYSTEM")
 
 @router.post("/create", response_model=UserModel)
 async def create_user(sub: str = Depends(user_sub)):
+    """Create new user by clerk"""
     if AUTH_SYSTEM == "email_password":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

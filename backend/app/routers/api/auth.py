@@ -18,6 +18,7 @@ async def create_user(
     data: UserCreateModel,
     session: Session = Depends(get_session),
 ):
+    """Create new user by email password"""
     access_token = create_new_user(data, session)
     if not access_token:
         raise HTTPException(
