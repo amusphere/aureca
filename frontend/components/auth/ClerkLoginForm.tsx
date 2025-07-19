@@ -1,7 +1,7 @@
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/components/ui/card";
 import { SignInButton } from "@clerk/nextjs";
-import { ArrowRightIcon, BrainCircuitIcon, CalendarIcon, CheckCircleIcon, MailIcon, ShieldCheckIcon, SparklesIcon, ZapIcon } from "lucide-react";
+import { BrainCircuitIcon, CalendarIcon, CheckCircleIcon, MailIcon, SparklesIcon, ZapIcon } from "lucide-react";
 
 export default function ClerkLoginForm() {
   return (
@@ -97,7 +97,7 @@ export default function ClerkLoginForm() {
               </div>
 
               {/* Enhanced login button */}
-              <SignInButton mode="modal" signUpFallbackRedirectUrl="/api/users/create">
+              <SignInButton mode="modal" forceRedirectUrl="/api/users/create">
                 <Button
                   className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 hover:from-blue-500 hover:via-purple-500 hover:to-emerald-500 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 ease-out hover:scale-[1.02] active:scale-[0.98] group/btn border-0 relative overflow-hidden"
                   size="lg"
@@ -106,22 +106,10 @@ export default function ClerkLoginForm() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
 
                   <div className="relative flex items-center justify-center gap-3">
-                    <SparklesIcon className="w-6 h-6 group-hover/btn:rotate-12 transition-transform duration-300" />
-                    <span>始める</span>
-                    <ArrowRightIcon className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                    <span>Sign In</span>
                   </div>
                 </Button>
               </SignInButton>
-
-              {/* Minimal security indicator */}
-              <div className="flex items-center justify-center gap-2 text-white/40">
-                <ShieldCheckIcon className="w-4 h-4" />
-                <div className="flex gap-1">
-                  <div className="w-1 h-1 bg-white/30 rounded-full animate-pulse" />
-                  <div className="w-1 h-1 bg-white/30 rounded-full animate-pulse delay-200" />
-                  <div className="w-1 h-1 bg-white/30 rounded-full animate-pulse delay-400" />
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
