@@ -97,7 +97,7 @@ export default function ClerkLoginForm() {
               </div>
 
               {/* Enhanced login button */}
-              <SignInButton mode="modal" forceRedirectUrl="/api/users/create">
+              <SignInButton mode="modal" forceRedirectUrl="/api/users">
                 <Button
                   className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 hover:from-blue-500 hover:via-purple-500 hover:to-emerald-500 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 ease-out hover:scale-[1.02] active:scale-[0.98] group/btn border-0 relative overflow-hidden"
                   size="lg"

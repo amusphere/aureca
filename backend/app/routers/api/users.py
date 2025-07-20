@@ -12,7 +12,7 @@ router = APIRouter(prefix="/users")
 AUTH_SYSTEM = os.getenv("AUTH_SYSTEM")
 
 
-@router.post("/create", response_model=UserModel)
+@router.post("", response_model=UserModel)
 async def create_user(sub: str = Depends(user_sub)):
     """Create new user by clerk"""
     if AUTH_SYSTEM == "email_password":
@@ -23,15 +23,15 @@ async def create_user(sub: str = Depends(user_sub)):
     return add_new_user(sub)
 
 
-@router.get("/me", response_model=UserModel)
-async def get_current_user(user: User = Depends(auth_user)):
-    return user
-
-
-@router.delete("/me")
+@router.delete("")
 async def delete_current_user_endpoint(
     user: User = Depends(auth_user), session: Session = Depends(get_session)
 ):
     """Delete current user and all related data"""
     delete_current_user(user, session)
     return {"message": "User deleted successfully"}
+
+
+@router.get("/me", response_model=UserModel)
+async def get_current_user(user: User = Depends(auth_user)):
+    return user
