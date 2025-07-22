@@ -35,10 +35,12 @@ class User(SQLModel, table=True):
     clerk_sub: str = Field(nullable=True, unique=True, index=True)
 
     password_reset_tokens: list["PasswordResetToken"] = Relationship(
-        back_populates="user"
+        back_populates="user", cascade_delete=True
     )
-    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user")
-    tasks: list["Tasks"] = Relationship(back_populates="user")
+    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(
+        back_populates="user", cascade_delete=True
+    )
+    tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class PasswordResetToken(SQLModel, table=True):

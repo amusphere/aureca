@@ -73,3 +73,15 @@ def create_new_user(sub: str) -> User:
     session.refresh(user)
     session.close()
     return user
+
+
+def delete_clerk_user(clerk_sub: str) -> None:
+    """Delete user from Clerk"""
+    try:
+        sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
+        sdk.users.delete(user_id=clerk_sub)
+        logger.info(f"Successfully deleted user from Clerk: {clerk_sub}")
+    except Exception as e:
+        logger.error(f"Failed to delete user from Clerk: {clerk_sub}, error: {e}")
+        # Don't raise the exception to avoid blocking local database deletion
+        # The user will be deleted from local database even if Clerk deletion fails

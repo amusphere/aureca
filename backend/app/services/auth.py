@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta
 
 from app.repositories.password_reset import create_token, get_active_token_by_hash
-from app.repositories.user import get_user_br_column
+from app.repositories.user import delete_user, get_user_br_column
 from app.schema import User
 from app.utils.auth.email_password import get_password_hash
 from fastapi import Depends, HTTPException, status
@@ -16,7 +16,12 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 
 if AUTH_SYSTEM == "clerk":
-    from app.utils.auth.clerk import create_new_user, get_auth_sub, get_authed_user
+    from app.utils.auth.clerk import (
+        create_new_user,
+        delete_clerk_user,
+        get_auth_sub,
+        get_authed_user,
+    )
 else:
     from app.utils.auth.email_password import (
         create_new_user,
@@ -55,6 +60,16 @@ async def auth_user(sub=Depends(get_auth_sub)) -> User:
 def add_new_user(sub: str) -> User:
     user = create_new_user(sub)
     return user
+
+
+def delete_current_user(user: User, session: Session) -> None:
+    """Delete the current user and all related data"""
+    # Delete from Clerk if using Clerk authentication and user has clerk_sub
+    if AUTH_SYSTEM == "clerk" and user.clerk_sub:
+        delete_clerk_user(user.clerk_sub)
+
+    # Delete from local database (this will cascade delete all related data)
+    delete_user(session, user)
 
 
 def _hash_token(token: str) -> str:
