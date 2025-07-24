@@ -4,7 +4,6 @@ import { Home, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import ClerkUserButton from "@/components/auth/ClerkUserButton";
-import EmailPasswordUserButton from "@/components/auth/EmailPasswordUserButton";
 import {
   Sidebar,
   SidebarContent,
@@ -19,12 +18,11 @@ import {
   SidebarSeparator,
 } from "@/components/components/ui/sidebar";
 
-const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
 
 const items = [
   {
     title: "Home",
-    url: "/home",
+    url: "/",
     icon: Home,
   },
   {
@@ -114,11 +112,7 @@ export default function AppSidebar() {
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
             <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg bg-sidebar-accent/40 border border-sidebar-border/20 backdrop-blur-sm relative z-10">
-              {authSystem === 'clerk' ? (
-                <ClerkUserButton />
-              ) : (
-                <EmailPasswordUserButton />
-              )}
+              <ClerkUserButton />
             </div>
           </div>
         </div>

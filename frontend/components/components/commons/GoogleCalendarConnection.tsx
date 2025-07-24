@@ -28,11 +28,11 @@ export default function GoogleCalendarConnection() {
     if (connected === "true") {
       toast.success("Googleアカウントが正常に連携されました。");
       // URL パラメータをクリア
-      router.replace("/home", { scroll: false });
+      router.replace("/settings", { scroll: false });
     } else if (error) {
       toast.error(`Google連携でエラーが発生しました: ${decodeURIComponent(error)}`);
       // URL パラメータをクリア
-      router.replace("/home", { scroll: false });
+      router.replace("/settings", { scroll: false });
     }
   }, [searchParams, router]);
 

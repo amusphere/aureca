@@ -1,8 +1,14 @@
+import { Suspense } from "react";
 import IntegrationSettingsPage from "@/components/pages/IntegrationSettingsPage";
 
-// Force dynamic rendering since this route uses cookies for auth
-export const dynamic = 'force-dynamic';
+function SettingsPageContent() {
+  return <IntegrationSettingsPage />;
+}
 
 export default function SettingsPage() {
-  return <IntegrationSettingsPage />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SettingsPageContent />
+    </Suspense>
+  );
 };

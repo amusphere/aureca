@@ -3,7 +3,6 @@ import os
 import sys
 
 import httpx
-from app.database import engine
 from app.repositories.user import get_user_br_column
 from app.schema import User
 from clerk_backend_api import AuthenticateRequestOptions, Clerk
@@ -45,14 +44,12 @@ async def get_auth_sub(request: Request, credentials=Depends(security)) -> str |
         return None
 
 
-async def get_authed_user(sub: str) -> User | None:
-    session = Session(engine)
+async def get_authed_user(sub: str, session: Session) -> User | None:
     user = get_user_br_column(session, sub, "clerk_sub")
-    session.close()
     return user
 
 
-def create_new_user(sub: str) -> User:
+def create_new_user(sub: str, session: Session) -> User:
     sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
     clerk_user: ClerkUser = sdk.users.get(user_id=sub)
 
@@ -67,11 +64,9 @@ def create_new_user(sub: str) -> User:
         name=clerk_user.username,
         clerk_sub=sub,
     )
-    session = Session(engine)
     session.add(user)
     session.commit()
     session.refresh(user)
-    session.close()
     return user
 
 
