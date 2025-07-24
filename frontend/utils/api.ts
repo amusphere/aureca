@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // APIのベースURL
@@ -55,12 +54,6 @@ const handleError = (error: any): ApiError => {
 };
 
 const getAccessToken = async (): Promise<string | null> => {
-  const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
-  if (authSystem === 'email_password') {
-    const store = await cookies();
-    const accessToken = store.get('access_token');
-    return accessToken?.value || null;
-  }
   try {
     const { auth } = await import('@clerk/nextjs/server');
     const { getToken } = await auth();

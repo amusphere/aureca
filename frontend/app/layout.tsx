@@ -14,7 +14,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const content = (
+  return (
     <html lang="ja">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -22,16 +22,14 @@ export default function RootLayout({
         <meta name="color-scheme" content="light dark" />
       </head>
       <body className="antialiased">
-        {/* Skip link for keyboard navigation */}
-        <a href="#main-content" className="skip-link">
-          メインコンテンツにスキップ
-        </a>
 
-        <div className="bg-gray-100 min-h-screen" id="app-root">
-          <main id="main-content" tabIndex={-1}>
-            {children}
-          </main>
-        </div>
+        <ClerkProvider>
+          <div className="bg-gray-100 min-h-screen" id="app-root">
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
+          </div>
+        </ClerkProvider>
 
         {/* Toast notifications with proper ARIA live region */}
         <div aria-live="polite" aria-atomic="true">
@@ -60,6 +58,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-
-  return <ClerkProvider>{content}</ClerkProvider>;
 }
