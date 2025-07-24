@@ -3,11 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   // Redirect from clerk in signin flow
-  try {
-    await apiPost("/users");
-  } catch {
-    // エラーハンドリングは上位で処理
-  }
+  await apiPost("/users");
 
   const domain = process.env.FRONTEND_URL || "http://localhost:3000";
   const redirectUrl = new URL("/", domain);
