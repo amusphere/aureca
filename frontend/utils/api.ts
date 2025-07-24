@@ -61,20 +61,16 @@ const getAccessToken = async (): Promise<string | null> => {
     const accessToken = store.get('access_token');
     return accessToken?.value || null;
   }
-  if (authSystem === 'clerk') {
-    // Dynamic import to avoid loading Clerk when not needed
-    try {
-      const { auth } = await import('@clerk/nextjs/server');
-      const { getToken } = await auth();
-      return getToken();
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to load Clerk auth:', error);
-      }
-      return null;
+  try {
+    const { auth } = await import('@clerk/nextjs/server');
+    const { getToken } = await auth();
+    return getToken();
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to load Clerk auth:', error);
     }
+    return null;
   }
-  return null;
 };
 
 

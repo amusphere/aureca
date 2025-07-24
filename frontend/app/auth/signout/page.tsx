@@ -14,28 +14,15 @@ export default function SignOutPage() {
       try {
         setIsSigningOut(true);
 
-        // Check auth system type
-        const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
-
-        if (authSystem === 'clerk') {
-          // Try to use Clerk signout
-          try {
-            // Check if Clerk is available in the global scope
-            const clerk = (window as { Clerk?: { signOut: () => Promise<void> } }).Clerk;
-            if (clerk && clerk.signOut) {
-              await clerk.signOut();
-              return;
-            }
-          } catch {
-            // Clerk not available - continue with fallback
+        try {
+          // Check if Clerk is available in the global scope
+          const clerk = (window as { Clerk?: { signOut: () => Promise<void> } }).Clerk;
+          if (clerk && clerk.signOut) {
+            await clerk.signOut();
+            return;
           }
-        } else if (authSystem === 'email_password') {
-          // Use API endpoint for email/password auth
-          try {
-            await fetch('/api/auth/signout');
-          } catch {
-            // API signout failed - continue with fallback
-          }
+        } catch {
+          // Clerk not available - continue with fallback
         }
 
         // Fallback: redirect to home page

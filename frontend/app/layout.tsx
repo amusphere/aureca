@@ -9,8 +9,6 @@ export const metadata: Metadata = {
   description: "",
 };
 
-const authSystem = process.env.NEXT_PUBLIC_AUTH_SYSTEM;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -63,9 +61,5 @@ export default function RootLayout({
     </html>
   );
 
-  if (authSystem === 'clerk') {
-    return <ClerkProvider>{content}</ClerkProvider>;
-  }
-
-  return content;
+  return <ClerkProvider>{content}</ClerkProvider>;
 }
