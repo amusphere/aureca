@@ -34,6 +34,9 @@ async def auth_user(sub=Depends(get_auth_sub)) -> User:
     user = await get_authed_user(sub)
 
     if user is None:
+        user = add_new_user(sub)
+
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
