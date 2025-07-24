@@ -95,7 +95,7 @@ export function useTaskDetail(initialTask: Task): UseTaskDetailReturn {
         async () => {
           await TaskService.deleteTask(currentTask.uuid);
           // タスク削除後、タスク一覧ページに戻る
-          router.push('/home');
+          router.push('/');
         },
         {
           onError: () => {

@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
     // エラーの場合
     if (error) {
       console.error("Google OAuth error:", error);
-      const redirectUrl = new URL(`/home?error=${encodeURIComponent(error)}`, DOMAIN);
+      const redirectUrl = new URL(`/?error=${encodeURIComponent(error)}`, DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // 認証コードがない場合
     if (!code || !state) {
       console.error("Missing code or state parameter");
-      const redirectUrl = new URL("/home?error=missing_parameters", DOMAIN);
+      const redirectUrl = new URL("/?error=missing_parameters", DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
@@ -34,17 +34,17 @@ export async function GET(request: NextRequest) {
 
     if (apiError) {
       console.error("Backend callback error:", apiError);
-      const redirectUrl = new URL(`/home?error=${encodeURIComponent(apiError.message)}`, DOMAIN);
+      const redirectUrl = new URL(`/?error=${encodeURIComponent(apiError.message)}`, DOMAIN);
       return NextResponse.redirect(redirectUrl.toString(), 302);
     }
 
     // 成功時はダッシュボードにリダイレクト
-    const redirectUrl = new URL("/home?connected=true", DOMAIN);
+    const redirectUrl = new URL("/?connected=true", DOMAIN);
     return NextResponse.redirect(redirectUrl.toString(), 302);
 
   } catch (error) {
     console.error("Callback processing error:", error);
-    const redirectUrl = new URL("/home?error=callback_failed", DOMAIN);
+    const redirectUrl = new URL("/?error=callback_failed", DOMAIN);
     return NextResponse.redirect(redirectUrl.toString(), 302);
   }
 }
