@@ -17,6 +17,5 @@ def get_user_br_column(session: Session, sub: str, column_name: str) -> User | N
 
 
 def delete_user(session: Session, user: User) -> None:
-    """Delete user and all related data (cascade delete handled by relationships)"""
     session.delete(user)
     session.commit()
