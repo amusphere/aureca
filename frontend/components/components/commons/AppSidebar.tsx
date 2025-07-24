@@ -44,7 +44,7 @@ export default function AppSidebar() {
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-sidebar-foreground tracking-tight leading-none truncate">
-              Task Manager
+              {process.env.NEXT_PUBLIC_APP_NAME || "Task Manager"}
             </h2>
             <p className="text-xs text-sidebar-foreground/65 font-medium tracking-wide hidden sm:block">
               Organize & Track

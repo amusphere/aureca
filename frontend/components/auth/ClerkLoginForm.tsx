@@ -52,7 +52,7 @@ export default function ClerkLoginForm() {
               {/* Minimal title */}
               <div className="space-y-3">
                 <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent tracking-tight">
-                  TaskFlow
+                  {process.env.NEXT_PUBLIC_APP_NAME || "TaskFlow"}
                 </h1>
                 <div className="flex items-center justify-center gap-2 text-white/60">
                   <div className="w-8 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />

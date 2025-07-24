@@ -5,7 +5,7 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: process.env.APP_NAME,
+  title: process.env.NEXT_PUBLIC_APP_NAME,
   description: "",
 };
 
