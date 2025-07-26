@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from 'next/server';
 
 // APIのベースURL
@@ -55,7 +56,6 @@ const handleError = (error: any): ApiError => {
 
 const getAccessToken = async (): Promise<string | null> => {
   try {
-    const { auth } = await import('@clerk/nextjs/server');
     const { getToken } = await auth();
     return getToken();
   } catch (error) {

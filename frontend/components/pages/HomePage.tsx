@@ -1,15 +1,6 @@
-"use client";
-
 import { TaskList } from "@/components/components/tasks/TaskList";
-import { useState } from "react";
-import AIChatModal from "../components/chat/AIChatModal";
-import FloatingChatButton from "../components/chat/ChatButton";
 
 export default function HomePage() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  const openChat = () => setIsChatOpen(true);
-  const closeChat = () => setIsChatOpen(false);
 
   return (
     <div className="relative h-full bg-background">
@@ -24,16 +15,16 @@ export default function HomePage() {
       </main>
 
       {/* Floating Chat Button */}
-      <FloatingChatButton
+      {/* <FloatingChatButton
         onClick={openChat}
         hasUnreadMessages={false}
-      />
+      /> */}
 
       {/* AI Chat Modal */}
-      <AIChatModal
+      {/* <AIChatModal
         isOpen={isChatOpen}
         onClose={closeChat}
-      />
+      /> */}
     </div>
   );
 }

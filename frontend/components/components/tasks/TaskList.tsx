@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/components/ui/button";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
+import { Protect } from "@clerk/nextjs";
 import { CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccessibility } from "../../hooks/useAccessibility";
@@ -12,12 +13,8 @@ import { LoadingSpinner } from "../commons/LoadingSpinner";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 
-interface TaskListProps {
-  onEditTask?: (task: Task) => void;
-  onDeleteTask?: (taskId: string) => void;
-}
 
-export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
+export function TaskList() {
   const [activeTab, setActiveTab] = useState("active");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -57,11 +54,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
   };
 
   const handleEditTask = (task: Task) => {
-    if (onEditTask) {
-      onEditTask(task);
-    } else {
-      setEditingTask(task);
-    }
+    setEditingTask(task);
   };
 
   const handleUpdateTask = async (taskData: UpdateTaskRequest) => {
@@ -151,19 +144,21 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
           <span className="sr-only sm:hidden">タスク一覧を更新</span>
         </Button>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleGenerateTasks}
-          disabled={isLoading || isGeneratingTasks}
-          aria-label="メールやカレンダーからタスクを自動生成"
-          aria-busy={isGeneratingTasks}
-          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
-        >
-          <SparklesIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-pulse' : ''}`} aria-hidden="true" />
-          <span className="hidden sm:inline">自動生成</span>
-          <span className="sr-only sm:hidden">タスクを自動生成</span>
-        </Button>
+        <Protect plan="standard">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleGenerateTasks}
+            disabled={isLoading || isGeneratingTasks}
+            aria-label="メールやカレンダーからタスクを自動生成"
+            aria-busy={isGeneratingTasks}
+            className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
+          >
+            <SparklesIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-pulse' : ''}`} aria-hidden="true" />
+            <span className="hidden sm:inline">自動生成</span>
+            <span className="sr-only sm:hidden">タスクを自動生成</span>
+          </Button>
+        </Protect>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
         <Button
           onClick={() => setIsTaskFormOpen(true)}
@@ -291,7 +286,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                         isCompleting={completingTasks.has(task.uuid)}
                         onToggleComplete={toggleTaskComplete}
                         onEdit={handleEditTask}
-                        onDelete={onDeleteTask || deleteTask}
+                        onDelete={deleteTask}
                       />
                     </div>
                   ))}
@@ -330,7 +325,7 @@ export function TaskList({ onEditTask, onDeleteTask }: TaskListProps) {
                         isUncompleting={uncompletingTasks.has(task.uuid)}
                         onToggleComplete={toggleTaskComplete}
                         onEdit={handleEditTask}
-                        onDelete={onDeleteTask || deleteTask}
+                        onDelete={deleteTask}
                       />
                     </div>
                   ))}
