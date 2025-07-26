@@ -144,7 +144,7 @@ export function TaskList() {
           <span className="sr-only sm:hidden">タスク一覧を更新</span>
         </Button>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
-        <Protect plan="standard">
+        <Protect condition={(has) => !has({ plan: "free" })}>
           <Button
             variant="ghost"
             size="sm"
