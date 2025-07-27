@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Settings } from "lucide-react";
+import { Cable, Home, SparklesIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import ClerkUserButton from "@/components/auth/ClerkUserButton";
@@ -26,10 +26,15 @@ const items = [
     icon: Home,
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
+    title: "Connector",
+    url: "/connector",
+    icon: Cable,
   },
+  {
+    title: "Subscript",
+    url: "/subscript",
+    icon: SparklesIcon,
+  }
 ];
 
 export default function AppSidebar() {
@@ -44,11 +49,8 @@ export default function AppSidebar() {
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-sidebar-foreground tracking-tight leading-none truncate">
-              {process.env.NEXT_PUBLIC_APP_NAME || "Task Manager"}
+              {process.env.NEXT_PUBLIC_APP_NAME}
             </h2>
-            <p className="text-xs text-sidebar-foreground/65 font-medium tracking-wide hidden sm:block">
-              Organize & Track
-            </p>
           </div>
         </div>
       </SidebarHeader>

@@ -1,4 +1,5 @@
 import { UserButton } from "@clerk/nextjs";
+import { ScaleIcon, ShieldUserIcon } from "lucide-react";
 
 
 export default function ClerkUserButton() {
@@ -36,7 +37,22 @@ export default function ClerkUserButton() {
           },
         }}
         showName={true}
-      />
+      >
+        <UserButton.MenuItems>
+          <UserButton.Link
+            label="Privacy Policy"
+            labelIcon={<ShieldUserIcon size={16} />}
+            href="/privacy-policy"
+          />
+        </UserButton.MenuItems>
+        <UserButton.MenuItems>
+          <UserButton.Link
+            label="Legal Notice"
+            labelIcon={<ScaleIcon size={16} />}
+            href="/legal-notice"
+          />
+        </UserButton.MenuItems>
+      </UserButton>
     </div>
   )
 }
