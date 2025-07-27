@@ -1,137 +1,240 @@
 import { Button } from "@/components/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/components/ui/card";
 import { SignInButton } from "@clerk/nextjs";
-import { BrainCircuitIcon, CalendarIcon, CheckCircleIcon, MailIcon, SparklesIcon, ZapIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  BrainCircuitIcon,
+  CalendarIcon,
+  CheckIcon,
+  MailIcon,
+  SparklesIcon,
+  ZapIcon
+} from "lucide-react";
 
 export default function ClerkLoginForm() {
+  const appName = process.env.NEXT_PUBLIC_APP_NAME;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-      {/* Enhanced background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Primary orbs */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-emerald-500/15 to-cyan-500/15 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-gradient-to-r from-violet-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse delay-500" />
-
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
-
-        {/* Floating particles */}
-        <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-blue-400/40 rounded-full animate-ping" />
-        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-purple-400/60 rounded-full animate-ping delay-700" />
-        <div className="absolute bottom-1/3 left-1/5 w-1.5 h-1.5 bg-emerald-400/50 rounded-full animate-ping delay-1200" />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
-        {/* Main login card */}
-        <div className="w-full max-w-lg space-y-8 animate-fade-in-up">
-          <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl relative overflow-hidden group hover:bg-white/[0.07] transition-all duration-700">
-            {/* Enhanced card decorative gradients */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-tl from-emerald-500/3 via-transparent to-cyan-500/3 pointer-events-none" />
-
-            {/* Animated border */}
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm" />
-
-            <CardHeader className="relative z-10 text-center space-y-8 pt-12 pb-8">
-              {/* Enhanced logo area with multiple layers */}
-              <div className="relative mx-auto">
-                {/* Outer glow ring */}
-                <div className="absolute inset-0 w-24 h-24 bg-gradient-to-r from-blue-500/30 to-purple-600/30 rounded-3xl blur-xl animate-pulse" />
-
-                {/* Main logo container */}
-                <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-600 to-emerald-500 rounded-2xl flex items-center justify-center shadow-2xl transform hover:scale-110 transition-transform duration-500 group-hover:rotate-3">
-                  <BrainCircuitIcon className="w-10 h-10 text-white drop-shadow-lg" />
-
-                  {/* Inner sparkle effects */}
-                  <div className="absolute top-2 right-2 w-1 h-1 bg-white/80 rounded-full animate-ping" />
-                  <div className="absolute bottom-3 left-3 w-0.5 h-0.5 bg-white/60 rounded-full animate-ping delay-500" />
-                </div>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <BrainCircuitIcon className="w-5 h-5 text-white" />
               </div>
-
-              {/* Minimal title */}
-              <div className="space-y-3">
-                <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent tracking-tight">
-                  {process.env.NEXT_PUBLIC_APP_NAME}
-                </h1>
-                <div className="flex items-center justify-center gap-2 text-white/60">
-                  <div className="w-8 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                  <ZapIcon className="w-4 h-4" />
-                  <div className="w-8 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="relative z-10 space-y-8 pb-12 px-8">
-              {/* Visual feature showcase - icon-focused design */}
-              <div className="grid grid-cols-3 gap-6 mb-8">
-                {/* AI Feature */}
-                <div className="group/feature text-center space-y-3">
-                  <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center border border-white/10 group-hover/feature:border-blue-400/30 transition-all duration-500 group-hover/feature:scale-110">
-                    <SparklesIcon className="w-7 h-7 text-blue-400 group-hover/feature:text-blue-300 transition-colors duration-300" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400/60 rounded-full animate-pulse" />
-                  </div>
-                  <div className="text-xs text-white/70 font-medium">AI</div>
-                </div>
-
-                {/* Smart Management */}
-                <div className="group/feature text-center space-y-3">
-                  <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-2xl flex items-center justify-center border border-white/10 group-hover/feature:border-emerald-400/30 transition-all duration-500 group-hover/feature:scale-110">
-                    <CheckCircleIcon className="w-7 h-7 text-emerald-400 group-hover/feature:text-emerald-300 transition-colors duration-300" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400/60 rounded-full animate-pulse delay-300" />
-                  </div>
-                  <div className="text-xs text-white/70 font-medium">Smart</div>
-                </div>
-
-                {/* Integration */}
-                <div className="group/feature text-center space-y-3">
-                  <div className="relative mx-auto w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-2xl flex items-center justify-center border border-white/10 group-hover/feature:border-cyan-400/30 transition-all duration-500 group-hover/feature:scale-110">
-                    <div className="flex items-center justify-center gap-1">
-                      <CalendarIcon className="w-5 h-5 text-cyan-400 group-hover/feature:text-cyan-300 transition-colors duration-300" />
-                      <MailIcon className="w-5 h-5 text-cyan-400 group-hover/feature:text-cyan-300 transition-colors duration-300" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400/60 rounded-full animate-pulse delay-600" />
-                  </div>
-                  <div className="text-xs text-white/70 font-medium">Connect</div>
-                </div>
-              </div>
-
-              {/* Enhanced login button */}
+              <span className="text-xl font-semibold text-gray-900">{appName}</span>
+            </div>
+            <div className="flex items-center gap-4">
               <SignInButton mode="modal">
-                <Button
-                  className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 hover:from-blue-500 hover:via-purple-500 hover:to-emerald-500 text-white shadow-2xl hover:shadow-blue-500/25 transition-all duration-500 ease-out hover:scale-[1.02] active:scale-[0.98] group/btn border-0 relative overflow-hidden"
-                  size="lg"
-                >
-                  {/* Button background animation */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-
-                  <div className="relative flex items-center justify-center gap-3">
-                    <span>Sign In</span>
-                  </div>
+                <Button className="bg-gray-900 hover:bg-gray-800 text-white">
+                  サインイン
                 </Button>
               </SignInButton>
+            </div>
+          </div>
+        </div>
+      </header>
 
-              {/* Legal links */}
-              <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-4">
-                  <a
-                    href="/privacy-policy"
-                    className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
-                  >
-                    プライバシーポリシー
-                  </a>
-                  <a
-                    href="/terms-of-service"
-                    className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
-                  >
-                    特定商取引法に基づく表記
-                  </a>
+      {/* Hero Section */}
+      <section className="pt-20 pb-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 tracking-tight">
+                AIが変える
+                <br />
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  タスク管理
+                </span>
+              </h1>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                カレンダーやメールと連携しAIがあなたの生産性を最大化します。
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <SignInButton mode="modal">
+                <Button size="lg" className="bg-gray-900 hover:bg-gray-800 text-white px-8 py-3 text-lg">
+                  無料で始める
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </Button>
+              </SignInButton>
+              <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
+                デモを見る
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              すべてが一つの場所に
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              散らばったタスクを統合し、AIの力で効率的に管理
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+                <SparklesIcon className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                AI自動生成
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                「明日の会議の準備をする」と入力するだけで、AIが具体的なタスクリストを自動生成
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+                <div className="flex items-center gap-1">
+                  <CalendarIcon className="w-5 h-5 text-green-600" />
+                  <MailIcon className="w-5 h-5 text-green-600" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                スマート連携
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                カレンダーやメールから自動でタスクを抽出。重要な予定を見逃しません
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+                <ZapIcon className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                自然言語処理
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                複雑なコマンドは不要。普段の言葉でタスクを管理し、AIが意図を理解します
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              なぜ{appName}なのか
+            </h2>
+          </div>
+
+          <div className="space-y-8">
+            <div className="flex items-start gap-4">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  時間を節約
+                </h3>
+                <p className="text-gray-600">
+                  手動でのタスク入力や整理にかかる時間を大幅に削減。AIが自動で最適化します。
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  見逃しを防止
+                </h3>
+                <p className="text-gray-600">
+                  メールや予定から重要なタスクを自動抽出。大切な締切を見逃すことがありません。
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <CheckIcon className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  直感的な操作
+                </h3>
+                <p className="text-gray-600">
+                  複雑な設定は不要。自然な日本語でタスクを管理し、すぐに使い始められます。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gray-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl font-bold text-white">
+                今すぐ始めましょう
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                無料で{appName}を体験し、AIがもたらす生産性の向上を実感してください
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <SignInButton mode="modal">
+                <Button size="lg" className="bg-white hover:bg-gray-100 text-gray-900 px-8 py-3 text-lg">
+                  無料アカウント作成
+                  <ArrowRightIcon className="w-5 h-5 ml-2" />
+                </Button>
+              </SignInButton>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                <BrainCircuitIcon className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-semibold text-gray-900">{appName}</span>
+            </div>
+
+            <div className="flex items-center gap-8 text-sm text-gray-600">
+              <a
+                href="/privacy-policy"
+                className="hover:text-gray-900 transition-colors duration-200"
+              >
+                プライバシーポリシー
+              </a>
+              <a
+                href="/terms-of-service"
+                className="hover:text-gray-900 transition-colors duration-200"
+              >
+                特定商取引法に基づく表記
+              </a>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-gray-100 text-center text-sm text-gray-500">
+            © 2025 {appName}. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

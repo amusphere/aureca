@@ -1,3 +1,4 @@
+import AIChat from "@/components/components/commons/AIChat";
 import { AIUpgradePrompt } from "@/components/components/commons/AIUpgradePrompt";
 import { TaskList } from "@/components/components/tasks/TaskList";
 import { Protect } from "@clerk/nextjs";
@@ -18,17 +19,9 @@ export default async function HomePage() {
         </div>
       </main>
 
-      {/* Floating Chat Button */}
-      {/* <FloatingChatButton
-        onClick={openChat}
-        hasUnreadMessages={false}
-      /> */}
-
-      {/* AI Chat Modal */}
-      {/* <AIChatModal
-        isOpen={isChatOpen}
-        onClose={closeChat}
-      /> */}
+      <Protect condition={(has) => !has({ plan: "free" })}>
+        <AIChat />
+      </Protect>
     </div>
   );
 }
