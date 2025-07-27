@@ -52,7 +52,7 @@ export default function ClerkLoginForm() {
               {/* Minimal title */}
               <div className="space-y-3">
                 <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent tracking-tight">
-                  {process.env.NEXT_PUBLIC_APP_NAME }
+                  {process.env.NEXT_PUBLIC_APP_NAME}
                 </h1>
                 <div className="flex items-center justify-center gap-2 text-white/60">
                   <div className="w-8 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
@@ -110,6 +110,16 @@ export default function ClerkLoginForm() {
                   </div>
                 </Button>
               </SignInButton>
+
+              {/* Terms of Service link */}
+              <div className="text-center">
+                <a
+                  href="/terms-of-service"
+                  className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
+                >
+                  特定商取引法に基づく表記
+                </a>
+              </div>
             </CardContent>
           </Card>
         </div>
