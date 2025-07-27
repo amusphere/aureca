@@ -111,14 +111,22 @@ export default function ClerkLoginForm() {
                 </Button>
               </SignInButton>
 
-              {/* Terms of Service link */}
-              <div className="text-center">
-                <a
-                  href="/terms-of-service"
-                  className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
-                >
-                  特定商取引法に基づく表記
-                </a>
+              {/* Legal links */}
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center gap-4">
+                  <a
+                    href="/privacy-policy"
+                    className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
+                  >
+                    プライバシーポリシー
+                  </a>
+                  <a
+                    href="/terms-of-service"
+                    className="text-sm text-white/60 hover:text-white/80 transition-colors duration-300 underline underline-offset-4 hover:underline-offset-2"
+                  >
+                    特定商取引法に基づく表記
+                  </a>
+                </div>
               </div>
             </CardContent>
           </Card>
