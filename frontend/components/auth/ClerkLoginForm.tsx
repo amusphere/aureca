@@ -222,7 +222,7 @@ export default function ClerkLoginForm() {
                 プライバシーポリシー
               </a>
               <a
-                href="/terms-of-service"
+                href="/legal-notice"
                 className="hover:text-gray-900 transition-colors duration-200"
               >
                 特定商取引法に基づく表記
