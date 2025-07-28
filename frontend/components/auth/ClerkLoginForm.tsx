@@ -60,9 +60,11 @@ export default function ClerkLoginForm() {
                   <ArrowRightIcon className="w-5 h-5 ml-2" />
                 </Button>
               </SignInButton>
-              <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
-                デモを見る
-              </Button>
+              <a href="/demo">
+                <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
+                  デモを見る
+                </Button>
+              </a>
             </div>
           </div>
         </div>

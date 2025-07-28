@@ -5,7 +5,15 @@
 // export default middleware;
 
 import { clerkMiddleware } from '@clerk/nextjs/server';
-export default clerkMiddleware();
+
+export default clerkMiddleware((auth, req) => {
+  // デモページは認証不要
+  if (req.nextUrl.pathname.startsWith('/demo')) {
+    return;
+  }
+
+  // その他のページは通常の認証処理
+});
 
 export const config = {
   matcher: [

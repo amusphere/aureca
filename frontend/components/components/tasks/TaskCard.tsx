@@ -93,12 +93,12 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
 
               <div className="flex items-center gap-1 flex-wrap shrink-0">
                 {task.completed && (
-                  <Badge variant="status-completed" size="sm">
+                  <Badge variant="secondary">
                     完了
                   </Badge>
                 )}
                 {isExpired && !task.completed && (
-                  <Badge variant="destructive" size="sm">
+                  <Badge variant="destructive">
                     期限切れ
                   </Badge>
                 )}
