@@ -6,10 +6,16 @@ export class TaskService {
   /**
    * Get all tasks with optional filtering
    */
-  static async getTasks(completed?: boolean): Promise<Task[]> {
+  static async getTasks(
+    completed?: boolean,
+    orderByPriority?: boolean
+  ): Promise<Task[]> {
     const queryParams = new URLSearchParams();
     if (completed !== undefined) {
       queryParams.append('completed', completed.toString());
+    }
+    if (orderByPriority !== undefined) {
+      queryParams.append('order_by_priority', orderByPriority.toString());
     }
 
     const url = queryParams.toString()
@@ -85,6 +91,7 @@ export class TaskService {
       description: task.description,
       completed: completed,
       expires_at: task.expires_at,
+      priority: task.priority,
     });
   }
 }
