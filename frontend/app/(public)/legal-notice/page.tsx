@@ -35,10 +35,16 @@ export default function TermsOfServicePage() {
               </dd>
             </div>
 
-            {/* メールアドレス */}
+            {/* 電話番号 */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">メールアドレス</dt>
-              <dd className="text-gray-700">shuto@amusphere.dev</dd>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">電話番号</dt>
+              <dd className="text-gray-700">070-4152-7790</dd>
+            </div>
+
+            {/* 受付時間 */}
+            <div className="flex">
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">受付時間</dt>
+              <dd className="text-gray-700">10:00〜18:00（土日祝を除く）</dd>
             </div>
 
             {/* 販売価格 */}
@@ -49,43 +55,43 @@ export default function TermsOfServicePage() {
               </dd>
             </div>
 
-            {/* 商品代金以外に必要な料金 */}
+            {/* 追加手数料等の追加料金 */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">商品代金以外に必要な料金</dt>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">追加手数料等の追加料金</dt>
               <dd className="text-gray-700">
                 <div>消費税（価格が税込表示の場合を除く）</div>
                 <div>インターネット接続に伴う通信費（お客様負担）</div>
               </dd>
             </div>
 
-            {/* 支払方法 */}
+            {/* 受け付け可能な決済手段 */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">支払方法</dt>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">受け付け可能な決済手段</dt>
               <dd className="text-gray-700">
-                Stripe を利用したクレジットカード決済
+                クレジットカード（Stripe 決済）
               </dd>
             </div>
 
-            {/* 支払時期 */}
+            {/* 決済期間 */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">支払時期</dt>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">決済期間</dt>
               <dd className="text-gray-700">
                 <div>初回：ご登録手続き完了時に課金されます。</div>
                 <div>以降：ご契約プランの更新日に自動で課金されます。次回請求日はマイページでご確認いただけます。</div>
               </dd>
             </div>
 
-            {/* サービス提供時期 */}
+            {/* 引渡時期 */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">サービス提供時期</dt>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">引渡時期</dt>
               <dd className="text-gray-700">
                 決済完了後、即時にご利用いただけます。
               </dd>
             </div>
 
-            {/* 返品・キャンセル・解約 */}
+            {/* 交換および返品（返金ポリシー） */}
             <div className="flex">
-              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">返品・キャンセル・解約</dt>
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">交換および返品（返金ポリシー）</dt>
               <dd className="text-gray-700">
                 <div>デジタルサービスの性質上、購入後の返金はお受けしておりません。</div>
                 <div>解約をご希望の場合、次回請求日の前日までにマイページの「プラン管理」から手続きを行ってください。解約完了後、次回以降の課金は発生しません。</div>
@@ -101,11 +107,23 @@ export default function TermsOfServicePage() {
               </dd>
             </div>
 
+            {/* 申込み期間の制限 */}
+            <div className="flex">
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">申込み期間の制限</dt>
+              <dd className="text-gray-700">特に制限はございません。</dd>
+            </div>
+
+            {/* 販売数量の制限 */}
+            <div className="flex">
+              <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">販売数量の制限</dt>
+              <dd className="text-gray-700">制限は設けておりません。</dd>
+            </div>
+
             {/* 動作推奨環境 */}
             <div className="flex">
               <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">動作推奨環境</dt>
               <dd className="text-gray-700">
-                最新バージョンの Google Chrome／Safari／Microsoft Edge／Firefox
+                最新バージョンの Google Chrome／Safari／Microsoft Edge
               </dd>
             </div>
 

@@ -140,7 +140,7 @@ export default function PrivacyPolicyPage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p><strong>合同会社アミュスフィア</strong></p>
                   <p>住所：〒900-0016 沖縄県那覇市前島３丁目２５番２号 泊ポートビル１階</p>
-                  <p>メールアドレス：shuto@amusphere.dev</p>
+                  <p>メールアドレス：info@amusphere.dev</p>
                 </div>
               </div>
             </section>
@@ -148,8 +148,7 @@ export default function PrivacyPolicyPage() {
             {/* 制定日・改定日 */}
             <section className="border-t border-gray-200 pt-6">
               <div className="text-sm text-gray-600 space-y-1">
-                <p>制定日：2025年1月1日</p>
-                <p>最終改定日：2025年1月1日</p>
+                <p>制定日：2025年7月31日</p>
               </div>
             </section>
           </div>

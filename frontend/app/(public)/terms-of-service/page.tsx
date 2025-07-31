@@ -62,7 +62,7 @@ export default function TermsOfServicePage() {
               <div className="text-gray-700 space-y-3">
                 <p>1. ユーザーは、本サービスの有料部分の対価として、当社が別途定め、本ウェブサイトに表示する利用料金を、当社が指定する方法により支払うものとします。</p>
                 <p>2. 本サービスは月額または年額のサブスクリプション制となっており、ユーザーが解約手続きを行うまで自動的に更新されます。</p>
-                <p>3. ユーザーが利用料金の支払を遅滞した場合には、ユーザーは年14.6％の割合による遅延損害金を支払うものとします。</p>
+                <p>3. 本サービスの利用料金は前払い制となっており、各請求期間の開始前に支払いを行うものとします。</p>
                 <p>4. 当社は、利用料金の改定を行うことがあります。利用料金の改定を行う場合、当社は改定日の30日前までにユーザーに通知するものとします。</p>
               </div>
             </section>
@@ -85,7 +85,6 @@ export default function TermsOfServicePage() {
                   <li>本サービスの他のユーザーまたはその他の第三者に不利益、損害、不快感を与える行為</li>
                   <li>他のユーザーに成りすます行為</li>
                   <li>当社が許諾しない本サービス上での宣伝、広告、勧誘、または営業行為</li>
-                  <li>面識のない異性との出会いを目的とした行為</li>
                   <li>当社のサービスに関連して、反社会的勢力に対して直接または間接に利益を供与する行為</li>
                   <li>その他、当社が不適切と判断する行為</li>
                 </ol>
@@ -209,7 +208,7 @@ export default function TermsOfServicePage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p><strong>合同会社アミュスフィア</strong></p>
                   <p>住所：〒900-0016 沖縄県那覇市前島３丁目２５番２号 泊ポートビル１階</p>
-                  <p>メールアドレス：shuto@amusphere.dev</p>
+                  <p>メールアドレス：info@amusphere.dev</p>
                 </div>
               </div>
             </section>
@@ -217,8 +216,7 @@ export default function TermsOfServicePage() {
             {/* 制定日・改定日 */}
             <section className="border-t border-gray-200 pt-6">
               <div className="text-sm text-gray-600 space-y-1">
-                <p>制定日：2025年1月1日</p>
-                <p>最終改定日：2025年1月1日</p>
+                <p>制定日：2025年7月31日</p>
               </div>
             </section>
           </div>
