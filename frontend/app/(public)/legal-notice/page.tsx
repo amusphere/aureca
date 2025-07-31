@@ -123,7 +123,7 @@ export default function TermsOfServicePage() {
             <div className="flex">
               <dt className="w-48 flex-shrink-0 font-semibold text-gray-900">動作推奨環境</dt>
               <dd className="text-gray-700">
-                最新バージョンの Google Chrome／Safari／Microsoft Edge／Firefox
+                最新バージョンの Google Chrome／Safari／Microsoft Edge
               </dd>
             </div>
 
