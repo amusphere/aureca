@@ -3,7 +3,6 @@ import Link from "next/link";
 
 export default function LandingFooter() {
   const appName = process.env.NEXT_PUBLIC_APP_NAME || "Nadeshiko.AI";
-  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -41,7 +40,7 @@ export default function LandingFooter() {
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-6 pt-6 text-center">
           <p className="text-sm text-gray-400">
-            © {currentYear} {appName}. All rights reserved.
+            © 2025 {appName}. All rights reserved.
           </p>
         </div>
       </div>
