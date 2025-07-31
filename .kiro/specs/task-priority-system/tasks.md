@@ -30,7 +30,7 @@
   - Task、CreateTaskRequest、UpdateTaskRequestインターフェースの拡張
   - _要件: 要件1.1, 要件1.2_
 
-- [ ] 7. 優先度表示コンポーネントの作成
+- [x] 7. 優先度表示コンポーネントの作成
   - TaskPriorityBadgeコンポーネントの実装
   - 優先度別の色分けとアイコン表示
   - レスポンシブデザイン対応
