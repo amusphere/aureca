@@ -19,6 +19,7 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 async def get_tasks_endpoint(
     completed: bool = False,
     expires_at: float | None = None,
+    order_by_priority: bool = True,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
@@ -28,6 +29,7 @@ async def get_tasks_endpoint(
         user_id=user.id,
         completed=completed,
         expires_at=expires_at,
+        order_by_priority=order_by_priority,
     )
     return [TaskModel.model_validate(task) for task in tasks]
 
