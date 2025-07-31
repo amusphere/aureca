@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.schema import Tasks, TaskPriority
+from app.schema import TaskPriority, Tasks
 from sqlmodel import Session, select
 
 
@@ -9,19 +9,26 @@ def find_tasks(
     user_id: int,
     completed: bool = False,
     expires_at: float | None = None,
+    order_by_priority: bool = True,
 ) -> list[Tasks]:
     """Find all task lists for a specific user"""
-    stmt = (
-        select(Tasks)
-        .where(
-            Tasks.user_id == user_id,
-            Tasks.completed == completed,
-        )
-        .order_by(Tasks.expires_at)
+    stmt = select(Tasks).where(
+        Tasks.user_id == user_id,
+        Tasks.completed == completed,
     )
 
     if expires_at is not None:
         stmt = stmt.where(Tasks.expires_at >= expires_at)
+
+    if order_by_priority:
+        # Efficient priority sorting: 1(High) -> 2(Middle) -> 3(Low) -> NULL
+        # Using nullslast() to put tasks without priority at the end
+        stmt = stmt.order_by(
+            Tasks.priority.asc().nullslast(),
+            Tasks.expires_at.asc().nullslast(),
+        )
+    else:
+        stmt = stmt.order_by(Tasks.expires_at.asc().nullslast())
 
     return session.exec(stmt).all()
 
