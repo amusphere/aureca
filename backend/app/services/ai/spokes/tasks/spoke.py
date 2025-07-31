@@ -67,6 +67,7 @@ class TasksSpoke(BaseSpoke):
             "description": task.description,
             "completed": task.completed,
             "expires_at": task.expires_at,
+            "priority": task.priority.value if task.priority else None,
             "created_at": task.created_at,
             "updated_at": task.updated_at,
         }
@@ -155,6 +156,7 @@ class TasksSpoke(BaseSpoke):
                 title=parameters["title"],
                 description=parameters.get("description"),
                 expires_at=parameters.get("expires_at"),
+                priority=parameters.get("priority"),
             )
 
             task_data = self._convert_task_to_dict(task)
@@ -220,6 +222,7 @@ class TasksSpoke(BaseSpoke):
                 title=parameters.get("title"),
                 description=parameters.get("description"),
                 expires_at=parameters.get("expires_at"),
+                priority=parameters.get("priority"),
             )
 
             task_data = self._convert_task_to_dict(task)

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.schema import Tasks
+from app.schema import Tasks, TaskPriority
 from sqlmodel import Session, select
 
 
@@ -52,6 +52,7 @@ def create_task(
     title: str,
     description: str | None = None,
     expires_at: float | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Create a new task"""
     task = Tasks(
@@ -59,6 +60,7 @@ def create_task(
         title=title,
         description=description,
         expires_at=expires_at,
+        priority=priority,
     )
     session.add(task)
     session.commit()
@@ -73,6 +75,7 @@ def update_task(
     description: str | None = None,
     expires_at: float | None = None,
     completed: bool | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Update an existing task"""
     task = get_task_by_id(session, id)
@@ -87,6 +90,8 @@ def update_task(
         task.expires_at = expires_at
     if completed is not None:
         task.completed = completed
+    if priority is not None:
+        task.priority = priority
 
     session.commit()
     session.refresh(task)
@@ -117,6 +122,7 @@ def update_task_by_uuid(
     description: str | None = None,
     expires_at: float | None = None,
     completed: bool | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Update an existing task by UUID"""
     task = get_task_by_uuid(session, uuid, user_id)
@@ -131,6 +137,8 @@ def update_task_by_uuid(
         task.expires_at = expires_at
     if completed is not None:
         task.completed = completed
+    if priority is not None:
+        task.priority = priority
 
     session.commit()
     session.refresh(task)

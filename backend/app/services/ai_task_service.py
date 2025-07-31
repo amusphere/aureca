@@ -6,7 +6,7 @@ from typing import List
 from app.models.google_mail import DraftModel
 from app.repositories.task_source import create_task_source, get_task_source_by_uuid, get_task_source_by_source_id
 from app.repositories.tasks import create_task
-from app.schema import SourceType, TaskSource, User
+from app.schema import SourceType, TaskSource, User, TaskPriority
 from app.services.gmail_service import get_authenticated_gmail_service
 from app.services.google_calendar_service import (
     CalendarFreeTimeResponse,
@@ -31,6 +31,7 @@ class TaskGenerationResponse(BaseModel):
     title: str
     description: str
     expires_at: float | None = None
+    priority: TaskPriority | None = None
 
 
 class EmailReplyDraftResponse(BaseModel):
@@ -137,6 +138,7 @@ class AiTaskService:
                             title=task_data.title,
                             description=task_data.description,
                             expires_at=task_data.expires_at,
+                            priority=task_data.priority,
                         )
 
                         # TaskSourceを作成（メール情報と直接リンクを保存）
@@ -237,6 +239,7 @@ class AiTaskService:
                             title=task_data.title,
                             description=task_data.description,
                             expires_at=task_data.expires_at,
+                            priority=task_data.priority,
                         )
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
