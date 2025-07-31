@@ -5,6 +5,12 @@ from uuid import UUID, uuid4
 from sqlmodel import Field, Relationship, SQLModel
 
 
+class TaskPriority(int, Enum):
+    HIGH = 1
+    MIDDLE = 2
+    LOW = 3
+
+
 class SourceType(str, Enum):
     EMAIL = "email"
     CALENDAR = "calendar"
@@ -77,6 +83,7 @@ class Tasks(SQLModel, table=True):
     description: str | None = Field(nullable=True)
     completed: bool = Field(default=False)
     expires_at: float | None = Field(default=None, nullable=True)
+    priority: TaskPriority | None = Field(default=None, nullable=True, index=True)
 
     sources: list["TaskSource"] = Relationship(
         back_populates="task", cascade_delete=True
