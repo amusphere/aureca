@@ -12,7 +12,7 @@ from app.utils.llm import llm_chat_completions, llm_chat_completions_perse
 from sqlmodel import Session
 
 from ..spokes.manager import SpokeManager
-from ..utils.exceptions import InvalidParameterError, PromptAnalysisError
+from ..utils.exceptions import InvalidParameterError
 from ..utils.logger import AIAssistantLogger
 from .models import NextAction, OperatorResponse, SpokeResponse
 
@@ -209,6 +209,27 @@ class AIHub:
 - 相対的な日時表現（「明日」「来週」「今日」「次の金曜日」など）は具体的な日時に変換してください
 - 日時に関することは基本的に日本時間（JST）で処理を行ってください
 - オプショナルなパラメータが存在しない場合は、`null` または `None` を返してください
+
+## タスク優先度の判定ガイドライン:
+タスク作成・更新時には、ユーザーのリクエスト内容を分析して適切な優先度を設定してください：
+
+**high (高優先度)**:
+- 緊急キーワード: 「緊急」「至急」「ASAP」「すぐに」「今日中」「明日まで」
+- 重要なイベント: 「重要な会議」「面接」「プレゼン」「締切」「顧客対応」
+- 権威・影響度: 「社長」「役員」「クライアント」「重要な取引先」
+
+**middle (中優先度)**:
+- 計画的対応: 「今週中」「来週まで」「確認してください」「対応をお願いします」
+- 標準業務: 「会議」「ミーティング」「準備」「確認」「報告」
+
+**low (低優先度)**:
+- 余裕のある対応: 「時間があるときに」「参考まで」「いつでも」「定期的に」
+- 情報共有: 「FYI」「お知らせ」「連絡まで」
+
+**null (優先度なし)**:
+- 緊急性・重要性が不明確、または単純な情報提供のみの場合
+
+迷った場合は、より低い優先度を選択してください。
 """
 
     def _create_execution_summary(

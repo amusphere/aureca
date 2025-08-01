@@ -4,9 +4,13 @@ from datetime import datetime, timedelta
 from typing import List
 
 from app.models.google_mail import DraftModel
-from app.repositories.task_source import create_task_source, get_task_source_by_uuid, get_task_source_by_source_id
+from app.repositories.task_source import (
+    create_task_source,
+    get_task_source_by_source_id,
+    get_task_source_by_uuid,
+)
 from app.repositories.tasks import create_task
-from app.schema import SourceType, TaskSource, User, TaskPriority
+from app.schema import SourceType, TaskPriority, TaskSource, User
 from app.services.gmail_service import get_authenticated_gmail_service
 from app.services.google_calendar_service import (
     CalendarFreeTimeResponse,
@@ -72,10 +76,7 @@ class AiTaskService:
             calendar_tasks = await self.generate_tasks_from_calendar_events(user)
 
             # サービス別にタスクを整理
-            tasks_by_source = {
-                "Gmail": email_tasks,
-                "GoogleCalendar": calendar_tasks
-            }
+            tasks_by_source = {"Gmail": email_tasks, "GoogleCalendar": calendar_tasks}
 
             return tasks_by_source
 
@@ -117,11 +118,13 @@ class AiTaskService:
                     existing_task_source = get_task_source_by_source_id(
                         session=self.session,
                         source_id=email_id,
-                        source_type=SourceType.EMAIL
+                        source_type=SourceType.EMAIL,
                     )
 
                     if existing_task_source:
-                        self.logger.info(f"メール {email_id} は既にタスクが生成済みです。スキップします。")
+                        self.logger.info(
+                            f"メール {email_id} は既にタスクが生成済みです。スキップします。"
+                        )
                         continue
 
                     # メール内容を詳細取得
@@ -221,11 +224,13 @@ class AiTaskService:
                     existing_task_source = get_task_source_by_source_id(
                         session=self.session,
                         source_id=event_id,
-                        source_type=SourceType.CALENDAR
+                        source_type=SourceType.CALENDAR,
                     )
 
                     if existing_task_source:
-                        self.logger.info(f"カレンダーイベント {event_id} は既にタスクが生成済みです。スキップします。")
+                        self.logger.info(
+                            f"カレンダーイベント {event_id} は既にタスクが生成済みです。スキップします。"
+                        )
                         continue
 
                     # イベント内容からタスクを生成
@@ -342,13 +347,33 @@ class AiTaskService:
 
 expires_at は UNIX タイムスタンプで返してください。期限が明確でない場合は null を返してください。
 
-優先度判定基準：
-- high: 緊急性が高い（今日中、明日まで、ASAP、緊急、至急、重要な会議・締切、クリティカル、即座に、すぐに）
-- middle: 中程度の重要性（今週中、来週まで、重要だが緊急ではない、確認してください、対応をお願いします）
-- low: 低優先度（時間があるときに、参考まで、定期的に、情報共有、FYI）
-- null: 判断できない場合、もしくは優先度が必要ない場合
+優先度判定基準（改良版）：
+以下のキーワードや文脈を総合的に分析して優先度を判定してください：
 
-緊急性や重要性を示すキーワードがない場合は priority を null にしてください。""",
+【High優先度】- 即座に対応が必要
+- 緊急時間表現: 今日中、今日まで、明日まで、24時間以内、数時間以内、午前中まで、夕方まで
+- 緊急キーワード: 緊急、至急、急ぎ、ASAP、urgent、急いで、すぐに、即座に、クリティカル、critical
+- 重要なビジネス: 重要な会議、重要な打ち合わせ、面接、プレゼンテーション、発表、締切、deadline、提出期限
+- 業務への影響: 顧客対応、クライアント対応、トラブル対応、エスカレーション、問題解決、障害対応
+- 権威・地位: 役員、部長、社長、CEO、重要な取引先、VIP、お客様からの、クライアントからの
+
+【Middle優先度】- 計画的な対応が必要
+- 期限のある業務: 今週中、来週まで、月末まで、数日以内、1週間以内
+- 重要度キーワード: 重要、大切、確認してください、対応をお願いします、検討してください、準備してください
+- 定例・継続業務: 会議、ミーティング、打ち合わせ、研修、セミナー、レビュー、報告書、企画、調査
+
+【Low優先度】- 余裕をもって対応可能
+- ゆとりある期限: 時間があるときに、いつでも結構です、お時間のあるときに、来月、将来的に
+- 情報共有系: 参考まで、FYI、情報共有、連絡まで、お知らせ、ご報告、周知
+- 任意性: ご都合の良いときに、可能であれば、もしよろしければ、お手すきの際に
+
+【null優先度】- 判断材料不足または対応不要
+- 単純な情報提供のみ、広告、自動通知、システム送信メール
+- 緊急性・重要性を示すキーワードが一切含まれていない場合
+- アクションが不明確または不要な場合
+
+判定時は送信者の重要度、内容の緊急性、ビジネスへの影響度を総合的に考慮してください。
+迷った場合は、より保守的（低い）優先度を選択してください。""",
                 },
                 {
                     "role": "user",
@@ -368,7 +393,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             response = llm_chat_completions_perse(
                 prompts=prompts,
                 response_format=TaskGenerationResponse,
-                temperature=0.3,
+                temperature=0.2,  # 優先度判定の一貫性向上
                 max_tokens=500,
             )
 
@@ -377,7 +402,9 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
                 return None
 
             # 優先度判定結果をログ出力
-            self.logger.info(f"Generated task from email - Title: {response.title[:50]}..., Priority: {response.priority}")
+            self.logger.info(
+                f"Generated task from email - Title: {response.title[:50]}..., Priority: {response.priority}"
+            )
 
             return response
 
@@ -469,13 +496,46 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 
 expires_at は UNIX タイムスタンプで返してください。通常はイベント開始時刻の30分〜2時間前に設定してください（イベントの種類により調整）。
 
-優先度判定基準：
-- high: 緊急性や重要性が高い（重要な会議、面接、プレゼンテーション、締切、フライト、医療予約、試験、重要なアポイントメント）
-- middle: 中程度の重要性（一般的な会議、研修、セミナー、出張準備、イベント参加、運動・スポーツ）
-- low: 低優先度（定期的な会議、個人的なイベント、趣味の活動、食事会、カジュアルな集まり）
-- null: 判断できない場合やブロック用途の予定
+優先度判定基準（改良版）：
+イベントの種類、重要性、参加者、ビジネス影響度を総合的に分析して優先度を決定してください：
 
-イベントの種類、説明内容、重要性を示すキーワードに基づいて適切な優先度を設定してください。""",
+【High優先度】- 重要度・緊急度が極めて高いイベント
+- 重要なビジネス: 重要な会議、役員会議、取締役会、株主総会、重要な打ち合わせ、クライアント会議、プレゼンテーション
+- キャリア関連: 面接、面談、評価面談、人事面談、昇進面談、転職関連面談
+- 公的・発表系: 重要な発表、講演、デモンストレーション、重要な報告会、記者会見
+- 期限・締切: 提出期限、納期、契約期限、重要なdeadline関連イベント
+- 交通・移動: フライト、新幹線、重要な移動、国際線、重要な出張
+- 医療・健康: 医療予約、手術、重要な健康診断、緊急診察、専門医診察
+- 試験・資格: 重要な試験、資格試験、認定試験、入学試験、昇進試験
+
+【Middle優先度】- 標準的な重要度のイベント
+- 日常業務: 一般的な会議、定例会議、ミーティング、チーム会議、進捗会議、1on1
+- 学習・研修: セミナー、研修、勉強会、ワークショップ、講習会、トレーニング
+- 一般出張・移動: 通常の出張、移動、交通機関利用、営業訪問
+- 運動・健康: ジム、フィットネス、スポーツ、運動、トレーニング、定期検診
+- イベント参加: 展示会、カンファレンス、説明会、見学会、ネットワーキング
+- 個人的重要: 家族イベント、記念日、誕生日、結婚式、お祝い事
+
+【Low優先度】- 軽度の重要度・任意性の高いイベント
+- 個人的時間: 個人的な食事、友人との食事、カジュアルな集まり、趣味の時間
+- 定期・ルーチン: 定期検診、日常の買い物、散髪、美容院、メンテナンス
+- 余暇・娯楽: 映画鑑賞、読書時間、休憩時間、エンターテイメント、趣味活動
+- 非必須参加: 任意参加のイベント、オプショナルな集まり、懇親会
+
+【null優先度】- 判断不可能またはタスク生成対象外
+- ブロック用途: 「busy」「ブロック」「Block」「時間確保」「予約ブロック」
+- 作業専用時間: 「作業時間」「開発時間」「集中時間」「コーディング時間」のみ
+- 詳細情報不足: 情報が不十分で判断できない、内容が不明確
+- システム生成: 自動生成された予定、重複、無意味な予定
+
+判定時は以下を重視してください：
+1. ビジネスへの影響度と重要度
+2. 参加者の地位・権威性
+3. イベントの緊急性・期限性
+4. 準備の必要性と複雑さ
+5. 失敗時のリスクの大きさ
+
+企業環境では business context を最優先し、判断に迷った場合は middle を選択してください。""",
                 },
                 {
                     "role": "user",
@@ -496,7 +556,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             response = llm_chat_completions_perse(
                 prompts=prompts,
                 response_format=TaskGenerationResponse,
-                temperature=0.3,
+                temperature=0.2,  # 優先度判定の一貫性向上
                 max_tokens=500,
             )
 
@@ -505,7 +565,9 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
                 return None
 
             # 優先度判定結果をログ出力
-            self.logger.info(f"Generated task from calendar event - Title: {response.title[:50]}..., Priority: {response.priority}")
+            self.logger.info(
+                f"Generated task from calendar event - Title: {response.title[:50]}..., Priority: {response.priority}"
+            )
 
             return response
 

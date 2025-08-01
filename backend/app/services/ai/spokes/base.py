@@ -4,14 +4,14 @@ Base spoke interface for all AI service spokes
 
 import json
 from abc import ABC
-from typing import Dict, Any
+from typing import Any, Dict
 
 from app.schema import User
+from app.utils.llm import llm_chat_completions
 from sqlmodel import Session
 
 from ..core.models import NextAction, SpokeResponse
 from ..utils.logger import AIAssistantLogger
-from app.utils.llm import llm_chat_completions
 
 
 class BaseSpoke(ABC):
@@ -114,6 +114,25 @@ class BaseSpoke(ABC):
 **アクション定義**:
 {action_definition}
 
+## タスク関連アクションの優先度判定ガイドライン:
+タスク作成・更新アクションの場合、以下の基準で優先度を判定してください：
+
+**"high"**: 緊急性・重要性が高い
+- 緊急キーワード: 緊急、至急、ASAP、すぐに、今日中、明日まで、クリティカル
+- 重要な業務: 重要な会議、面接、プレゼン、締切、顧客対応、クライアント対応
+- 権威性: 社長、役員、部長、重要な取引先、VIP関連
+
+**"middle"**: 標準的な重要度
+- 計画的対応: 今週中、来週まで、確認してください、対応をお願いします
+- 一般業務: 会議、ミーティング、準備、確認、報告、検討
+
+**"low"**: 低優先度・余裕のある対応
+- ゆとりのある時間: 時間があるときに、いつでも、参考まで、定期的に
+- 情報共有: FYI、お知らせ、連絡まで、情報共有
+
+**null**: 優先度が不明確
+- 緊急性・重要性の判断材料がない場合
+
 以下のJSONフォーマットで応答してください：
 {{
     "enhanced_parameters": {{
@@ -126,6 +145,7 @@ class BaseSpoke(ABC):
 注意事項：
 - 必須パラメータ（required: true）は必ず推測して含めてください
 - 日時パラメータの場合は、適切な形式で推測してください
+- 優先度パラメータがある場合は、上記のガイドラインに従って適切に設定してください
 - 不明なパラメータは推測せず、null または省略してください
 """
 
