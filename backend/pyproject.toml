@@ -14,9 +14,12 @@ dependencies = [
     "google-api-python-client>=2.170.0",
     "google-auth>=2.40.2",
     "google-auth-oauthlib>=1.2.2",
+    "httpx>=0.28.1",
     "openai>=1.82.0",
     "passlib[bcrypt]>=1.7.4",
     "psycopg2-binary>=2.9.10",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
     "python-jose>=3.4.0",
     "python-multipart>=0.0.20",
     "setuptools>=79.0.0",
@@ -24,3 +27,11 @@ dependencies = [
     "svix>=1.69.0",
     "uvicorn>=0.34.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
