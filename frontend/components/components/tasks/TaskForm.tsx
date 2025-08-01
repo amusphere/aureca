@@ -6,9 +6,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/components/ui/select";
 import { Textarea } from "@/components/components/ui/textarea";
-import { CreateTaskRequest, Task, TaskPriority, UpdateTaskRequest } from "@/types/Task";
+import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 import { format, fromUnixTime } from "date-fns";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface TaskFormProps {
@@ -22,19 +22,29 @@ interface TaskFormValues {
   title: string;
   description?: string;
   expires_at?: string; // ISO date string for form input
-  priority?: TaskPriority;
+  priority?: string; // UI用の文字列値（"high", "middle", "low", "none"）
 }
 
 export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!task;
 
+  // 優先度の数値を文字列に変換
+  const priorityToString = useCallback((priority?: number): string => {
+    switch (priority) {
+      case 1: return "high";
+      case 2: return "middle";
+      case 3: return "low";
+      default: return "none";
+    }
+  }, []);
+
   const form = useForm<TaskFormValues>({
     defaultValues: {
       title: "",
       description: "",
       expires_at: "",
-      priority: undefined,
+      priority: "none",
     },
   });
 
@@ -47,26 +57,36 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
         expires_at: task.expires_at
           ? format(fromUnixTime(task.expires_at), "yyyy-MM-dd'T'HH:mm")
           : "",
-        priority: task.priority,
+        priority: priorityToString(task.priority),
       });
     } else {
       form.reset({
         title: "",
         description: "",
         expires_at: "",
-        priority: undefined,
+        priority: "none",
       });
     }
-  }, [task, form]);
+  }, [task, form, priorityToString]);
 
   const handleSubmit = async (data: TaskFormValues) => {
     setIsSubmitting(true);
     try {
+      // 優先度の文字列を数値に変換
+      let priorityValue: 1 | 2 | 3 | undefined = undefined;
+      if (data.priority === "high") {
+        priorityValue = 1;
+      } else if (data.priority === "middle") {
+        priorityValue = 2;
+      } else if (data.priority === "low") {
+        priorityValue = 3;
+      }
+
       const taskData = {
         title: data.title,
         description: data.description || undefined,
         expires_at: data.expires_at ? Math.floor(new Date(data.expires_at).getTime() / 1000) : undefined,
-        priority: data.priority,
+        priority: priorityValue,
       };
 
       await onSubmit(taskData);
@@ -91,7 +111,7 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
         expires_at: task.expires_at
           ? format(fromUnixTime(task.expires_at), "yyyy-MM-dd'T'HH:mm")
           : "",
-        priority: task.priority,
+        priority: priorityToString(task.priority),
       });
     } else {
       form.reset();
@@ -167,16 +187,17 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
                   <FormControl>
                     <Select
                       onValueChange={(value) => {
-                        // 空文字列の場合はundefinedを設定
-                        field.onChange(value || undefined);
+                        // "none"の場合はundefinedを設定
+                        field.onChange(value === "none" ? undefined : value);
                       }}
-                      value={field.value || ""}
+                      value={field.value || "none"}
                       disabled={isSubmitting}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="優先度を選択（任意）" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">設定しない</SelectItem>
                         <SelectItem value="high">高</SelectItem>
                         <SelectItem value="middle">中</SelectItem>
                         <SelectItem value="low">低</SelectItem>

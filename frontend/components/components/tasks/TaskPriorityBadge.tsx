@@ -13,19 +13,19 @@ interface TaskPriorityBadgeProps {
 
 // 優先度別の設定
 const PRIORITY_CONFIG = {
-  high: {
+  1: {
     variant: "priority-high" as const,
     icon: AlertTriangle,
     label: "高",
     ariaLabel: "高優先度",
   },
-  middle: {
+  2: {
     variant: "priority-medium" as const,
     icon: AlertCircle,
     label: "中",
     ariaLabel: "中優先度",
   },
-  low: {
+  3: {
     variant: "priority-low" as const,
     icon: Circle,
     label: "低",
@@ -82,25 +82,18 @@ export function TaskPriorityBadge({
 // 優先度の表示順序を取得するヘルパー関数
 export function getPriorityOrder(priority?: TaskPriority): number {
   if (!priority) return 999; // 優先度未設定は最後
-
-  const orderMap = {
-    high: 1,
-    middle: 2,
-    low: 3,
-  };
-
-  return orderMap[priority];
+  return priority; // 数値なのでそのまま返す
 }
 
 // 優先度の重要度を判定するヘルパー関数
 export function isPriorityHigh(priority?: TaskPriority): boolean {
-  return priority === "high";
+  return priority === 1;
 }
 
 export function isPriorityMedium(priority?: TaskPriority): boolean {
-  return priority === "middle";
+  return priority === 2;
 }
 
 export function isPriorityLow(priority?: TaskPriority): boolean {
-  return priority === "low";
+  return priority === 3;
 }

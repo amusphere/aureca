@@ -7,6 +7,7 @@ import { Task } from "@/types/Task";
 import { formatTaskExpiry, getTaskStatus } from "@/utils/taskUtils";
 import { CalendarIcon, CheckIcon, ClockIcon, EditIcon, TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { TaskPriorityBadge, isPriorityHigh } from "./TaskPriorityBadge";
 
 interface TaskCardProps {
   task: Task;
@@ -50,6 +51,7 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
         ${isExpired && !task.completed ? 'border-destructive/50' : ''}
         ${isCompleting ? 'animate-[completion_0.6s_ease-out_forwards]' : ''}
         ${isUncompleting ? 'animate-[uncompletion_0.6s_ease-out_forwards]' : ''}
+        ${isPriorityHigh(task.priority) && !task.completed ? 'border-destructive/30 bg-destructive/5' : ''}
         hover:shadow-lg hover:border-border/80 hover:scale-[1.01]
         active:scale-[0.99] active:shadow-sm
         animate-fade-in-up
@@ -80,18 +82,46 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
           </Button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2 sm:mb-1">
-              <h3 className={`
-                text-sm font-medium leading-tight break-words sm:truncate flex-1
-                ${task.completed
-                  ? 'line-through text-muted-foreground'
-                  : 'text-foreground'
-                }
-              `}>
-                {task.title}
-              </h3>
+            <div className="flex flex-col gap-1 sm:gap-2 mb-2 sm:mb-1">
+              {/* タイトル行 */}
+              <div className="flex items-start sm:items-center gap-2">
+                <h3 className={`
+                  text-sm font-medium leading-tight break-words flex-1 min-w-0
+                  ${task.completed
+                    ? 'line-through text-muted-foreground'
+                    : 'text-foreground'
+                  }
+                `}>
+                  {task.title}
+                </h3>
 
-              <div className="flex items-center gap-1 flex-wrap shrink-0">
+                {/* タイトルのすぐ右に優先度バッジを配置（PC・モバイル共通） */}
+                <div className="flex items-center shrink-0">
+                  <TaskPriorityBadge
+                    priority={task.priority}
+                    size="sm"
+                    showIcon={true}
+                    showLabel={false}
+                  />
+                </div>
+              </div>
+
+              {/* デスクトップ用のバッジ行 */}
+              <div className="hidden sm:flex items-center gap-1 flex-wrap shrink-0">
+                {task.completed && (
+                  <Badge variant="status-completed" size="sm">
+                    完了
+                  </Badge>
+                )}
+                {isExpired && !task.completed && (
+                  <Badge variant="destructive" size="sm">
+                    期限切れ
+                  </Badge>
+                )}
+              </div>
+
+              {/* モバイル用のステータスバッジ行 */}
+              <div className="flex items-center gap-1 flex-wrap sm:hidden">
                 {task.completed && (
                   <Badge variant="status-completed" size="sm">
                     完了

@@ -1,4 +1,4 @@
-export type TaskPriority = "high" | "middle" | "low";
+export type TaskPriority = 1 | 2 | 3; // 1: high, 2: middle, 3: low
 
 export interface TaskSource {
   uuid: string;
