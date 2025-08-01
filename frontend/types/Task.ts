@@ -1,3 +1,5 @@
+export type TaskPriority = 1 | 2 | 3; // 1: high, 2: middle, 3: low
+
 export interface TaskSource {
   uuid: string;
   source_type: string;
@@ -16,6 +18,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   expires_at?: number;
+  priority?: TaskPriority;
   sources?: TaskSource[];
 }
 
@@ -23,6 +26,7 @@ export interface CreateTaskRequest {
   title: string;
   description?: string;
   expires_at?: number;
+  priority?: TaskPriority;
 }
 
 export interface UpdateTaskRequest {
@@ -30,6 +34,7 @@ export interface UpdateTaskRequest {
   description?: string;
   completed?: boolean;
   expires_at?: number;
+  priority?: TaskPriority;
 }
 
 // ソースタイプ関連の型定義

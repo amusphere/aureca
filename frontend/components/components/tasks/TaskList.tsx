@@ -3,7 +3,7 @@
 import { Button } from "@/components/components/ui/button";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
 import { Protect } from "@clerk/nextjs";
-import { CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
+import { ArrowUp01, Calendar, CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccessibility } from "../../hooks/useAccessibility";
 import { useTasks } from "../../hooks/useTasks";
@@ -19,6 +19,7 @@ export function TaskList() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+  const [orderByPriority, setOrderByPriority] = useState(true); // デフォルトで優先度順
 
   // 初期データ読み込み完了フラグ（チラつき防止）
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
@@ -41,12 +42,33 @@ export function TaskList() {
     clearError,
   } = useTasks();
 
+  // ソート切り替え関数
+  const handleSortToggle = async () => {
+    const newOrderByPriority = !orderByPriority;
+    setOrderByPriority(newOrderByPriority);
+    await fetchTasks(newOrderByPriority);
+
+    // アクセシビリティのためのアナウンス
+    announce(
+      newOrderByPriority
+        ? "優先度順でソートに切り替えました"
+        : "期限日順でソートに切り替えました"
+    );
+  };
+
   // 初期データ読み込み完了を管理（チラつき防止）
   useEffect(() => {
     if (!isLoading && !isGeneratingTasks) {
       setHasInitiallyLoaded(true);
     }
   }, [isLoading, isGeneratingTasks]);
+
+  // ソート設定変更時にデータを再取得
+  useEffect(() => {
+    if (hasInitiallyLoaded) {
+      fetchTasks(orderByPriority);
+    }
+  }, [orderByPriority, fetchTasks, hasInitiallyLoaded]);
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTask(taskData);
@@ -64,6 +86,11 @@ export function TaskList() {
     }
   };
 
+  // fetchTasks の呼び出しをラップした関数
+  const handleRefreshTasks = async () => {
+    await fetchTasks(orderByPriority);
+  };
+
   const handleGenerateTasks = async () => {
     setIsGeneratingTasks(true);
     try {
@@ -75,7 +102,7 @@ export function TaskList() {
         const data = await response.json();
 
         // タスクが生成されたら一覧を更新
-        await fetchTasks();
+        await fetchTasks(orderByPriority);
 
         // 自動生成完了メッセージを表示
         const gmailCount = data.Gmail?.length || 0;
@@ -104,13 +131,13 @@ export function TaskList() {
         const { toast } = await import('sonner');
         toast.error('タスク生成に失敗しました');
         // エラーでもタスク一覧をリフレッシュして最新状態を確認
-        await fetchTasks();
+        await fetchTasks(orderByPriority);
       }
     } catch {
       const { toast } = await import('sonner');
       toast.error('タスク生成中にエラーが発生しました');
       // エラーが発生してもタスク一覧をリフレッシュ
-      await fetchTasks();
+      await fetchTasks(orderByPriority);
     } finally {
       setIsGeneratingTasks(false);
     }
@@ -124,7 +151,7 @@ export function TaskList() {
           <ErrorDisplay
             error={error}
             onDismiss={clearError}
-            onRetry={fetchTasks}
+            onRetry={() => fetchTasks(orderByPriority)}
           />
         </div>
       )}
@@ -134,7 +161,7 @@ export function TaskList() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchTasks}
+          onClick={handleRefreshTasks}
           disabled={isLoading || isGeneratingTasks}
           aria-label="タスク一覧を更新"
           className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
@@ -142,6 +169,27 @@ export function TaskList() {
           <RefreshCwIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isLoading || isGeneratingTasks ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span className="hidden sm:inline">更新</span>
           <span className="sr-only sm:hidden">タスク一覧を更新</span>
+        </Button>
+        <div className="w-px h-4 bg-border/50" aria-hidden="true" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSortToggle}
+          disabled={isLoading || isGeneratingTasks}
+          aria-label={orderByPriority ? "期限日順でソート" : "優先度順でソート"}
+          className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
+        >
+          {orderByPriority ? (
+            <ArrowUp01 className="w-3 h-3 mr-1.5" aria-hidden="true" />
+          ) : (
+            <Calendar className="w-3 h-3 mr-1.5" aria-hidden="true" />
+          )}
+          <span className="hidden sm:inline">
+            {orderByPriority ? "優先度順" : "期限日順"}
+          </span>
+          <span className="sr-only sm:hidden">
+            {orderByPriority ? "優先度順でソート中" : "期限日順でソート中"}
+          </span>
         </Button>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
         <Protect condition={(has) => !has({ plan: "free" })}>

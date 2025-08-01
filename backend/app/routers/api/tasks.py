@@ -1,5 +1,5 @@
 from app.database import get_session
-from app.models.task import TaskModel
+from app.models.task import TaskModel, CreateTaskRequest, UpdateTaskRequest
 from app.repositories.tasks import (
     create_task,
     delete_task_by_uuid,
@@ -19,16 +19,19 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 async def get_tasks_endpoint(
     completed: bool = False,
     expires_at: float | None = None,
+    order_by_priority: bool = True,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
     """ユーザーのタスク一覧を取得"""
-    return find_tasks(
+    tasks = find_tasks(
         session=session,
         user_id=user.id,
         completed=completed,
         expires_at=expires_at,
+        order_by_priority=order_by_priority,
     )
+    return [TaskModel.model_validate(task) for task in tasks]
 
 
 @router.get("/{task_uuid}", response_model=TaskModel)
@@ -46,29 +49,31 @@ async def get_task_endpoint(
             detail="Task not found",
         )
 
-    return task
+    return TaskModel.model_validate(task)
 
 
 @router.post("", response_model=TaskModel)
 async def create_task_endpoint(
-    task: TaskModel,
+    task: CreateTaskRequest,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
     """新しいタスクを作成"""
-    return create_task(
+    created_task = create_task(
         session=session,
         user_id=user.id,
         title=task.title,
         description=task.description,
         expires_at=task.expires_at,
+        priority=task.priority,
     )
+    return TaskModel.model_validate(created_task)
 
 
 @router.patch("/{task_uuid}", response_model=TaskModel)
 async def update_task_endpoint(
     task_uuid: str,
-    task: TaskModel,
+    task: UpdateTaskRequest,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
@@ -80,7 +85,7 @@ async def update_task_endpoint(
             detail="Task not found",
         )
 
-    return update_task_by_uuid(
+    updated_task = update_task_by_uuid(
         session=session,
         uuid=task_uuid,
         user_id=user.id,
@@ -88,7 +93,9 @@ async def update_task_endpoint(
         description=task.description,
         expires_at=task.expires_at,
         completed=task.completed,
+        priority=task.priority,
     )
+    return TaskModel.model_validate(updated_task)
 
 
 @router.delete("/{task_uuid}", status_code=status.HTTP_204_NO_CONTENT)

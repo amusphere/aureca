@@ -17,7 +17,7 @@ interface UseTasksReturn {
   uncompletingTasks: Set<string>;
 
   // Actions
-  fetchTasks: () => Promise<void>;
+  fetchTasks: (orderByPriority?: boolean) => Promise<void>;
   createTask: (taskData: CreateTaskRequest) => Promise<void>;
   updateTask: (taskUuid: string, taskData: UpdateTaskRequest) => Promise<void>;
   toggleTaskComplete: (taskUuid: string, completed: boolean) => Promise<void>;
@@ -46,18 +46,19 @@ export function useTasks(): UseTasksReturn {
   const { error, withErrorHandling, clearError } = useErrorHandling();
 
   // Fetch tasks from API using TaskService
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (orderByPriority: boolean = true) => {
     setIsLoading(true);
 
     try {
       await withErrorHandling(
         async () => {
           const [activeData, completedData] = await Promise.all([
-            TaskService.getTasks(false),
-            TaskService.getTasks(true)
+            TaskService.getTasks(false, orderByPriority),
+            TaskService.getTasks(true, orderByPriority)
           ]);
 
-          const sortedActiveTasks = sortTasksByExpiry(activeData);
+          // 優先度ソートが無効の場合のみ期限日でソート
+          const sortedActiveTasks = orderByPriority ? activeData : sortTasksByExpiry(activeData);
           setActiveTasks(sortedActiveTasks);
           setCompletedTasks(completedData);
         },
@@ -77,7 +78,7 @@ export function useTasks(): UseTasksReturn {
     await withErrorHandling(
       async () => {
         await TaskService.createTask(taskData);
-        await fetchTasks();
+        await fetchTasks(); // デフォルトで優先度順
       },
       {
         onError: (error) => {
@@ -108,7 +109,7 @@ export function useTasks(): UseTasksReturn {
       {
         onError: () => {
           // Refresh data on error
-          fetchTasks();
+          fetchTasks(); // デフォルトで優先度順
         }
       }
     );
@@ -175,7 +176,7 @@ export function useTasks(): UseTasksReturn {
           });
 
           // Refresh data on error
-          fetchTasks();
+          fetchTasks(); // デフォルトで優先度順
         }
       }
     );
@@ -197,7 +198,7 @@ export function useTasks(): UseTasksReturn {
       {
         onError: () => {
           // Refresh data on error
-          fetchTasks();
+          fetchTasks(); // デフォルトで優先度順
         }
       }
     );
@@ -205,7 +206,7 @@ export function useTasks(): UseTasksReturn {
 
   // Initial data fetch
   useEffect(() => {
-    fetchTasks();
+    fetchTasks(); // デフォルトで優先度順
   }, [fetchTasks]);
 
   return {

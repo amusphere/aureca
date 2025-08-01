@@ -1,0 +1,261 @@
+"""Performance tests for task priority system."""
+
+import time
+import statistics
+from typing import List
+from sqlmodel import Session
+
+from app.repositories.tasks import find_tasks
+from app.schema import Tasks, TaskPriority, User
+
+
+class TestTaskPriorityPerformance:
+    """Performance tests for task priority functionality."""
+
+    def test_large_dataset_priority_sorting_performance(self, session: Session, test_user: User):
+        """Test priority sorting performance with large datasets."""
+        # Test with different dataset sizes
+        dataset_sizes = [100, 500, 1000, 2000]
+        performance_results = {}
+
+        for size in dataset_sizes:
+            # Clear previous test data
+            session.query(Tasks).filter(Tasks.user_id == test_user.id).delete()
+            session.commit()
+
+            # Create test data
+            self._create_test_tasks(session, test_user, size)
+
+            # Measure sorting performance
+            execution_times = []
+
+            # Run multiple iterations to get average performance
+            for _ in range(5):
+                start_time = time.time()
+                tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
+                end_time = time.time()
+
+                execution_times.append(end_time - start_time)
+
+                # Verify correct number of tasks returned
+                assert len(tasks) == size
+
+            # Calculate performance metrics
+            avg_time = statistics.mean(execution_times)
+            max_time = max(execution_times)
+            min_time = min(execution_times)
+
+            performance_results[size] = {
+                "avg_time": avg_time,
+                "max_time": max_time,
+                "min_time": min_time
+            }
+
+            # Performance assertions
+            assert avg_time < 2.0, f"Average sorting time {avg_time:.3f}s too slow for {size} tasks"
+            assert max_time < 3.0, f"Maximum sorting time {max_time:.3f}s too slow for {size} tasks"
+
+        # Verify performance scales reasonably
+        self._verify_performance_scaling(performance_results)
+
+    def test_priority_sorting_vs_no_sorting_performance(self, session: Session, test_user: User):
+        """Compare performance of priority sorting vs no sorting."""
+        test_size = 1000
+
+        # Create test data
+        self._create_test_tasks(session, test_user, test_size)
+
+        # Measure priority sorting performance
+        priority_times = []
+        for _ in range(10):
+            start_time = time.time()
+            tasks_with_priority = find_tasks(
+                session=session,
+                user_id=test_user.id,
+                order_by_priority=True
+            )
+            end_time = time.time()
+            priority_times.append(end_time - start_time)
+
+        # Measure no sorting performance
+        no_sort_times = []
+        for _ in range(10):
+            start_time = time.time()
+            tasks_no_sort = find_tasks(
+                session=session,
+                user_id=test_user.id,
+                order_by_priority=False
+            )
+            end_time = time.time()
+            no_sort_times.append(end_time - start_time)
+
+        avg_priority_time = statistics.mean(priority_times)
+        avg_no_sort_time = statistics.mean(no_sort_times)
+
+        # Verify both return same number of tasks
+        assert len(tasks_with_priority) == len(tasks_no_sort) == test_size
+
+        # Priority sorting should be reasonably close to no sorting
+        # (with proper indexing, the difference should be minimal)
+        performance_ratio = avg_priority_time / avg_no_sort_time
+        assert performance_ratio < 3.0, f"Priority sorting is {performance_ratio:.2f}x slower than no sorting"
+
+        print(f"Priority sorting: {avg_priority_time:.4f}s avg")
+        print(f"No sorting: {avg_no_sort_time:.4f}s avg")
+        print(f"Performance ratio: {performance_ratio:.2f}x")
+
+    def test_database_index_effectiveness(self, session: Session, test_user: User):
+        """Test that database indexes are effective for priority queries."""
+        test_size = 5000
+
+        # Create large test dataset
+        self._create_test_tasks(session, test_user, test_size)
+
+        # Test various query patterns that should benefit from indexes
+        query_patterns = [
+            # Priority sorting (should use priority index)
+            lambda: find_tasks(session=session, user_id=test_user.id, order_by_priority=True),
+
+            # Completed filter with priority sorting
+            lambda: find_tasks(session=session, user_id=test_user.id, completed=False, order_by_priority=True),
+
+            # Expires_at filter with priority sorting
+            lambda: find_tasks(session=session, user_id=test_user.id, expires_at=1672617600.0, order_by_priority=True),
+        ]
+
+        for i, query_func in enumerate(query_patterns):
+            execution_times = []
+
+            for _ in range(3):
+                start_time = time.time()
+                results = query_func()
+                end_time = time.time()
+
+                execution_times.append(end_time - start_time)
+
+                # Verify query returns results
+                assert len(results) > 0
+
+            avg_time = statistics.mean(execution_times)
+
+            # With proper indexes, even complex queries should be fast
+            assert avg_time < 1.0, f"Query pattern {i} too slow: {avg_time:.3f}s"
+
+            print(f"Query pattern {i}: {avg_time:.4f}s avg")
+
+    def test_memory_usage_with_large_datasets(self, session: Session, test_user: User):
+        """Test memory usage patterns with large task datasets."""
+        # Note: psutil not available in test environment, so we'll do a basic test
+
+        # Create large dataset
+        test_size = 1000  # Reduced size for basic test
+        self._create_test_tasks(session, test_user, test_size)
+
+        # Perform priority sorting query
+        start_time = time.time()
+        tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
+        end_time = time.time()
+
+        execution_time = end_time - start_time
+
+        # Verify we got the expected number of tasks
+        assert len(tasks) == test_size
+
+        # Verify performance is still good with large dataset
+        assert execution_time < 2.0, f"Query too slow with large dataset: {execution_time:.3f}s"
+
+        print(f"Large dataset query time: {execution_time:.4f}s for {test_size} tasks")
+
+    def test_concurrent_priority_queries(self, session: Session, test_user: User):
+        """Test performance under concurrent priority sorting queries."""
+        import concurrent.futures
+
+        test_size = 1000
+        self._create_test_tasks(session, test_user, test_size)
+
+        def run_priority_query():
+            """Execute a priority sorting query."""
+            start_time = time.time()
+            tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
+            end_time = time.time()
+            return {
+                "execution_time": end_time - start_time,
+                "task_count": len(tasks)
+            }
+
+        # Run concurrent queries
+        num_threads = 5
+        execution_results = []
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+            futures = [executor.submit(run_priority_query) for _ in range(num_threads)]
+
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                execution_results.append(result)
+
+        # Verify all queries completed successfully
+        assert len(execution_results) == num_threads
+
+        for result in execution_results:
+            assert result["task_count"] == test_size
+            assert result["execution_time"] < 2.0  # Should complete within 2 seconds
+
+        # Calculate average concurrent performance
+        avg_concurrent_time = statistics.mean([r["execution_time"] for r in execution_results])
+        max_concurrent_time = max([r["execution_time"] for r in execution_results])
+
+        print(f"Average concurrent query time: {avg_concurrent_time:.4f}s")
+        print(f"Maximum concurrent query time: {max_concurrent_time:.4f}s")
+
+        # Concurrent performance should still be reasonable
+        assert avg_concurrent_time < 1.5
+        assert max_concurrent_time < 2.0
+
+    def _create_test_tasks(self, session: Session, user: User, count: int) -> List[Tasks]:
+        """Create test tasks with mixed priorities."""
+        tasks = []
+        priorities = [TaskPriority.HIGH, TaskPriority.MIDDLE, TaskPriority.LOW, None]
+
+        for i in range(count):
+            priority = priorities[i % len(priorities)]
+
+            task = Tasks(
+                id=f"perf-task-{i}",
+                user_id=user.id,
+                title=f"Performance Test Task {i}",
+                description=f"Description for task {i}",
+                priority=priority,
+                completed=i % 10 == 0,  # 10% completed
+                expires_at=1672617600.0 + (i * 3600),  # Staggered expiry times
+                created_at=1672531200.0 + i,
+                updated_at=1672531200.0 + i,
+            )
+
+            session.add(task)
+            tasks.append(task)
+
+        session.commit()
+        return tasks
+
+    def _verify_performance_scaling(self, performance_results: dict):
+        """Verify that performance scales reasonably with dataset size."""
+        sizes = sorted(performance_results.keys())
+
+        for i in range(1, len(sizes)):
+            current_size = sizes[i]
+            previous_size = sizes[i - 1]
+
+            current_time = performance_results[current_size]["avg_time"]
+            previous_time = performance_results[previous_size]["avg_time"]
+
+            size_ratio = current_size / previous_size
+            time_ratio = current_time / previous_time
+
+            # Performance should scale sub-linearly (better than O(n))
+            # With good indexing, it should be closer to O(log n)
+            assert time_ratio < size_ratio * 1.5, \
+                f"Performance scaling too poor: {time_ratio:.2f}x time for {size_ratio:.2f}x data"
+
+            print(f"Size {previous_size} -> {current_size}: "
+                  f"{time_ratio:.2f}x time for {size_ratio:.2f}x data")

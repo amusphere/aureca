@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.schema import Tasks
+from app.schema import TaskPriority, Tasks
 from sqlmodel import Session, select
 
 
@@ -9,19 +9,26 @@ def find_tasks(
     user_id: int,
     completed: bool = False,
     expires_at: float | None = None,
+    order_by_priority: bool = True,
 ) -> list[Tasks]:
     """Find all task lists for a specific user"""
-    stmt = (
-        select(Tasks)
-        .where(
-            Tasks.user_id == user_id,
-            Tasks.completed == completed,
-        )
-        .order_by(Tasks.expires_at)
+    stmt = select(Tasks).where(
+        Tasks.user_id == user_id,
+        Tasks.completed == completed,
     )
 
     if expires_at is not None:
         stmt = stmt.where(Tasks.expires_at >= expires_at)
+
+    if order_by_priority:
+        # Efficient priority sorting: 1(High) -> 2(Middle) -> 3(Low) -> NULL
+        # Using nullslast() to put tasks without priority at the end
+        stmt = stmt.order_by(
+            Tasks.priority.asc().nullslast(),
+            Tasks.expires_at.asc().nullslast(),
+        )
+    else:
+        stmt = stmt.order_by(Tasks.expires_at.asc().nullslast())
 
     return session.exec(stmt).all()
 
@@ -52,6 +59,7 @@ def create_task(
     title: str,
     description: str | None = None,
     expires_at: float | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Create a new task"""
     task = Tasks(
@@ -59,6 +67,7 @@ def create_task(
         title=title,
         description=description,
         expires_at=expires_at,
+        priority=priority,
     )
     session.add(task)
     session.commit()
@@ -73,6 +82,7 @@ def update_task(
     description: str | None = None,
     expires_at: float | None = None,
     completed: bool | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Update an existing task"""
     task = get_task_by_id(session, id)
@@ -87,6 +97,8 @@ def update_task(
         task.expires_at = expires_at
     if completed is not None:
         task.completed = completed
+    if priority is not None:
+        task.priority = priority
 
     session.commit()
     session.refresh(task)
@@ -117,6 +129,7 @@ def update_task_by_uuid(
     description: str | None = None,
     expires_at: float | None = None,
     completed: bool | None = None,
+    priority: TaskPriority | None = None,
 ) -> Tasks:
     """Update an existing task by UUID"""
     task = get_task_by_uuid(session, uuid, user_id)
@@ -131,6 +144,8 @@ def update_task_by_uuid(
         task.expires_at = expires_at
     if completed is not None:
         task.completed = completed
+    if priority is not None:
+        task.priority = priority
 
     session.commit()
     session.refresh(task)

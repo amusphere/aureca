@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const completed = searchParams.get('completed');
     const expires_at = searchParams.get('expires_at');
+    const order_by_priority = searchParams.get('order_by_priority');
 
     // クエリパラメータを構築
     const queryParams = new URLSearchParams();
@@ -14,6 +15,9 @@ export async function GET(request: NextRequest) {
     }
     if (expires_at !== null) {
       queryParams.append('expires_at', expires_at);
+    }
+    if (order_by_priority !== null) {
+      queryParams.append('order_by_priority', order_by_priority);
     }
 
     const queryString = queryParams.toString();

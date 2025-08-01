@@ -46,6 +46,11 @@
           "type": "number",
           "required": false,
           "description": "Expiry timestamp (Unix time)"
+        },
+        "priority": {
+          "type": "string",
+          "required": false,
+          "description": "Task priority (high, middle, low)"
         }
       }
     },
@@ -97,6 +102,11 @@
           "type": "number",
           "required": false,
           "description": "Expiry timestamp (Unix time)"
+        },
+        "priority": {
+          "type": "string",
+          "required": false,
+          "description": "Task priority (high, middle, low)"
         }
       }
     },
