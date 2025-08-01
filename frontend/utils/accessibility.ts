@@ -3,6 +3,8 @@
  * WCAG AA準拠の確認とキーボードナビゲーション支援
  */
 
+import { TaskPriority } from "@/types/Task";
+
 // カラーコントラスト比を計算する関数
 export function calculateContrastRatio(color1: string, color2: string): number {
   const getLuminance = (color: string): number => {
@@ -256,4 +258,145 @@ export function watchBreakpointChanges(callback: (breakpoint: string) => void): 
     mobileQuery.removeEventListener('change', handleChange);
     tabletQuery.removeEventListener('change', handleChange);
   };
+}
+
+// === 優先度関連のアクセシビリティ機能 ===
+
+/**
+ * 優先度に基づいてアクセシブルな説明文を生成
+ */
+export function getPriorityDescription(priority?: TaskPriority): string {
+  if (!priority) return "優先度未設定";
+
+  switch (priority) {
+    case 1:
+      return "高優先度 - 緊急度が高く、早急な対応が必要なタスクです";
+    case 2:
+      return "中優先度 - 重要なタスクですが、時間に余裕があります";
+    case 3:
+      return "低優先度 - 時間があるときに対応すれば良いタスクです";
+    default:
+      return "優先度未設定";
+  }
+}
+
+/**
+ * 優先度に基づいてアクセシブルなラベルを生成
+ */
+export function getPriorityAriaLabel(priority?: TaskPriority): string {
+  if (!priority) return "優先度未設定";
+
+  switch (priority) {
+    case 1:
+      return "高優先度タスク";
+    case 2:
+      return "中優先度タスク";
+    case 3:
+      return "低優先度タスク";
+    default:
+      return "優先度未設定";
+  }
+}
+
+/**
+ * 優先度変更をスクリーンリーダーにアナウンス
+ */
+export function announcePriorityChange(priority?: TaskPriority, taskTitle?: string): void {
+  const priorityText = getPriorityDescription(priority);
+  const message = taskTitle
+    ? `タスク「${taskTitle}」の優先度を${priorityText}に変更しました`
+    : `優先度を${priorityText}に変更しました`;
+
+  announceToScreenReader(message, 'polite');
+}
+
+/**
+ * 優先度選択のキーボードショートカット
+ */
+export function handlePriorityKeyboardShortcuts(
+  event: KeyboardEvent,
+  onPriorityChange: (priority: TaskPriority | undefined) => void
+): boolean {
+  // Ctrl/Cmd + 数字キーで優先度を設定
+  if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+    switch (event.key) {
+      case '1':
+        event.preventDefault();
+        onPriorityChange(1);
+        announceToScreenReader('高優先度に設定しました', 'polite');
+        return true;
+      case '2':
+        event.preventDefault();
+        onPriorityChange(2);
+        announceToScreenReader('中優先度に設定しました', 'polite');
+        return true;
+      case '3':
+        event.preventDefault();
+        onPriorityChange(3);
+        announceToScreenReader('低優先度に設定しました', 'polite');
+        return true;
+      case '0':
+        event.preventDefault();
+        onPriorityChange(undefined);
+        announceToScreenReader('優先度を未設定にしました', 'polite');
+        return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * 優先度バッジの色がアクセシブルかチェック
+ */
+export function validatePriorityColors(): {
+  high: boolean;
+  medium: boolean;
+  low: boolean;
+} {
+  const results = {
+    high: false,
+    medium: false,
+    low: false
+  };
+
+  // 実際のDOM要素から色を取得してチェック
+  if (typeof window !== 'undefined') {
+    const testContainer = document.createElement('div');
+    testContainer.style.position = 'absolute';
+    testContainer.style.top = '-9999px';
+    document.body.appendChild(testContainer);
+
+    try {
+      // 高優先度バッジのテスト
+      testContainer.innerHTML = '<span class="priority-high-badge">高</span>';
+      const highElement = testContainer.querySelector('.priority-high-badge') as HTMLElement;
+      if (highElement) {
+        const style = window.getComputedStyle(highElement);
+        const { passAA } = checkWCAGCompliance(style.color, style.backgroundColor);
+        results.high = passAA;
+      }
+
+      // 中優先度バッジのテスト
+      testContainer.innerHTML = '<span class="priority-medium-badge">中</span>';
+      const mediumElement = testContainer.querySelector('.priority-medium-badge') as HTMLElement;
+      if (mediumElement) {
+        const style = window.getComputedStyle(mediumElement);
+        const { passAA } = checkWCAGCompliance(style.color, style.backgroundColor);
+        results.medium = passAA;
+      }
+
+      // 低優先度バッジのテスト
+      testContainer.innerHTML = '<span class="priority-low-badge">低</span>';
+      const lowElement = testContainer.querySelector('.priority-low-badge') as HTMLElement;
+      if (lowElement) {
+        const style = window.getComputedStyle(lowElement);
+        const { passAA } = checkWCAGCompliance(style.color, style.backgroundColor);
+        results.low = passAA;
+      }
+    } finally {
+      document.body.removeChild(testContainer);
+    }
+  }
+
+  return results;
 }

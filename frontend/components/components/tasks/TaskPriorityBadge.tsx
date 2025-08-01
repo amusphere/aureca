@@ -52,9 +52,15 @@ export function TaskPriorityBadge({
     <Badge
       variant={config.variant}
       size={size}
-      className={cn("transition-all duration-300 ease-out", className)}
+      className={cn(
+        "transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        // 高優先度の場合は軽微な視覚的強調（アニメーション軽減設定を尊重）
+        priority === 1 && "animate-pulse motion-reduce:animate-none ring-1 ring-destructive/20",
+        className
+      )}
       aria-label={config.ariaLabel}
       role="status"
+      tabIndex={0}
     >
       {showIcon && (
         <Icon

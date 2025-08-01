@@ -31,6 +31,14 @@ export default function RootLayout({
           </div>
         </ClerkProvider>
 
+        {/* Screen reader live region for announcements */}
+        <div
+          id="sr-announcements"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
+
         {/* Toast notifications with proper ARIA live region */}
         <div aria-live="polite" aria-atomic="true">
           <Toaster
@@ -47,14 +55,6 @@ export default function RootLayout({
             }}
           />
         </div>
-
-        {/* Screen reader announcements */}
-        <div
-          id="sr-announcements"
-          aria-live="assertive"
-          aria-atomic="true"
-          className="sr-only"
-        ></div>
       </body>
     </html>
   );

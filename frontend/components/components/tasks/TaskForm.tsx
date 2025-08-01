@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/components/ui/form";
 import { Input } from "@/components/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/components/ui/select";
 import { Textarea } from "@/components/components/ui/textarea";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
+import { handlePriorityKeyboardShortcuts, announceToScreenReader } from "@/utils/accessibility";
 import { format, fromUnixTime } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -119,13 +120,35 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
     onClose();
   };
 
+  // 優先度変更のキーボードショートカット処理
+  const handlePriorityShortcut = useCallback((priority: 1 | 2 | 3 | undefined) => {
+    const priorityString = priority === 1 ? "high" : priority === 2 ? "middle" : priority === 3 ? "low" : "none";
+    form.setValue("priority", priorityString);
+
+    // 変更をアナウンス
+    const priorityName = priority === 1 ? "高優先度" : priority === 2 ? "中優先度" : priority === 3 ? "低優先度" : "優先度未設定";
+    announceToScreenReader(`優先度を${priorityName}に設定しました`, 'polite');
+  }, [form]);
+
+  // キーボードイベントハンドラー
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    // 優先度設定のキーボードショートカット
+    if (handlePriorityKeyboardShortcuts(event.nativeEvent, handlePriorityShortcut)) {
+      return; // ショートカットが処理された場合は他の処理をスキップ
+    }
+  }, [handlePriorityShortcut]);
+
   // 現在時刻をISO形式で取得（datetime-localの最小値用）
   const now = new Date();
   const localDateTime = format(now, "yyyy-MM-dd'T'HH:mm");
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onKeyDown={handleKeyDown}
+        aria-describedby="form-shortcuts-help"
+      >
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? "タスクを編集" : "新しいタスクを作成"}
@@ -133,6 +156,9 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
           <DialogDescription>
             タスクの詳細を入力してください。期限は任意です。
           </DialogDescription>
+          <div id="form-shortcuts-help" className="sr-only">
+            キーボードショートカット: Ctrl+1で高優先度、Ctrl+2で中優先度、Ctrl+3で低優先度、Ctrl+0で優先度未設定に変更できます。
+          </div>
         </DialogHeader>
 
         <Form {...form}>
@@ -184,6 +210,9 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>優先度</FormLabel>
+                  <FormDescription>
+                    タスクの重要度を設定できます（任意）
+                  </FormDescription>
                   <FormControl>
                     <Select
                       onValueChange={(value) => {
@@ -192,15 +221,39 @@ export function TaskForm({ isOpen, task, onClose, onSubmit }: TaskFormProps) {
                       }}
                       value={field.value || "none"}
                       disabled={isSubmitting}
+                      aria-describedby="priority-description"
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger
+                        className="w-full focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        aria-label="優先度を選択"
+                      >
                         <SelectValue placeholder="優先度を選択（任意）" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">設定しない</SelectItem>
-                        <SelectItem value="high">高</SelectItem>
-                        <SelectItem value="middle">中</SelectItem>
-                        <SelectItem value="low">低</SelectItem>
+                        <SelectItem
+                          value="none"
+                          aria-label="優先度を設定しない"
+                        >
+                          設定しない
+                        </SelectItem>
+                        <SelectItem
+                          value="high"
+                          aria-label="高優先度に設定"
+                        >
+                          高 - 緊急度が高いタスク
+                        </SelectItem>
+                        <SelectItem
+                          value="middle"
+                          aria-label="中優先度に設定"
+                        >
+                          中 - 標準的な重要度のタスク
+                        </SelectItem>
+                        <SelectItem
+                          value="low"
+                          aria-label="低優先度に設定"
+                        >
+                          低 - 時間があるときに対応
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

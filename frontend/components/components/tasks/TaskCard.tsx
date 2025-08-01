@@ -102,6 +102,7 @@ export function TaskCard({ task, isCompleting = false, isUncompleting = false, o
                     size="sm"
                     showIcon={true}
                     showLabel={false}
+                    className="focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
                   />
                 </div>
               </div>
