@@ -43,6 +43,7 @@ class User(SQLModel, table=True):
         back_populates="user", cascade_delete=True
     )
     tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
+    ai_chat_usage_logs: list["AIChatUsageLog"] = Relationship(cascade_delete=True)
 
 
 class GoogleOAuthToken(SQLModel, table=True):
@@ -108,6 +109,23 @@ class TaskSource(SQLModel, table=True):
     title: str | None = Field(nullable=True)
     content: str | None = Field(nullable=True)
     extra_data: str | None = Field(nullable=True)  # JSON形式で追加情報を保存
+
+
+class AIChatUsageLog(SQLModel, table=True):
+    __tablename__ = "ai_chat_usage_logs"
+    __table_args__ = (
+        {"extend_existing": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    usage_date: str = Field(index=True)  # YYYY-MM-DD format
+    usage_count: int = Field(default=0)
+    created_at: float = Field(default_factory=lambda: datetime.now().timestamp())
+    updated_at: float = Field(default_factory=lambda: datetime.now().timestamp())
+
+    # Relationship to User
+    user: User = Relationship(back_populates="ai_chat_usage_logs")
 
 
 metadata = SQLModel.metadata
