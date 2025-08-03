@@ -1,6 +1,6 @@
 "use client";
 
-import { AIChatUsage, AIChatUsageError } from "@/types/AIChatUsage";
+import { AIChatUsage, AIChatUsageError, AIChatUsageErrorCode, AIChatUsageUtils } from "@/types/AIChatUsage";
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -37,16 +37,7 @@ export default function AIChatInput({
   // Generate appropriate placeholder text based on usage status
   const getPlaceholderText = (): string => {
     if (usageError) {
-      switch (usageError.errorCode) {
-        case 'USAGE_LIMIT_EXCEEDED':
-          return "本日の利用回数上限に達しました。明日の00:00にリセットされます。";
-        case 'PLAN_RESTRICTION':
-          return "現在のプランではAIChatをご利用いただけません。";
-        case 'SYSTEM_ERROR':
-          return "一時的なエラーが発生しました。しばらく後にお試しください。";
-        default:
-          return "現在ご利用いただけません。";
-      }
+      return AIChatUsageUtils.getErrorMessage(usageError.errorCode as AIChatUsageErrorCode, 'placeholder');
     }
 
     if (usage && !usage.canUseChat) {

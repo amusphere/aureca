@@ -1,178 +1,176 @@
 "use client";
 
-import { useAIChatUsage } from "@/components/hooks/useAIChatUsage";
-import { Badge } from "@/components/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/components/ui/card";
-import { Button } from "@/components/components/ui/button";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AIChatUsage, AIChatUsageError, AIChatUsageErrorCode, AIChatUsageUtils } from "@/types/AIChatUsage";
+import { AlertCircle, Clock, RefreshCw } from "lucide-react";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+
+interface AIChatUsageDisplayProps {
+  usage: AIChatUsage | null;
+  error: AIChatUsageError | null;
+  loading?: boolean;
+  onRefresh?: () => void;
+  onClearError?: () => void;
+  variant?: 'compact' | 'detailed';
+  className?: string;
+}
 
 /**
- * Component to display AI Chat usage information
- * Used for testing and debugging the useAIChatUsage hook
- *
- * Requirements covered:
- * - 4.1: Display remaining usage count and daily limit
- * - 4.2: Show usage status and restrictions
- * - 5.1: Display error messages
- * - 5.2: Real-time updates and refresh functionality
+ * Component for displaying AI Chat usage information with enhanced error handling
+ * Implements requirements 4.1, 4.2, 5.1, 5.2, 5.3
  */
-export function AIChatUsageDisplay() {
-  const {
-    usage,
-    loading,
-    error,
-    canUseChat,
-    isUsageExhausted,
-    checkUsage,
-    refreshUsage,
-    incrementUsage,
-    clearError
-  } = useAIChatUsage();
-
-  const handleTestIncrement = async () => {
-    const result = await incrementUsage();
-    console.log('Increment result:', result);
-  };
-
-  if (loading) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 animate-spin" />
-            AI Chat 利用状況
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">読み込み中...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+export function AIChatUsageDisplay({
+  usage,
+  error,
+  loading = false,
+  onRefresh,
+  onClearError,
+  variant = 'compact',
+  className = '',
+}: AIChatUsageDisplayProps) {
+  // Error state display
   if (error) {
     return (
-      <Card className="w-full max-w-md border-destructive">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            エラー
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-destructive">{error.error}</p>
-          <p className="text-xs text-muted-foreground">
-            エラーコード: {error.errorCode}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            リセット時刻: {new Date(error.resetTime).toLocaleString('ja-JP')}
-          </p>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={clearError}>
-              エラーをクリア
-            </Button>
-            <Button size="sm" onClick={refreshUsage}>
-              再試行
-            </Button>
+      <div className={`p-4 bg-destructive/5 border border-destructive/20 rounded-lg ${className}`}>
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-destructive">
+              {AIChatUsageUtils.getErrorTitle(error.errorCode as AIChatUsageErrorCode)}
+            </p>
+            {variant === 'detailed' && (
+              <p className="text-xs text-destructive/90 mt-1">
+                {AIChatUsageUtils.getErrorMessage(error.errorCode as AIChatUsageErrorCode, 'detailed')}
+              </p>
+            )}
+
+            {/* Reset time information */}
+            {error.resetTime && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-1 text-xs text-destructive/80">
+                  <Clock className="h-3 w-3" />
+                  <span>リセット時刻: {AIChatUsageUtils.formatResetTime(error.resetTime)}</span>
+                </div>
+                <p className="text-xs text-destructive/70 ml-4">
+                  ({AIChatUsageUtils.getTimeUntilReset(error.resetTime)}にリセット)
+                </p>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {variant === 'detailed' && (
+              <div className="flex gap-2 mt-3">
+                {onClearError && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onClearError}
+                    className="h-7 text-xs"
+                  >
+                    閉じる
+                  </Button>
+                )}
+                {onRefresh && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onRefresh}
+                    disabled={loading}
+                    className="h-7 text-xs"
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                    再確認
+                  </Button>
+                )}
+                {AIChatUsageUtils.getErrorActionText(error.errorCode as AIChatUsageErrorCode) &&
+                  AIChatUsageUtils.isRecoverableError(error.errorCode as AIChatUsageErrorCode) && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        // TODO: Implement plan upgrade navigation
+                        console.log('Navigate to plan upgrade');
+                      }}
+                    >
+                      {AIChatUsageUtils.getErrorActionText(error.errorCode as AIChatUsageErrorCode)}
+                    </Button>
+                  )}
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
-  if (!usage) {
+  // Loading state
+  if (loading && !usage) {
     return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>AI Chat 利用状況</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">利用状況を取得できませんでした</p>
-          <Button size="sm" className="mt-2" onClick={checkUsage}>
-            再読み込み
-          </Button>
-        </CardContent>
-      </Card>
+      <div className={`flex items-center gap-2 ${className}`}>
+        <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">利用状況を確認中...</span>
+      </div>
     );
   }
 
-  return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          AI Chat 利用状況
-          <Badge variant={canUseChat ? "default" : "destructive"}>
-            {canUseChat ? "利用可能" : "利用不可"}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Usage Statistics */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">残り回数:</span>
-            <span className={`text-sm font-bold ${isUsageExhausted ? 'text-destructive' : 'text-primary'}`}>
-              {usage.remainingCount} / {usage.dailyLimit}
-            </span>
-          </div>
+  // Usage display
+  if (usage) {
+    const canUseChat = usage.canUseChat;
+    const isExhausted = usage.remainingCount <= 0;
 
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all duration-300 ${
-                isUsageExhausted ? 'bg-destructive' : 'bg-primary'
-              }`}
-              style={{
-                width: `${Math.max(0, (usage.remainingCount / usage.dailyLimit) * 100)}%`
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Reset Time */}
-        <div className="text-xs text-muted-foreground">
-          リセット時刻: {new Date(usage.resetTime).toLocaleString('ja-JP')}
-        </div>
-
-        {/* Status Messages */}
-        {isUsageExhausted && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-            <p className="text-sm text-destructive font-medium">
-              本日の利用回数上限に達しました
-            </p>
-            <p className="text-xs text-destructive/80 mt-1">
-              明日の00:00にリセットされます
-            </p>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={refreshUsage}>
-            <RefreshCw className="h-3 w-3 mr-1" />
-            更新
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleTestIncrement}
-            disabled={!canUseChat}
+    return (
+      <div className={`space-y-2 ${className}`}>
+        {/* Usage badge */}
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={canUseChat ? "default" : "destructive"}
+            className={`text-xs font-medium ${AIChatUsageUtils.getUsageStatusColor(usage.remainingCount, usage.dailyLimit)}`}
           >
-            テスト実行
-          </Button>
+            {AIChatUsageUtils.formatUsageDisplay(usage.remainingCount, usage.dailyLimit)}
+          </Badge>
+          {loading && (
+            <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
         </div>
 
-        {/* Debug Information */}
-        {process.env.NODE_ENV === 'development' && (
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted-foreground">
-              デバッグ情報
-            </summary>
-            <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-              {JSON.stringify({ usage, canUseChat, isUsageExhausted }, null, 2)}
-            </pre>
-          </details>
+        {/* Detailed information */}
+        {variant === 'detailed' && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              残り利用回数: {usage.remainingCount}回
+            </p>
+            {usage.resetTime && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
+                <Clock className="h-3 w-3" />
+                <span>
+                  リセット: {AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}後
+                  ({AIChatUsageUtils.formatResetTime(usage.resetTime)})
+                </span>
+              </div>
+            )}
+          </div>
         )}
-      </CardContent>
-    </Card>
+
+        {/* Exhausted warning */}
+        {isExhausted && variant === 'detailed' && (
+          <div className="p-2 bg-muted/50 border border-border/30 rounded text-xs text-muted-foreground">
+            本日の利用回数上限に達しました。
+            {usage.resetTime && (
+              <span className="block mt-1">
+                {AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}後にリセットされます。
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // No data state
+  return (
+    <div className={`text-xs text-muted-foreground ${className}`}>
+      利用状況を取得できませんでした
+    </div>
   );
 }

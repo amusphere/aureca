@@ -119,7 +119,7 @@ class AIChatUsageService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
-                    "error": "現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。",
+                    "error": "現在のプランではAIChatをご利用いただけません。プランをアップグレードしてご利用ください。",
                     "error_code": "PLAN_RESTRICTION",
                     "remaining_count": 0,
                     "reset_time": stats["reset_time"],
@@ -128,10 +128,24 @@ class AIChatUsageService:
 
         # Check if daily limit is exceeded (for non-unlimited plans)
         if stats["daily_limit"] > 0 and not stats["can_use_chat"]:
+            # Calculate time until reset for better user experience
+            reset_time = datetime.fromisoformat(
+                stats["reset_time"].replace("Z", "+00:00")
+            )
+            now = datetime.now(timezone.utc)
+            time_diff = reset_time - now
+            hours_until_reset = max(0, int(time_diff.total_seconds() / 3600))
+
+            reset_message = "本日の利用回数上限に達しました。"
+            if hours_until_reset > 0:
+                reset_message += f"約{hours_until_reset}時間後にリセットされます。"
+            else:
+                reset_message += "まもなくリセットされます。"
+
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
-                    "error": "本日の利用回数上限に達しました。明日の00:00にリセットされます。",
+                    "error": reset_message,
                     "error_code": "USAGE_LIMIT_EXCEEDED",
                     "remaining_count": stats["remaining_count"],
                     "reset_time": stats["reset_time"],
@@ -169,12 +183,18 @@ class AIChatUsageService:
             # Return updated statistics
             return await self.get_usage_stats(user)
 
-        except Exception:
-            # Handle database errors
+        except Exception as e:
+            # Handle database errors with more detailed logging
+            import logging
+
+            logging.error(
+                f"AI Chat usage increment failed for user {user.id}: {str(e)}"
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail={
-                    "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+                    "error": "一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。",
                     "error_code": "SYSTEM_ERROR",
                     "remaining_count": 0,
                     "reset_time": self._get_reset_time(),

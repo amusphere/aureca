@@ -1,10 +1,10 @@
 "use client";
 
 import {
+  AI_CHAT_USAGE_ERROR_CODES,
   AIChatUsage,
   AIChatUsageError,
-  AI_CHAT_USAGE_ERROR_CODES,
-  AI_CHAT_USAGE_ERROR_MESSAGES
+  AIChatUsageUtils
 } from "@/types/AIChatUsage";
 import { useCallback, useEffect, useState } from "react";
 import { useErrorHandling } from "./useErrorHandling";
@@ -87,7 +87,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
       const errorMessage = err instanceof Error ? err.message : 'システムエラーが発生しました';
 
       setUsageError({
-        error: AI_CHAT_USAGE_ERROR_MESSAGES[AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR],
+        error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
         errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
         remainingCount: 0,
         resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
@@ -163,7 +163,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
       const errorMessage = err instanceof Error ? err.message : 'システムエラーが発生しました';
 
       const systemError: AIChatUsageError = {
-        error: AI_CHAT_USAGE_ERROR_MESSAGES[AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR],
+        error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
         errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
         remainingCount: 0,
         resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -199,7 +199,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
   // Determine the primary error to return (usage errors take precedence)
   const primaryError = usageError || (systemError ? {
-    error: AI_CHAT_USAGE_ERROR_MESSAGES[AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR],
+    error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
     errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
     remainingCount: 0,
     resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
