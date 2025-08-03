@@ -23,10 +23,36 @@ async def process_ai_request_endpoint(
     user: User = Depends(auth_user),
 ):
     """AIアシスタントにリクエストを送信して処理結果を取得"""
-    hub = AIHub(user.id, session)
-    result = await hub.process_request(prompt=request.prompt, current_user=user)
+    # Initialize usage service
+    usage_service = AIChatUsageService(session)
 
-    return result
+    try:
+        # Check usage limits before processing
+        await usage_service.check_usage_limit(user)
+
+        # Process AI request
+        hub = AIHub(user.id, session)
+        result = await hub.process_request(prompt=request.prompt, current_user=user)
+
+        # Increment usage count after successful processing
+        await usage_service.increment_usage(user)
+
+        return result
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
+        raise
+    except Exception:
+        # Handle unexpected errors during AI processing
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+                "error_code": "SYSTEM_ERROR",
+                "remaining_count": 0,
+                "reset_time": usage_service._get_reset_time(),
+            },
+        )
 
 
 @router.post("/generate-from-all", response_model=GeneratedTasksBySourceModel)
