@@ -1,5 +1,6 @@
 "use client";
 
+import { AIChatUsage, AIChatUsageError } from "@/types/AIChatUsage";
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -13,6 +14,9 @@ interface AIChatInputProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  // Usage limit props
+  usage?: AIChatUsage | null;
+  usageError?: AIChatUsageError | null;
 }
 
 export default function AIChatInput({
@@ -20,13 +24,43 @@ export default function AIChatInput({
   isLoading,
   disabled = false,
   placeholder = "メッセージを入力してください...",
-  className
+  className,
+  usage,
+  usageError
 }: AIChatInputProps) {
   const [message, setMessage] = useState("");
 
+  // Determine if usage limits should disable the input
+  const isUsageLimited = usageError !== null || (usage && !usage.canUseChat);
+  const isInputDisabled = disabled || isUsageLimited;
+
+  // Generate appropriate placeholder text based on usage status
+  const getPlaceholderText = (): string => {
+    if (usageError) {
+      switch (usageError.errorCode) {
+        case 'USAGE_LIMIT_EXCEEDED':
+          return "本日の利用回数上限に達しました。明日の00:00にリセットされます。";
+        case 'PLAN_RESTRICTION':
+          return "現在のプランではAIChatをご利用いただけません。";
+        case 'SYSTEM_ERROR':
+          return "一時的なエラーが発生しました。しばらく後にお試しください。";
+        default:
+          return "現在ご利用いただけません。";
+      }
+    }
+
+    if (usage && !usage.canUseChat) {
+      return "利用制限により現在ご利用いただけません。";
+    }
+
+    return placeholder;
+  };
+
+  const effectivePlaceholder = getPlaceholderText();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoading || disabled) return;
+    if (!message.trim() || isLoading || isInputDisabled) return;
 
     const messageToSend = message.trim();
     setMessage("");
@@ -40,7 +74,7 @@ export default function AIChatInput({
     }
   };
 
-  const canSend = message.trim().length > 0 && !isLoading && !disabled;
+  const canSend = message.trim().length > 0 && !isLoading && !isInputDisabled;
 
   return (
     <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
@@ -49,7 +83,7 @@ export default function AIChatInput({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           className={cn(
             "min-h-[88px] max-h-[140px] resize-none w-full",
             "text-base leading-relaxed",
@@ -59,13 +93,15 @@ export default function AIChatInput({
             "transition-all duration-200",
             "focus:shadow-md focus:shadow-primary/10",
             "placeholder:text-muted-foreground/70",
-            disabled && "opacity-50 cursor-not-allowed"
+            isInputDisabled && "opacity-50 cursor-not-allowed",
+            // Special styling for usage limit errors
+            isUsageLimited && "border-destructive/30 bg-destructive/5"
           )}
-          disabled={isLoading || disabled}
+          disabled={isLoading || isInputDisabled}
           rows={2}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          {!disabled && (
+          {!isInputDisabled && (
             <p className="text-xs text-muted-foreground/80 hidden sm:block font-medium">
               Shift+Enter で送信
             </p>
@@ -92,9 +128,15 @@ export default function AIChatInput({
             "disabled:hover:scale-100",
             // モバイルでのタッチターゲットサイズを確保
             "min-w-[48px] min-h-[48px]",
-            disabled && "cursor-not-allowed"
+            isInputDisabled && "cursor-not-allowed"
           )}
-          aria-label={disabled ? "利用制限により送信できません" : "メッセージを送信"}
+          aria-label={
+            isUsageLimited
+              ? "利用制限により送信できません"
+              : isInputDisabled
+                ? "送信できません"
+                : "メッセージを送信"
+          }
         >
           {isLoading ? (
             <>
@@ -105,7 +147,7 @@ export default function AIChatInput({
             <>
               <Send size={16} className="transition-transform duration-200" />
               <span className="hidden sm:inline">
-                {disabled ? "制限中" : "送信"}
+                {isUsageLimited ? "制限中" : isInputDisabled ? "無効" : "送信"}
               </span>
             </>
           )}

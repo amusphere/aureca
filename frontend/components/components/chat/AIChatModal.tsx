@@ -291,11 +291,8 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               onSendMessage={handleSendMessage}
               isLoading={isLoading || usageLoading}
               disabled={!canUseChat || isUsageExhausted}
-              placeholder={
-                !canUseChat || isUsageExhausted
-                  ? "利用制限により入力できません..."
-                  : "メッセージを入力してください..."
-              }
+              usage={usage}
+              usageError={usageError}
             />
           </div>
         </div>
