@@ -4,11 +4,13 @@ from app.models.ai_assistant import (
     AIResponseModel,
     GeneratedTasksBySourceModel,
 )
+from app.models.ai_chat_usage import AIChatUsageResponse
 from app.schema import User
 from app.services.ai import AIHub
+from app.services.ai_chat_usage_service import AIChatUsageService
 from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
@@ -37,3 +39,57 @@ async def generate_tasks_from_all_endpoint(
     generated_tasks = await ai_task_service.generate_tasks_from_all_sources(user=user)
 
     return generated_tasks
+
+
+@router.get("/usage", response_model=AIChatUsageResponse)
+async def get_ai_chat_usage_endpoint(
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """AI Chat利用状況を取得"""
+    usage_service = AIChatUsageService(session)
+
+    try:
+        usage_stats = await usage_service.check_usage_limit(user)
+        return AIChatUsageResponse(**usage_stats)
+    except HTTPException:
+        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
+        raise
+    except Exception:
+        # Handle unexpected errors
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+                "error_code": "SYSTEM_ERROR",
+                "remaining_count": 0,
+                "reset_time": usage_service._get_reset_time(),
+            },
+        )
+
+
+@router.post("/usage/increment", response_model=AIChatUsageResponse)
+async def increment_ai_chat_usage_endpoint(
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """AI Chat利用回数を記録（内部API）"""
+    usage_service = AIChatUsageService(session)
+
+    try:
+        updated_stats = await usage_service.increment_usage(user)
+        return AIChatUsageResponse(**updated_stats)
+    except HTTPException:
+        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
+        raise
+    except Exception:
+        # Handle unexpected errors
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+                "error_code": "SYSTEM_ERROR",
+                "remaining_count": 0,
+                "reset_time": usage_service._get_reset_time(),
+            },
+        )
