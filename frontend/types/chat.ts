@@ -15,3 +15,15 @@ export interface AIResponse {
   };
   error?: string;
 }
+
+/**
+ * Extended AI response that includes usage information
+ * Used when AI chat responses need to include usage limit data
+ */
+export interface AIResponseWithUsage extends AIResponse {
+  usage?: {
+    remainingCount: number;
+    dailyLimit: number;
+    resetTime: string;
+  };
+}
