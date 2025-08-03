@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { AIResponse, Message } from "../../types/chat";
+import { useAIChatUsage } from "./useAIChatUsage";
+import { AI_CHAT_USAGE_ERROR_MESSAGES } from "@/types/AIChatUsage";
 
 const CHAT_CONSTANTS = {
   completionMessage: "処理が完了しました。",
@@ -11,6 +13,9 @@ export function useMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Integrate with AI Chat usage limits
+  const { usage, canUseChat, error: usageError, refreshUsage } = useAIChatUsage();
 
   const addMessage = (content: string, isUser: boolean): void => {
     const newMessage: Message = {
@@ -26,6 +31,15 @@ export function useMessages() {
     setError(null);
     setIsLoading(true);
 
+    // Check usage limits before sending message
+    if (!canUseChat) {
+      const errorMessage = usageError?.error || 'AI Chatをご利用いただけません';
+      setError(errorMessage);
+      addMessage(`エラー: ${errorMessage}`, false);
+      setIsLoading(false);
+      return;
+    }
+
     // ユーザーのメッセージを追加
     addMessage(messageText, true);
 
@@ -39,6 +53,25 @@ export function useMessages() {
       });
 
       if (!response.ok) {
+        // Handle usage limit errors specifically
+        if (response.status === 429) {
+          const errorData = await response.json();
+          const errorMessage = errorData.error || AI_CHAT_USAGE_ERROR_MESSAGES.USAGE_LIMIT_EXCEEDED;
+          setError(errorMessage);
+          addMessage(`エラー: ${errorMessage}`, false);
+          // Refresh usage data to get updated limits
+          await refreshUsage();
+          return;
+        }
+
+        if (response.status === 403) {
+          const errorData = await response.json();
+          const errorMessage = errorData.error || AI_CHAT_USAGE_ERROR_MESSAGES.PLAN_RESTRICTION;
+          setError(errorMessage);
+          addMessage(`エラー: ${errorMessage}`, false);
+          return;
+        }
+
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -50,6 +83,9 @@ export function useMessages() {
         : (data.error || CHAT_CONSTANTS.apiErrorMessage);
 
       addMessage(aiResponseText, false);
+
+      // Refresh usage data after successful AI response
+      await refreshUsage();
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : CHAT_CONSTANTS.fallbackErrorMessage;
@@ -65,5 +101,9 @@ export function useMessages() {
     isLoading,
     error,
     sendMessage,
+    // Expose usage information for UI components
+    usage,
+    canUseChat,
+    usageError,
   };
 }
