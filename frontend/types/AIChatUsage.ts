@@ -110,6 +110,9 @@ export class AIChatUsageUtils {
   static formatResetTime(resetTime: string): string {
     try {
       const date = new Date(resetTime);
+      if (isNaN(date.getTime())) {
+        return '明日の00:00';
+      }
       return date.toLocaleString('ja-JP', {
         year: 'numeric',
         month: 'long',
@@ -133,6 +136,11 @@ export class AIChatUsageUtils {
     try {
       const now = new Date();
       const reset = new Date(resetTime);
+
+      if (isNaN(reset.getTime())) {
+        return '明日の00:00';
+      }
+
       const diffMs = reset.getTime() - now.getTime();
 
       if (diffMs <= 0) {
