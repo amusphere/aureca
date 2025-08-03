@@ -3,13 +3,14 @@
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
+import { LoadingSpinner } from "../commons/LoadingSpinner";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import { LoadingSpinner } from "../commons/LoadingSpinner";
 
 interface AIChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
   isLoading: boolean;
+  disabled?: boolean;
   placeholder?: string;
   className?: string;
 }
@@ -17,6 +18,7 @@ interface AIChatInputProps {
 export default function AIChatInput({
   onSendMessage,
   isLoading,
+  disabled = false,
   placeholder = "メッセージを入力してください...",
   className
 }: AIChatInputProps) {
@@ -24,7 +26,7 @@ export default function AIChatInput({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoading) return;
+    if (!message.trim() || isLoading || disabled) return;
 
     const messageToSend = message.trim();
     setMessage("");
@@ -38,7 +40,7 @@ export default function AIChatInput({
     }
   };
 
-  const canSend = message.trim().length > 0 && !isLoading;
+  const canSend = message.trim().length > 0 && !isLoading && !disabled;
 
   return (
     <form onSubmit={handleSubmit} className={cn("space-y-4", className)}>
@@ -56,15 +58,18 @@ export default function AIChatInput({
             "rounded-2xl px-4 py-3",
             "transition-all duration-200",
             "focus:shadow-md focus:shadow-primary/10",
-            "placeholder:text-muted-foreground/70"
+            "placeholder:text-muted-foreground/70",
+            disabled && "opacity-50 cursor-not-allowed"
           )}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           rows={2}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
-          <p className="text-xs text-muted-foreground/80 hidden sm:block font-medium">
-            Shift+Enter で送信
-          </p>
+          {!disabled && (
+            <p className="text-xs text-muted-foreground/80 hidden sm:block font-medium">
+              Shift+Enter で送信
+            </p>
+          )}
         </div>
       </div>
       <div className="flex justify-between items-center">
@@ -86,9 +91,10 @@ export default function AIChatInput({
             "hover:scale-105 active:scale-95",
             "disabled:hover:scale-100",
             // モバイルでのタッチターゲットサイズを確保
-            "min-w-[48px] min-h-[48px]"
+            "min-w-[48px] min-h-[48px]",
+            disabled && "cursor-not-allowed"
           )}
-          aria-label="メッセージを送信"
+          aria-label={disabled ? "利用制限により送信できません" : "メッセージを送信"}
         >
           {isLoading ? (
             <>
@@ -98,7 +104,9 @@ export default function AIChatInput({
           ) : (
             <>
               <Send size={16} className="transition-transform duration-200" />
-              <span className="hidden sm:inline">送信</span>
+              <span className="hidden sm:inline">
+                {disabled ? "制限中" : "送信"}
+              </span>
             </>
           )}
         </Button>

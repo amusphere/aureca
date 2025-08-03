@@ -1,14 +1,16 @@
 "use client";
 
-import { X } from "lucide-react";
+import { AlertCircle, RefreshCw, X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useAIChatUsage } from "../../hooks/useAIChatUsage";
 import { useMessages } from "../../hooks/useMessages";
 import { cn } from "../../lib/utils";
+import { EmptyState } from "../commons/EmptyState";
+import { ErrorDisplay } from "../commons/ErrorDisplay";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
-import { ErrorDisplay } from "../commons/ErrorDisplay";
-import { EmptyState } from "../commons/EmptyState";
 import AIChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 
@@ -36,10 +38,39 @@ const EMPTY_STATE_MESSAGES = {
 
 export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
   const { messages, isLoading, error, sendMessage } = useMessages();
+  const {
+    usage,
+    loading: usageLoading,
+    error: usageError,
+    canUseChat,
+    isUsageExhausted,
+    refreshUsage,
+    incrementUsage,
+    clearError: clearUsageError
+  } = useAIChatUsage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Enhanced message sending with usage tracking
+  const handleSendMessage = async (message: string) => {
+    // Check if user can use chat before sending
+    if (!canUseChat) {
+      return;
+    }
+
+    try {
+      // Send the message
+      await sendMessage(message);
+
+      // Increment usage count after successful message
+      await incrementUsage();
+    } catch (error) {
+      // Error handling is managed by useMessages hook
+      console.error('Failed to send message:', error);
+    }
   };
 
   useEffect(() => {
@@ -95,29 +126,108 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       >
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-5 border-b border-border/30 bg-background/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={cn(
+              "w-2 h-2 rounded-full transition-colors duration-300",
+              canUseChat ? "bg-green-500 animate-pulse" : "bg-red-500"
+            )} />
             <h2
               id="chat-title"
               className="text-xl font-semibold text-foreground tracking-tight"
             >
               {EMPTY_STATE_MESSAGES.title}
             </h2>
+
+            {/* Usage Display - Desktop */}
+            {usage && (
+              <div className="hidden sm:flex items-center gap-2 ml-auto mr-4">
+                <Badge
+                  variant={canUseChat ? "default" : "destructive"}
+                  className="text-xs font-medium"
+                >
+                  {usage.remainingCount}/{usage.dailyLimit}
+                </Badge>
+                {usageLoading && (
+                  <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                )}
+              </div>
+            )}
           </div>
+
           <Button
             onClick={onClose}
             variant="ghost"
             size="icon"
-            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200"
+            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
             aria-label="チャットを閉じる"
           >
             <X size={18} />
           </Button>
         </header>
 
+        {/* Mobile Usage Display */}
+        {usage && (
+          <div className="sm:hidden px-6 py-3 bg-muted/30 border-b border-border/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  残り利用回数:
+                </span>
+                <Badge
+                  variant={canUseChat ? "default" : "destructive"}
+                  className="text-xs"
+                >
+                  {usage.remainingCount}/{usage.dailyLimit}
+                </Badge>
+              </div>
+              {usageLoading && (
+                <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Error Display */}
+          {/* Usage Error Display */}
+          {usageError && (
+            <div className="p-4 bg-destructive/5 border-b border-destructive/20">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-destructive">
+                    {usageError.error}
+                  </p>
+                  {usageError.resetTime && (
+                    <p className="text-xs text-destructive/80 mt-1">
+                      リセット時刻: {new Date(usageError.resetTime).toLocaleString('ja-JP')}
+                    </p>
+                  )}
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={clearUsageError}
+                      className="h-7 text-xs"
+                    >
+                      閉じる
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={refreshUsage}
+                      className="h-7 text-xs"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      再確認
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* System Error Display */}
           {error && (
             <div className="p-4">
               <ErrorDisplay
@@ -160,7 +270,33 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
           {/* Input Area */}
           <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
-            <AIChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+            {/* Usage Exhausted Message */}
+            {isUsageExhausted && (
+              <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground font-medium">
+                    本日の利用回数上限に達しました
+                  </p>
+                </div>
+                {usage?.resetTime && (
+                  <p className="text-xs text-muted-foreground/80 mt-1 ml-6">
+                    明日の00:00にリセットされます
+                  </p>
+                )}
+              </div>
+            )}
+
+            <AIChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading || usageLoading}
+              disabled={!canUseChat || isUsageExhausted}
+              placeholder={
+                !canUseChat || isUsageExhausted
+                  ? "利用制限により入力できません..."
+                  : "メッセージを入力してください..."
+              }
+            />
           </div>
         </div>
       </div>
