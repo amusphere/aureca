@@ -1,0 +1,211 @@
+name: Frontend Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-tests.yml'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run frontend tests
+      run: npm test
+
+    - name: Upload frontend test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-test-results
+        path: |
+          frontend/test-results/
+          frontend/coverage/
+        retention-days: 30
+
+  frontend-lint:
+    name: Frontend Linting
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run ESLint
+      run: npm run lint
+
+    - name: Run TypeScript type checking
+      run: npm run type-check
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Build frontend
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-build
+        path: frontend/.next/
+        retention-days: 30
+
+  frontend-coverage:
+    name: Frontend Coverage
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ env.NODE_VERSION }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      if: always()
+      with:
+        file: ./frontend/coverage/coverage-final.json
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: false
+
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-coverage-results
+        path: frontend/coverage/
+        retention-days: 30
+
+  frontend-status:
+    name: Frontend Status
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, frontend-lint, frontend-build, frontend-coverage]
+    if: always()
+
+    steps:
+    - name: Check frontend results
+      run: |
+        echo "## Frontend Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ needs.frontend-tests.result }}" = "success" ]; then
+          echo "✅ **Frontend Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Frontend Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ needs.frontend-lint.result }}" = "success" ]; then
+          echo "✅ **Frontend Linting**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Frontend Linting**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ needs.frontend-build.result }}" = "success" ]; then
+          echo "✅ **Frontend Build**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Frontend Build**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ needs.frontend-coverage.result }}" = "success" ]; then
+          echo "✅ **Frontend Coverage**: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Frontend Coverage**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Job Results" >> $GITHUB_STEP_SUMMARY
+        echo "- Tests: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Linting: ${{ needs.frontend-lint.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Build: ${{ needs.frontend-build.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Coverage: ${{ needs.frontend-coverage.result }}" >> $GITHUB_STEP_SUMMARY
+
+    - name: Check overall frontend status
+      run: |
+        if [ "${{ needs.frontend-tests.result }}" = "success" ] && \
+           [ "${{ needs.frontend-lint.result }}" = "success" ] && \
+           [ "${{ needs.frontend-build.result }}" = "success" ] && \
+           [ "${{ needs.frontend-coverage.result }}" = "success" ]; then
+          echo "🎉 All frontend checks passed!"
+          exit 0
+        else
+          echo "💥 Some frontend checks failed!"
+          exit 1
+        fi
