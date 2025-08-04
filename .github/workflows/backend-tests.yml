@@ -115,23 +115,3 @@ jobs:
 
       - name: Run mypy
         run: uv run mypy .
-
-  backend-status:
-    name: Backend Tests Status
-    runs-on: ubuntu-latest
-    needs: [backend-tests, backend-lint]
-    if: always()
-
-    steps:
-      - name: Check results
-        run: |
-          if [[ "${{ needs.backend-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.backend-lint.result }}" == "success" ]]; then
-            echo "All backend checks passed!"
-            exit 0
-          else
-            echo "Some backend checks failed:"
-            echo "Tests: ${{ needs.backend-tests.result }}"
-            echo "Lint: ${{ needs.backend-lint.result }}"
-            exit 1
-          fi
