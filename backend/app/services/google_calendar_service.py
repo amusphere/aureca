@@ -138,7 +138,7 @@ class GoogleCalendarService:
 
         except Exception as e:
             logger.error(f"Failed to connect to Google Calendar API: {e}")
-            raise GoogleCalendarServiceError(f"Connection error: {e}")
+            raise GoogleCalendarServiceError(f"Connection error: {e}") from e
 
     async def _setup_credentials(self) -> None:
         """Set up Google OAuth credentials"""
@@ -170,7 +170,7 @@ class GoogleCalendarService:
             logger.error(f"Authentication setup error: {e}")
             raise GoogleCalendarAuthenticationError(
                 f"Failed to set up authentication: {e}"
-            )
+            ) from e
 
     async def disconnect(self) -> None:
         """Disconnect from Google Calendar API service"""
@@ -540,7 +540,7 @@ class GoogleCalendarService:
         except HttpError as e:
             if e.resp.status == 404:
                 logger.warning(f"Event {event_id} not found in calendar {calendar_id}")
-                raise GoogleCalendarAPIError("Event not found")
+                raise GoogleCalendarAPIError("Event not found") from e
             self._handle_calendar_api_error("delete event", e)
         except Exception as e:
             self._handle_calendar_api_error("delete event", e)
@@ -848,7 +848,7 @@ async def get_google_calendar_service(
         yield service
     except Exception as e:
         logger.error(f"Failed to create Google Calendar service: {e}")
-        raise GoogleCalendarServiceError(f"Service creation failed: {e}")
+        raise GoogleCalendarServiceError(f"Service creation failed: {e}") from e
     finally:
         await service.disconnect()
 

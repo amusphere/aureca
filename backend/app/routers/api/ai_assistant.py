@@ -64,7 +64,7 @@ async def process_ai_request_endpoint(
                 "remaining_count": 0,
                 "reset_time": _safe_get_reset_time(usage_service),
             },
-        )
+        ) from None
 
 
 @router.post("/generate-from-all", response_model=GeneratedTasksBySourceModel)
@@ -114,7 +114,7 @@ async def get_ai_chat_usage_endpoint(
                 "remaining_count": 0,
                 "reset_time": _safe_get_reset_time(usage_service),
             },
-        )
+        ) from e
 
 
 @router.post("/usage/increment", response_model=AIChatUsageResponse)
@@ -151,4 +151,4 @@ async def increment_ai_chat_usage_endpoint(
                 "remaining_count": 0,
                 "reset_time": _safe_get_reset_time(usage_service),
             },
-        )
+        ) from e

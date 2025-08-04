@@ -205,7 +205,7 @@ class AIChatUsageService:
                     "remaining_count": 0,
                     "reset_time": self._get_reset_time(),
                 },
-            )
+            ) from e
 
     async def get_usage_history(
         self, user: User, limit: int = 30

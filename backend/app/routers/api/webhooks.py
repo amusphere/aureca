@@ -26,7 +26,7 @@ async def clerk_webhook(
         wh = Webhook(CLERK_WEBHOOK_SECRET)
         event = wh.verify(payload, headers)
     except WebhookVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid or outdated signature")
+        raise HTTPException(status_code=400, detail="Invalid or outdated signature") from None
 
     if event["type"] == "user.deleted":
         clerk_user_id = event["data"]["id"]

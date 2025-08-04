@@ -25,7 +25,7 @@ async def get_google_auth_url(user: User = Depends(auth_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate auth URL: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/callback", response_model=GoogleAuthResponse)
@@ -44,12 +44,12 @@ async def google_oauth_callback(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request: {str(e)}"
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process callback: {str(e)}",
-        )
+        ) from e
 
 
 @router.delete("/disconnect")
@@ -69,7 +69,7 @@ async def disconnect_google_account(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to disconnect account: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/status")
@@ -87,4 +87,4 @@ async def get_google_connection_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to check connection status: {str(e)}",
-        )
+        ) from e

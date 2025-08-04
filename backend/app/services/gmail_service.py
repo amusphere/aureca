@@ -122,7 +122,7 @@ class GmailService:
 
         except Exception as e:
             logger.error(f"Failed to connect to Gmail API: {e}")
-            raise GmailServiceError(f"Connection error: {e}")
+            raise GmailServiceError(f"Connection error: {e}") from e
 
     async def _setup_credentials(self) -> None:
         """Set up Google OAuth credentials"""
@@ -152,7 +152,7 @@ class GmailService:
 
         except Exception as e:
             logger.error(f"Authentication setup error: {e}")
-            raise GmailAuthenticationError(f"Failed to set up authentication: {e}")
+            raise GmailAuthenticationError(f"Failed to set up authentication: {e}") from e
 
     async def disconnect(self) -> None:
         """Disconnect from Gmail API service"""

@@ -68,7 +68,7 @@ async def get_all_ai_chat_plans_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve plan configurations: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/ai-chat/plans/{plan_name}", response_model=PlanConfigResponse)
@@ -99,7 +99,7 @@ async def get_ai_chat_plan_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve plan configuration for '{plan_name}': {str(e)}",
-        )
+        ) from e
 
 
 @router.put("/ai-chat/plans/{plan_name}")
@@ -152,7 +152,7 @@ async def update_ai_chat_plan_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update plan configuration: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/ai-chat/plans")
@@ -210,7 +210,7 @@ async def create_ai_chat_plan_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create plan configuration: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/ai-chat/config/reload")
@@ -238,4 +238,4 @@ async def reload_ai_chat_config_endpoint() -> dict[str, str]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reload configuration: {str(e)}",
-        )
+        ) from e

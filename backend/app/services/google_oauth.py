@@ -207,7 +207,7 @@ class GoogleOauthService:
             except Exception as e:
                 raise ValueError(
                     f"Failed to refresh access token: {str(e)}. Please re-authenticate."
-                )
+                ) from e
 
         return credentials
 
