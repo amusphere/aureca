@@ -1,14 +1,24 @@
 """Test configuration and shared fixtures."""
 
 from typing import Generator
+from unittest.mock import patch
+
 import pytest
+from app.config import config_manager
+from app.database import get_session
+from app.schema import TaskPriority, Tasks, User
 from fastapi.testclient import TestClient
+from main import app
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.database import get_session
-from app.schema import User, Tasks, TaskPriority
-from main import app
+
+# Protect config file from being modified during tests
+@pytest.fixture(autouse=True, scope="session")
+def protect_config_file():
+    """Prevent tests from modifying the actual config file"""
+    with patch.object(config_manager, "_save_to_file", return_value=None):
+        yield
 
 
 # Test database configuration
@@ -30,6 +40,7 @@ def session_fixture() -> Generator[Session, None, None]:
 @pytest.fixture(name="client")
 def client_fixture(session: Session) -> Generator[TestClient, None, None]:
     """Create a test client with the test database session."""
+
     def get_session_override():
         return session
 

@@ -9,7 +9,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from app.config import AIChatPlanConfig, ConfigManager
 
 
@@ -21,34 +20,46 @@ def temp_config_file():
             "free": {
                 "daily_limit": 0,
                 "description": "Free plan - No AI chat access",
-                "features": ["Basic task management"]
+                "features": ["Basic task management"],
             },
             "basic": {
                 "daily_limit": 10,
                 "description": "Basic plan - 10 AI chats per day",
-                "features": ["Basic task management", "AI chat assistance", "Google integrations"]
+                "features": [
+                    "Basic task management",
+                    "AI chat assistance",
+                    "Google integrations",
+                ],
             },
             "premium": {
                 "daily_limit": 50,
                 "description": "Premium plan - 50 AI chats per day",
-                "features": ["All basic features", "Priority support", "Advanced AI features"]
+                "features": [
+                    "All basic features",
+                    "Priority support",
+                    "Advanced AI features",
+                ],
             },
             "enterprise": {
                 "daily_limit": -1,
                 "description": "Enterprise plan - Unlimited AI chats",
-                "features": ["All premium features", "Custom integrations", "Dedicated support"]
-            }
+                "features": [
+                    "All premium features",
+                    "Custom integrations",
+                    "Dedicated support",
+                ],
+            },
         },
         "settings": {
             "enable_dynamic_limits": True,
             "cache_duration_minutes": 5,
             "reset_timezone": "UTC",
-            "enable_usage_analytics": True
+            "enable_usage_analytics": True,
         },
-        "last_updated": "2025-01-03T00:00:00Z"
+        "last_updated": "2025-01-03T00:00:00Z",
     }
 
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(config_data, f)
         temp_file = f.name
 
@@ -64,7 +75,9 @@ def temp_config_file():
 @pytest.fixture
 def isolated_config_manager(temp_config_file):
     """Create an isolated config manager for testing"""
-    with patch.object(ConfigManager, '_get_config_file_path', return_value=temp_config_file):
+    with patch.object(
+        ConfigManager, "_get_config_file_path", return_value=temp_config_file
+    ):
         return ConfigManager()
 
 
@@ -119,9 +132,12 @@ class TestConfigManager:
         assert config_manager._ai_chat_plans["enterprise"].daily_limit == -1
 
     @patch.dict(os.environ, {"AI_CHAT_LIMIT_BASIC": "20"})
-    def test_environment_variable_override(self):
+    def test_environment_variable_override(self, temp_config_file):
         """Test that environment variables override default limits"""
-        config_manager = ConfigManager()
+        with patch.object(
+            ConfigManager, "_get_config_file_path", return_value=temp_config_file
+        ):
+            config_manager = ConfigManager()
 
         # Basic plan should be overridden by environment variable
         assert config_manager._ai_chat_plans["basic"].daily_limit == 20
@@ -129,7 +145,9 @@ class TestConfigManager:
     @patch.dict(os.environ, {"AI_CHAT_LIMIT_BASIC": "invalid"})
     def test_invalid_environment_variable(self, temp_config_file):
         """Test handling of invalid environment variable values"""
-        with patch.object(ConfigManager, '_get_config_file_path', return_value=temp_config_file):
+        with patch.object(
+            ConfigManager, "_get_config_file_path", return_value=temp_config_file
+        ):
             config_manager = ConfigManager()
 
         # Should fall back to default value when environment variable is invalid
