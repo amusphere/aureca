@@ -60,12 +60,12 @@ class TestAIChatUsageService:
     def test_get_daily_limit_premium_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for premium plan."""
         limit = service.get_daily_limit("premium")
-        assert limit == 100
+        assert limit == 50
 
     def test_get_daily_limit_enterprise_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for enterprise plan."""
         limit = service.get_daily_limit("enterprise")
-        assert limit == 500
+        assert limit == -1
 
     def test_get_daily_limit_unknown_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for unknown plan defaults to free."""
@@ -209,8 +209,8 @@ class TestAIChatUsageService:
 
         stats = await service.get_usage_stats(mock_user)
 
-        assert stats["remaining_count"] == 400  # 500 - 100 = 400
-        assert stats["daily_limit"] == 500
+        assert stats["remaining_count"] == -1  # Unlimited plan
+        assert stats["daily_limit"] == -1
         assert stats["current_usage"] == 100
         assert stats["can_use_chat"] is True
 
@@ -398,6 +398,7 @@ class TestAIChatUsageService:
 
         # Verify the limits were updated in the configuration system
         from app.config import get_ai_chat_plan_limit
+
         assert get_ai_chat_plan_limit("premium") == 100
         assert get_ai_chat_plan_limit("enterprise") == 500
         assert get_ai_chat_plan_limit("basic") == 10  # Unchanged

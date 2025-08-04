@@ -2,14 +2,11 @@
 Integration tests for admin configuration API endpoints
 """
 
-import json
-import tempfile
 import uuid
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from app.config import config_manager
+from app.config import AIChatPlanConfig, config_manager
 from fastapi.testclient import TestClient
 from main import app
 
@@ -22,87 +19,60 @@ def generate_unique_plan_name(base_name="test_plan"):
 
 
 @pytest.fixture(autouse=True)
-def use_temp_config_file():
-    """Use a temporary config file for testing to avoid modifying the real config"""
-    original_config = {
-        "ai_chat_plans": {
-            "free": {
-                "daily_limit": 0,
-                "description": "Free plan - No AI chat access",
-                "features": [
-                    "Basic task management",
-                    "Manual task creation",
-                    "Google Calendar integration",
-                ],
-            },
-            "basic": {
-                "daily_limit": 10,
-                "description": "Basic plan - 10 AI chats per day",
-                "features": [
-                    "Basic task management",
-                    "AI chat assistance",
-                    "Google integrations",
-                    "Email task generation",
-                    "Calendar task sync",
-                ],
-            },
-            "premium": {
-                "daily_limit": 50,
-                "description": "Premium plan - 50 AI chats per day",
-                "features": [
-                    "All basic features",
-                    "Priority support",
-                    "Advanced AI features",
-                    "Bulk task operations",
-                    "Custom integrations",
-                ],
-            },
-            "enterprise": {
-                "daily_limit": -1,
-                "description": "Enterprise plan - Unlimited AI chats",
-                "features": [
-                    "All premium features",
-                    "Custom integrations",
-                    "Dedicated support",
-                    "Advanced analytics",
-                    "Team collaboration",
-                    "Custom workflows",
-                ],
-            },
-        },
-        "settings": {
-            "enable_dynamic_limits": True,
-            "cache_duration_minutes": 5,
-            "reset_timezone": "UTC",
-            "enable_usage_analytics": True,
-        },
-        "last_updated": "2025-01-03T00:00:00Z",
+def mock_config_manager():
+    """Mock config manager to use in-memory data instead of files"""
+    # Create test data
+    test_plans = {
+        "free": AIChatPlanConfig(
+            daily_limit=0,
+            description="Free plan - No AI chat access",
+            features=[
+                "Basic task management",
+                "Manual task creation",
+                "Google Calendar integration",
+            ],
+        ),
+        "basic": AIChatPlanConfig(
+            daily_limit=10,
+            description="Basic plan - 10 AI chats per day",
+            features=[
+                "Basic task management",
+                "AI chat assistance",
+                "Google integrations",
+                "Email task generation",
+                "Calendar task sync",
+            ],
+        ),
+        "premium": AIChatPlanConfig(
+            daily_limit=50,
+            description="Premium plan - 50 AI chats per day",
+            features=[
+                "All basic features",
+                "Priority support",
+                "Advanced AI features",
+                "Bulk task operations",
+                "Custom integrations",
+            ],
+        ),
+        "enterprise": AIChatPlanConfig(
+            daily_limit=-1,
+            description="Enterprise plan - Unlimited AI chats",
+            features=[
+                "All premium features",
+                "Custom integrations",
+                "Dedicated support",
+                "Advanced analytics",
+                "Team collaboration",
+                "Custom workflows",
+            ],
+        ),
     }
 
-    # Save the original config file path
-    original_config_path = config_manager._config_file_path
-
-    # Create a temporary file
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False
-    ) as temp_file:
-        json.dump(original_config, temp_file, indent=2, ensure_ascii=False)
-        temp_config_path = Path(temp_file.name)
-
-    # Patch the config manager to use the temporary file
-    config_manager._config_file_path = temp_config_path
-    config_manager._load_from_file(temp_config_path)
-
-    yield
-
-    # Cleanup: restore original config file path and remove temp file
-    config_manager._config_file_path = original_config_path
-    if temp_config_path.exists():
-        temp_config_path.unlink()
-
-    # Reload the original config
-    if original_config_path and original_config_path.exists():
-        config_manager._load_from_file(original_config_path)
+    # Mock the config manager methods
+    with patch.object(config_manager, "_ai_chat_plans", test_plans), patch.object(
+        config_manager, "_save_to_file", return_value=None
+    ), patch.object(config_manager, "_check_file_updates", return_value=None):
+        yield
 
 
 class TestAdminAIChatPlansAPI:
