@@ -20,6 +20,12 @@ jobs:
     name: Frontend Tests
     runs-on: ubuntu-latest
 
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_test
+      NEXT_PUBLIC_APP_NAME: Test App
+      API_BASE_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:3000
+
     defaults:
       run:
         working-directory: ./frontend
@@ -54,6 +60,12 @@ jobs:
     name: Frontend Linting
     runs-on: ubuntu-latest
 
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_test
+      NEXT_PUBLIC_APP_NAME: Test App
+      API_BASE_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:3000
+
     defaults:
       run:
         working-directory: ./frontend
@@ -81,6 +93,12 @@ jobs:
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
+
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_test
+      NEXT_PUBLIC_APP_NAME: Test App
+      API_BASE_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:3000
 
     defaults:
       run:
