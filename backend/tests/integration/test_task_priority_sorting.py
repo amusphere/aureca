@@ -40,7 +40,7 @@ class TestTaskPrioritySorting:
             "High Priority Task 2",
             "Middle Priority Task 1",
             "Low Priority Task 1",
-            "No Priority Task 1"
+            "No Priority Task 1",
         }
         assert task_titles == expected_titles
 
@@ -58,7 +58,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=later_date.timestamp()
+            expires_at=later_date.timestamp(),
         )
 
         create_task(
@@ -67,7 +67,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=earlier_date.timestamp()
+            expires_at=earlier_date.timestamp(),
         )
 
         tasks = find_tasks(session=session, user_id=test_user.id)
@@ -86,7 +86,7 @@ class TestTaskPrioritySorting:
 
         # When priority sorting is disabled, tasks should be sorted by expires_at only
         # The earliest expires_at should come first
-        earliest_expires_at = min(task.expires_at or float('inf') for task in sample_tasks)
+        earliest_expires_at = min(task.expires_at or float("inf") for task in sample_tasks)
 
         assert len(tasks) > 0
         assert tasks[0].expires_at == earliest_expires_at
@@ -182,11 +182,7 @@ class TestTaskPrioritySorting:
         )
 
         # Filter by expires_at
-        filtered_tasks = find_tasks(
-            session=session,
-            user_id=test_user.id,
-            expires_at=current_time
-        )
+        filtered_tasks = find_tasks(session=session, user_id=test_user.id, expires_at=current_time)
 
         # Should only include tasks with expires_at >= current_time
         assert len(filtered_tasks) == 1

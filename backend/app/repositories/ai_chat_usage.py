@@ -9,21 +9,14 @@ from app.schema import AIChatUsageLog
 def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsageLog | None:
     """Get daily usage record for a specific user and date"""
     stmt = select(AIChatUsageLog).where(
-        and_(
-            AIChatUsageLog.user_id == user_id,
-            AIChatUsageLog.usage_date == usage_date
-        )
+        and_(AIChatUsageLog.user_id == user_id, AIChatUsageLog.usage_date == usage_date)
     )
     return session.exec(stmt).first()
 
 
 def create_daily_usage(session: Session, user_id: int, usage_date: str, usage_count: int = 1) -> AIChatUsageLog:
     """Create a new daily usage record"""
-    usage_log = AIChatUsageLog(
-        user_id=user_id,
-        usage_date=usage_date,
-        usage_count=usage_count
-    )
+    usage_log = AIChatUsageLog(user_id=user_id, usage_date=usage_date, usage_count=usage_count)
     session.add(usage_log)
     session.commit()
     session.refresh(usage_log)

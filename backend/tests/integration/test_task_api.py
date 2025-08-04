@@ -14,10 +14,10 @@ class TestTaskAPIIntegration:
         """Test GET /api/tasks endpoint with priority sorting."""
         # Create tasks with controlled expiry dates to ensure predictable sorting
         tasks_data = [
-            ("High Priority Task", TaskPriority.HIGH, 1672617600.0),    # Earliest expiry
-            ("Middle Priority Task", TaskPriority.MIDDLE, 1672704000.0), # Medium expiry
-            ("Low Priority Task", TaskPriority.LOW, 1672790400.0),      # Later expiry
-            ("No Priority Task", None, 1672876800.0),                   # Latest expiry
+            ("High Priority Task", TaskPriority.HIGH, 1672617600.0),  # Earliest expiry
+            ("Middle Priority Task", TaskPriority.MIDDLE, 1672704000.0),  # Medium expiry
+            ("Low Priority Task", TaskPriority.LOW, 1672790400.0),  # Later expiry
+            ("No Priority Task", None, 1672876800.0),  # Latest expiry
         ]
 
         for title, priority, expires_at in tasks_data:
@@ -39,10 +39,10 @@ class TestTaskAPIIntegration:
 
         # Verify priority sorting: HIGH(1) -> MIDDLE(2) -> LOW(3) -> None(999)
         expected_order = [
-            "High Priority Task",      # priority = 1
-            "Middle Priority Task",    # priority = 2
-            "Low Priority Task",       # priority = 3
-            "No Priority Task"         # priority = None (treated as 999)
+            "High Priority Task",  # priority = 1
+            "Middle Priority Task",  # priority = 2
+            "Low Priority Task",  # priority = 3
+            "No Priority Task",  # priority = None (treated as 999)
         ]
 
         actual_titles = [task.title for task in tasks]
@@ -55,7 +55,7 @@ class TestTaskAPIIntegration:
             "title": "New High Priority Task",
             "description": "This is a high priority task",
             "priority": "HIGH",
-            "expires_at": 1672617600.0
+            "expires_at": 1672617600.0,
         }
 
         # In a real test, you would mock authentication and make the actual API call
@@ -66,7 +66,7 @@ class TestTaskAPIIntegration:
             title=task_data["title"],
             description=task_data["description"],
             priority=TaskPriority.HIGH,
-            expires_at=task_data["expires_at"]
+            expires_at=task_data["expires_at"],
         )
 
         assert task.title == task_data["title"]
@@ -94,11 +94,7 @@ class TestTaskAPIIntegration:
         session.refresh(task)
 
         # Test the update logic directly
-        updated_task = update_task(
-            session=session,
-            id=task.id,
-            priority=TaskPriority.HIGH
-        )
+        updated_task = update_task(session=session, id=task.id, priority=TaskPriority.HIGH)
 
         assert updated_task is not None
         assert updated_task.priority == TaskPriority.HIGH
@@ -108,20 +104,12 @@ class TestTaskAPIIntegration:
         """Test that invalid priority values are handled correctly."""
         # Test with valid priority
         valid_task = create_task(
-            session=session,
-            user_id=test_user.id,
-            title="Valid Priority Task",
-            priority=TaskPriority.MIDDLE
+            session=session, user_id=test_user.id, title="Valid Priority Task", priority=TaskPriority.MIDDLE
         )
         assert valid_task.priority == TaskPriority.MIDDLE
 
         # Test with None priority (should be allowed)
-        none_priority_task = create_task(
-            session=session,
-            user_id=test_user.id,
-            title="No Priority Task",
-            priority=None
-        )
+        none_priority_task = create_task(session=session, user_id=test_user.id, title="No Priority Task", priority=None)
         assert none_priority_task.priority is None
 
     def test_priority_sorting_performance_with_many_tasks(self, session: Session, test_user: User):

@@ -80,16 +80,10 @@ class AIChatUsageService:
         user_plan = self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
-        current_usage = ai_chat_usage.get_current_usage_count(
-            self.session, user.id, current_date
-        )
+        current_usage = ai_chat_usage.get_current_usage_count(self.session, user.id, current_date)
 
-        remaining_count = (
-            max(0, daily_limit - current_usage) if daily_limit >= 0 else -1
-        )
-        can_use_chat = daily_limit == -1 or (
-            daily_limit > 0 and current_usage < daily_limit
-        )
+        remaining_count = max(0, daily_limit - current_usage) if daily_limit >= 0 else -1
+        can_use_chat = daily_limit == -1 or (daily_limit > 0 and current_usage < daily_limit)
 
         # Get plan configuration for additional context
         plan_config = self.get_plan_config(user_plan)
@@ -135,9 +129,7 @@ class AIChatUsageService:
         # Check if daily limit is exceeded (for non-unlimited plans)
         if stats["daily_limit"] > 0 and not stats["can_use_chat"]:
             # Calculate time until reset for better user experience
-            reset_time = datetime.fromisoformat(
-                stats["reset_time"].replace("Z", "+00:00")
-            )
+            reset_time = datetime.fromisoformat(stats["reset_time"].replace("Z", "+00:00"))
             now = datetime.now(UTC)
             time_diff = reset_time - now
             hours_until_reset = max(0, int(time_diff.total_seconds() / 3600))
@@ -193,9 +185,7 @@ class AIChatUsageService:
             # Handle database errors with more detailed logging
             import logging
 
-            logging.error(
-                f"AI Chat usage increment failed for user {user.id}: {str(e)}"
-            )
+            logging.error(f"AI Chat usage increment failed for user {user.id}: {str(e)}")
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -207,9 +197,7 @@ class AIChatUsageService:
                 },
             ) from e
 
-    async def get_usage_history(
-        self, user: User, limit: int = 30
-    ) -> list[AIChatUsageLog]:
+    async def get_usage_history(self, user: User, limit: int = 30) -> list[AIChatUsageLog]:
         """
         Get usage history for a user
 
@@ -265,9 +253,7 @@ class AIChatUsageService:
         for plan_name, daily_limit in new_limits.items():
             update_ai_chat_plan_limit(plan_name, daily_limit)
 
-        logger.warning(
-            "update_plan_limits is deprecated. Use configuration management system instead."
-        )
+        logger.warning("update_plan_limits is deprecated. Use configuration management system instead.")
 
     def get_all_plan_limits(self) -> dict[str, int]:
         """
@@ -277,10 +263,7 @@ class AIChatUsageService:
             Dictionary of all plan limits
         """
         all_plans = get_all_ai_chat_plans()
-        return {
-            plan_name: plan_config.daily_limit
-            for plan_name, plan_config in all_plans.items()
-        }
+        return {plan_name: plan_config.daily_limit for plan_name, plan_config in all_plans.items()}
 
     def get_all_plan_configs(self) -> dict[str, dict]:
         """

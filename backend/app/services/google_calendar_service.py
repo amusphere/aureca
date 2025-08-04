@@ -130,9 +130,7 @@ class GoogleCalendarService:
                 await self._setup_credentials()
 
             # Build Calendar service
-            self.calendar_service = build(
-                "calendar", "v3", credentials=self._credentials
-            )
+            self.calendar_service = build("calendar", "v3", credentials=self._credentials)
             self._is_connected = True
             logger.info("Successfully connected to Google Calendar API")
 
@@ -143,9 +141,7 @@ class GoogleCalendarService:
     async def _setup_credentials(self) -> None:
         """Set up Google OAuth credentials"""
         if not self.user or not self.db_session:
-            raise GoogleCalendarAuthenticationError(
-                "User information or session information is missing"
-            )
+            raise GoogleCalendarAuthenticationError("User information or session information is missing")
 
         try:
             oauth_service = GoogleOauthService(self.db_session)
@@ -168,9 +164,7 @@ class GoogleCalendarService:
 
         except Exception as e:
             logger.error(f"Authentication setup error: {e}")
-            raise GoogleCalendarAuthenticationError(
-                f"Failed to set up authentication: {e}"
-            ) from e
+            raise GoogleCalendarAuthenticationError(f"Failed to set up authentication: {e}") from e
 
     async def disconnect(self) -> None:
         """Disconnect from Google Calendar API service"""
@@ -304,9 +298,7 @@ class GoogleCalendarService:
                 processed_event = await self._process_event_data(event)
                 calendar_events.append(processed_event)
 
-            logger.info(
-                f"Retrieved {len(calendar_events)} events from calendar {calendar_id}"
-            )
+            logger.info(f"Retrieved {len(calendar_events)} events from calendar {calendar_id}")
             return calendar_events
 
         except Exception as e:
@@ -403,15 +395,9 @@ class GoogleCalendarService:
                 event_body["recurrence"] = recurrence
 
             # Create event
-            created_event = (
-                self.calendar_service.events()
-                .insert(calendarId=calendar_id, body=event_body)
-                .execute()
-            )
+            created_event = self.calendar_service.events().insert(calendarId=calendar_id, body=event_body).execute()
 
-            logger.info(
-                f"Created event {created_event.get('id')} in calendar {calendar_id}"
-            )
+            logger.info(f"Created event {created_event.get('id')} in calendar {calendar_id}")
             return {
                 "event_id": created_event.get("id"),
                 "html_link": created_event.get("htmlLink"),
@@ -454,11 +440,7 @@ class GoogleCalendarService:
 
         try:
             # Get existing event
-            existing_event = (
-                self.calendar_service.events()
-                .get(calendarId=calendar_id, eventId=event_id)
-                .execute()
-            )
+            existing_event = self.calendar_service.events().get(calendarId=calendar_id, eventId=event_id).execute()
 
             # Normalize timezones
             start_time = self._normalize_timezone(start_time)
@@ -526,9 +508,7 @@ class GoogleCalendarService:
         self._ensure_connected()
 
         try:
-            self.calendar_service.events().delete(
-                calendarId=calendar_id, eventId=event_id
-            ).execute()
+            self.calendar_service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
 
             logger.info(f"Deleted event {event_id} from calendar {calendar_id}")
             return {
@@ -563,11 +543,7 @@ class GoogleCalendarService:
         self._ensure_connected()
 
         try:
-            event = (
-                self.calendar_service.events()
-                .get(calendarId=calendar_id, eventId=event_id)
-                .execute()
-            )
+            event = self.calendar_service.events().get(calendarId=calendar_id, eventId=event_id).execute()
 
             processed_event = await self._process_event_data(event)
             logger.info(f"Retrieved event {event_id} from calendar {calendar_id}")
@@ -620,9 +596,7 @@ class GoogleCalendarService:
                         {
                             "start_time": current_time,
                             "end_time": event_start,
-                            "duration_minutes": int(
-                                (event_start - current_time).total_seconds() / 60
-                            ),
+                            "duration_minutes": int((event_start - current_time).total_seconds() / 60),
                         }
                     )
 
@@ -635,15 +609,11 @@ class GoogleCalendarService:
                     {
                         "start_time": current_time,
                         "end_time": end_date,
-                        "duration_minutes": int(
-                            (end_date - current_time).total_seconds() / 60
-                        ),
+                        "duration_minutes": int((end_date - current_time).total_seconds() / 60),
                     }
                 )
 
-            logger.info(
-                f"Calculated {len(free_time_slots)} free time slots in calendar {calendar_id}"
-            )
+            logger.info(f"Calculated {len(free_time_slots)} free time slots in calendar {calendar_id}")
             return free_time_slots
 
         except Exception as e:
@@ -676,9 +646,7 @@ class GoogleCalendarService:
             # 検索期間を設定（現在時刻から指定日数後まで）
             jst = ZoneInfo("Asia/Tokyo")
             now = datetime.now(jst)
-            start_date = now.replace(
-                hour=work_start_hour, minute=0, second=0, microsecond=0
-            )  # 業務開始時間から開始
+            start_date = now.replace(hour=work_start_hour, minute=0, second=0, microsecond=0)  # 業務開始時間から開始
             end_date = (now + timedelta(days=days_ahead)).replace(
                 hour=work_end_hour, minute=0, second=0, microsecond=0
             )  # 業務終了時間まで
@@ -717,9 +685,7 @@ class GoogleCalendarService:
             )
 
             # 合計空き時間を計算
-            total_free_hours = (
-                sum(slot.duration_minutes for slot in available_slots) / 60.0
-            )
+            total_free_hours = sum(slot.duration_minutes for slot in available_slots) / 60.0
 
             return CalendarFreeTimeResponse(
                 available_slots=available_slots,
@@ -763,12 +729,12 @@ class GoogleCalendarService:
         while current_date <= end_date_only:
             # 平日のみ対象（土日は除外）
             if current_date.weekday() < 5:  # 0-4が月-金
-                day_start = datetime.combine(
-                    current_date, datetime.min.time().replace(hour=work_start_hour)
-                ).replace(tzinfo=jst)
-                day_end = datetime.combine(
-                    current_date, datetime.min.time().replace(hour=work_end_hour)
-                ).replace(tzinfo=jst)
+                day_start = datetime.combine(current_date, datetime.min.time().replace(hour=work_start_hour)).replace(
+                    tzinfo=jst
+                )
+                day_end = datetime.combine(current_date, datetime.min.time().replace(hour=work_end_hour)).replace(
+                    tzinfo=jst
+                )
 
                 # その日の予定を取得（タイムゾーンを統一）
                 day_occupied = []
@@ -780,11 +746,7 @@ class GoogleCalendarService:
                         end = end.replace(tzinfo=jst)
 
                     # その日の範囲内の予定のみを対象とする
-                    if (
-                        start.date() == current_date
-                        and end > day_start
-                        and start < day_end
-                    ):
+                    if start.date() == current_date and end > day_start and start < day_end:
                         day_occupied.append((max(start, day_start), min(end, day_end)))
 
                 # 予定を時間順にソート
@@ -795,9 +757,7 @@ class GoogleCalendarService:
                 for occupied_start, occupied_end in day_occupied:
                     # 空き時間があるかチェック
                     if current_time < occupied_start:
-                        slot_duration = (
-                            occupied_start - current_time
-                        ).total_seconds() / 60
+                        slot_duration = (occupied_start - current_time).total_seconds() / 60
                         if slot_duration >= min_slot_minutes:
                             available_slots.append(
                                 AvailableTimeSlot(
@@ -826,9 +786,7 @@ class GoogleCalendarService:
 
 
 @asynccontextmanager
-async def get_google_calendar_service(
-    user: User | None = None, session: Session | None = None
-):
+async def get_google_calendar_service(user: User | None = None, session: Session | None = None):
     """
     Create and manage GoogleCalendarService as a context manager
 

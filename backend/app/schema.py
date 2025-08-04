@@ -39,9 +39,7 @@ class User(SQLModel, table=True):
     name: str | None = Field(nullable=True)
     clerk_sub: str = Field(nullable=True, unique=True, index=True)
 
-    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(
-        back_populates="user", cascade_delete=True
-    )
+    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user", cascade_delete=True)
     tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
     ai_chat_usage_logs: list["AIChatUsageLog"] = Relationship(cascade_delete=True)
 
@@ -86,9 +84,7 @@ class Tasks(SQLModel, table=True):
     expires_at: float | None = Field(default=None, nullable=True)
     priority: TaskPriority | None = Field(default=None, nullable=True, index=True)
 
-    sources: list["TaskSource"] = Relationship(
-        back_populates="task", cascade_delete=True
-    )
+    sources: list["TaskSource"] = Relationship(back_populates="task", cascade_delete=True)
 
 
 class TaskSource(SQLModel, table=True):
@@ -113,9 +109,7 @@ class TaskSource(SQLModel, table=True):
 
 class AIChatUsageLog(SQLModel, table=True):
     __tablename__ = "ai_chat_usage_logs"
-    __table_args__ = (
-        {"extend_existing": True},
-    )
+    __table_args__ = ({"extend_existing": True},)
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)

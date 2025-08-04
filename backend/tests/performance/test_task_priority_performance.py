@@ -21,6 +21,7 @@ class TestTaskPriorityPerformance:
         for size in dataset_sizes:
             # Clear previous test data
             from sqlmodel import select
+
             stmt = select(Tasks).where(Tasks.user_id == test_user.id)
             existing_tasks = session.exec(stmt).all()
             for task in existing_tasks:
@@ -49,11 +50,7 @@ class TestTaskPriorityPerformance:
             max_time = max(execution_times)
             min_time = min(execution_times)
 
-            performance_results[size] = {
-                "avg_time": avg_time,
-                "max_time": max_time,
-                "min_time": min_time
-            }
+            performance_results[size] = {"avg_time": avg_time, "max_time": max_time, "min_time": min_time}
 
             # Performance assertions
             assert avg_time < 2.0, f"Average sorting time {avg_time:.3f}s too slow for {size} tasks"
@@ -73,11 +70,7 @@ class TestTaskPriorityPerformance:
         priority_times = []
         for _ in range(10):
             start_time = time.time()
-            tasks_with_priority = find_tasks(
-                session=session,
-                user_id=test_user.id,
-                order_by_priority=True
-            )
+            tasks_with_priority = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
             end_time = time.time()
             priority_times.append(end_time - start_time)
 
@@ -85,11 +78,7 @@ class TestTaskPriorityPerformance:
         no_sort_times = []
         for _ in range(10):
             start_time = time.time()
-            tasks_no_sort = find_tasks(
-                session=session,
-                user_id=test_user.id,
-                order_by_priority=False
-            )
+            tasks_no_sort = find_tasks(session=session, user_id=test_user.id, order_by_priority=False)
             end_time = time.time()
             no_sort_times.append(end_time - start_time)
 
@@ -119,10 +108,8 @@ class TestTaskPriorityPerformance:
         query_patterns = [
             # Priority sorting (should use priority index)
             lambda: find_tasks(session=session, user_id=test_user.id, order_by_priority=True),
-
             # Completed filter with priority sorting
             lambda: find_tasks(session=session, user_id=test_user.id, completed=False, order_by_priority=True),
-
             # Expires_at filter with priority sorting
             lambda: find_tasks(session=session, user_id=test_user.id, expires_at=1672617600.0, order_by_priority=True),
         ]
@@ -173,6 +160,7 @@ class TestTaskPriorityPerformance:
     def test_concurrent_priority_queries(self, session: Session, test_user: User):
         """Test performance under concurrent priority sorting queries."""
         import pytest
+
         pytest.skip("SQLite doesn't support true concurrency - skipping this test")
 
         # Alternative: Test sequential execution multiple times instead of concurrency
@@ -246,8 +234,8 @@ class TestTaskPriorityPerformance:
             # Performance should scale sub-linearly (better than O(n))
             # With SQLite, scaling may not be as optimal as PostgreSQL with proper indexing
             # Allow for more generous scaling in test environment
-            assert time_ratio < size_ratio * 2.5, \
+            assert time_ratio < size_ratio * 2.5, (
                 f"Performance scaling too poor: {time_ratio:.2f}x time for {size_ratio:.2f}x data"
+            )
 
-            print(f"Size {previous_size} -> {current_size}: "
-                  f"{time_ratio:.2f}x time for {size_ratio:.2f}x data")
+            print(f"Size {previous_size} -> {current_size}: {time_ratio:.2f}x time for {size_ratio:.2f}x data")

@@ -52,7 +52,6 @@ class ScheduleJudgment(BaseModel):
 
 
 class AiTaskService:
-
     def __init__(self, session: Session, user_id: int):
         self.session = session
         self.user_id = user_id
@@ -84,9 +83,7 @@ class AiTaskService:
             self.logger.error(f"全ての情報源からのタスク生成に失敗: {str(e)}")
             raise
 
-    async def generate_tasks_from_new_emails(
-        self, user: User, max_emails: int = 10
-    ) -> list[dict]:
+    async def generate_tasks_from_new_emails(self, user: User, max_emails: int = 10) -> list[dict]:
         """
         新着メールを取得し、LLMでタスクを生成してデータベースに保存する
 
@@ -99,9 +96,7 @@ class AiTaskService:
         """
         try:
             # Gmailから新着メールを取得
-            async with get_authenticated_gmail_service(
-                user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(user, self.session) as gmail_service:
                 new_emails = await gmail_service.get_new_emails(max_results=max_emails)
 
             if not new_emails:
@@ -122,9 +117,7 @@ class AiTaskService:
                     )
 
                     if existing_task_source:
-                        self.logger.info(
-                            f"メール {email_id} は既にタスクが生成済みです。スキップします。"
-                        )
+                        self.logger.info(f"メール {email_id} は既にタスクが生成済みです。スキップします。")
                         continue
 
                     # メール内容を詳細取得
@@ -170,9 +163,7 @@ class AiTaskService:
                         self.logger.info(f"タスクを生成しました: {task.title}")
 
                 except Exception as e:
-                    self.logger.error(
-                        f"メール {email['id']} からのタスク生成に失敗: {str(e)}"
-                    )
+                    self.logger.error(f"メール {email['id']} からのタスク生成に失敗: {str(e)}")
                     continue
 
             return generated_tasks
@@ -197,9 +188,7 @@ class AiTaskService:
         """
         try:
             # カレンダーから今後のイベントを取得
-            async with get_authenticated_google_calendar_service(
-                user, self.session
-            ) as calendar_service:
+            async with get_authenticated_google_calendar_service(user, self.session) as calendar_service:
                 # 現在から指定日数後までのイベントを取得
                 start_date = datetime.now()
                 end_date = start_date + timedelta(days=days_ahead)
@@ -228,9 +217,7 @@ class AiTaskService:
                     )
 
                     if existing_task_source:
-                        self.logger.info(
-                            f"カレンダーイベント {event_id} は既にタスクが生成済みです。スキップします。"
-                        )
+                        self.logger.info(f"カレンダーイベント {event_id} は既にタスクが生成済みです。スキップします。")
                         continue
 
                     # イベント内容からタスクを生成
@@ -248,13 +235,9 @@ class AiTaskService:
                         )
 
                         # TaskSourceを作成（カレンダーイベント情報を保存）
-                        html_link = event.get(
-                            "htmlLink", ""
-                        )  # Google Calendar APIの正式フィールド名
+                        html_link = event.get("htmlLink", "")  # Google Calendar APIの正式フィールド名
 
-                        event_url = self._generate_calendar_event_url(
-                            event_id, html_link
-                        )
+                        event_url = self._generate_calendar_event_url(event_id, html_link)
 
                         create_task_source(
                             session=self.session,
@@ -277,9 +260,7 @@ class AiTaskService:
                             }
                         )
 
-                        self.logger.info(
-                            f"カレンダーイベントからタスクを生成しました: {task.title}"
-                        )
+                        self.logger.info(f"カレンダーイベントからタスクを生成しました: {task.title}")
 
                 except Exception as e:
                     self.logger.error(
@@ -313,9 +294,7 @@ class AiTaskService:
         async with get_authenticated_gmail_service(user, self.session) as gmail_service:
             return await gmail_service.get_email_content(email_id)
 
-    async def _generate_task_from_email(
-        self, email_content: dict
-    ) -> TaskGenerationResponse | None:
+    async def _generate_task_from_email(self, email_content: dict) -> TaskGenerationResponse | None:
         """
         メール内容からLLMを使ってタスクを生成
 
@@ -437,9 +416,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
         except Exception:
             return None
 
-    async def _generate_task_from_calendar_event(
-        self, event: dict
-    ) -> TaskGenerationResponse | None:
+    async def _generate_task_from_calendar_event(self, event: dict) -> TaskGenerationResponse | None:
         """
         カレンダーイベント内容からLLMを使ってタスクを生成
 
@@ -597,9 +574,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             self.logger.error(f"Error generating calendar event URL: {str(e)}")
             return "https://calendar.google.com/calendar"
 
-    async def generate_email_reply_draft(
-        self, task_source_uuid: str, user: User
-    ) -> DraftModel | None:
+    async def generate_email_reply_draft(self, task_source_uuid: str, user: User) -> DraftModel | None:
         """
         タスクソースからメールの返信下書きを生成する
 
@@ -621,9 +596,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
 
             # メールソースでない場合はエラー
             if task_source.source_type != SourceType.EMAIL:
-                self.logger.error(
-                    f"TaskSource is not email type: {task_source.source_type}"
-                )
+                self.logger.error(f"TaskSource is not email type: {task_source.source_type}")
                 return None
 
             # メールIDがない場合はエラー
@@ -635,9 +608,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             email_content = await self._get_email_detail(user, task_source.source_id)
 
             # LLMで返信下書きを生成
-            reply_draft = await self._generate_reply_draft_from_email(
-                email_content, task_source
-            )
+            reply_draft = await self._generate_reply_draft_from_email(email_content, task_source)
 
             # Gmailに下書きを作成
             draft = await self._create_gmail_draft(user, email_content, reply_draft)
@@ -667,19 +638,13 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             task_info = self._extract_task_info(task_source)
 
             # 会議調整が必要かLLMに判定させる
-            schedule_context = await self._determine_schedule_context(
-                email_content, task_source
-            )
+            schedule_context = await self._determine_schedule_context(email_content, task_source)
 
             # 返信下書きを生成
-            reply_draft = await self._generate_reply_with_context(
-                email_info, task_info, schedule_context
-            )
+            reply_draft = await self._generate_reply_with_context(email_info, task_info, schedule_context)
 
             # 件名を調整
-            reply_draft.subject = self._format_reply_subject(
-                email_info["subject"], reply_draft.subject
-            )
+            reply_draft.subject = self._format_reply_subject(email_info["subject"], reply_draft.subject)
 
             return reply_draft
 
@@ -703,9 +668,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         """
         try:
             # 元のメールの送信者情報を取得・正規化
-            original_sender = self._extract_email_address(
-                original_email.get("from", "")
-            )
+            original_sender = self._extract_email_address(original_email.get("from", ""))
             original_email_id = original_email.get("id", "")
 
             if not original_sender:
@@ -713,9 +676,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
                 return None
 
             # Gmail返信下書きを作成（スレッドに紐づけ）
-            async with get_authenticated_gmail_service(
-                user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(user, self.session) as gmail_service:
                 draft_result = await gmail_service.create_reply_draft(
                     original_email_id=original_email_id,
                     to=original_sender,
@@ -737,9 +698,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             self.logger.error(f"Gmail返信下書き作成に失敗: {str(e)}")
             return None
 
-    async def _get_calendar_free_time(
-        self, user: User, days_ahead: int = 7
-    ) -> CalendarFreeTimeResponse | None:
+    async def _get_calendar_free_time(self, user: User, days_ahead: int = 7) -> CalendarFreeTimeResponse | None:
         """
         ユーザーのGoogle Calendarから空き時間を取得する
 
@@ -752,18 +711,14 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         """
         try:
             # Google Calendarサービスを使用して空き時間を取得
-            async with get_authenticated_google_calendar_service(
-                user, self.session
-            ) as calendar_service:
+            async with get_authenticated_google_calendar_service(user, self.session) as calendar_service:
                 return await calendar_service.get_free_time(days_ahead=days_ahead)
 
         except Exception as e:
             self.logger.error(f"Google Calendar空き時間取得に失敗: {str(e)}")
             return None
 
-    def _format_available_times_for_prompt(
-        self, free_time_response: CalendarFreeTimeResponse
-    ) -> str:
+    def _format_available_times_for_prompt(self, free_time_response: CalendarFreeTimeResponse) -> str:
         """
         空き時間情報をプロンプト用にフォーマットする
 
@@ -775,9 +730,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         """
         # GoogleCalendarServiceのロジックをここに移行
         if not free_time_response.available_slots:
-            return (
-                "申し訳ございませんが、現在の予定では空き時間が見つかりませんでした。"
-            )
+            return "申し訳ございませんが、現在の予定では空き時間が見つかりませんでした。"
 
         formatted_slots = []
         current_date = None
@@ -795,7 +748,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             formatted_slots.append(f"  • {slot_time} {slot_duration}")
 
         return f"""空いている時間は以下の通りです：
-{''.join(formatted_slots)}
+{"".join(formatted_slots)}
 
 検索期間: {free_time_response.search_period}
 合計空き時間: {free_time_response.total_free_hours:.1f}時間
@@ -842,18 +795,14 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             return angle_bracket_match.group(1).strip()
 
         # 単純なメールアドレス形式の場合
-        email_match = re.search(
-            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", email_field
-        )
+        email_match = re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", email_field)
         if email_match:
             return email_match.group(0).strip()
 
         # そのまま返す（既に正しい形式の場合）
         return email_field.strip()
 
-    async def _determine_schedule_context(
-        self, email_content: dict, task_source: TaskSource
-    ) -> dict:
+    async def _determine_schedule_context(self, email_content: dict, task_source: TaskSource) -> dict:
         """
         会議スケジュール調整の必要性を判定し、必要に応じて空き時間情報を取得
 
@@ -866,9 +815,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         """
         try:
             # LLMで会議調整の必要性を判定
-            needs_scheduling = await self._check_scheduling_need(
-                email_content, task_source
-            )
+            needs_scheduling = await self._check_scheduling_need(email_content, task_source)
 
             context = {
                 "needs_scheduling": needs_scheduling,
@@ -878,9 +825,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
 
             # 会議調整が必要な場合のみ、空き時間を取得
             if needs_scheduling:
-                context = await self._add_calendar_availability(
-                    context, task_source.task.user
-                )
+                context = await self._add_calendar_availability(context, task_source.task.user)
 
             return context
 
@@ -892,9 +837,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
                 "calendar_error": str(e),
             }
 
-    async def _check_scheduling_need(
-        self, email_content: dict, task_source: TaskSource
-    ) -> bool:
+    async def _check_scheduling_need(self, email_content: dict, task_source: TaskSource) -> bool:
         """
         LLMを使用してメール内容から会議時間の調整が必要かどうかを判定
         """
@@ -929,13 +872,13 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
                     "content": f"""以下のメール内容とタスク情報を分析して、会議時間の調整が必要かどうかを判定してください：
 
 【メール情報】
-件名: {email_info['subject']}
-送信者: {email_info['sender']}
-本文: {email_info['body']}
+件名: {email_info["subject"]}
+送信者: {email_info["sender"]}
+本文: {email_info["body"]}
 
 【タスク情報】
-タイトル: {task_info['title']}
-内容: {task_info['content']}
+タイトル: {task_info["title"]}
+内容: {task_info["content"]}
 
 会議時間の調整が必要ですか？ true または false で回答してください。""",
                 },
@@ -960,9 +903,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         try:
             free_time_response = await self._get_calendar_free_time(user, days_ahead=7)
             if free_time_response and free_time_response.available_slots:
-                context["available_times"] = self._format_available_times_for_prompt(
-                    free_time_response
-                )
+                context["available_times"] = self._format_available_times_for_prompt(free_time_response)
         except Exception as calendar_error:
             self.logger.warning(f"Google Calendar取得中にエラー: {str(calendar_error)}")
             context["calendar_error"] = str(calendar_error)
@@ -1045,21 +986,19 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
 件名は「Re:」で始まる適切な件名を返してください。"""
             )
 
-    def _build_user_prompt(
-        self, email_info: dict, task_info: dict, schedule_context: dict
-    ) -> str:
+    def _build_user_prompt(self, email_info: dict, task_info: dict, schedule_context: dict) -> str:
         """ユーザープロンプトを構築"""
         prompt = f"""以下の情報を基に返信メールの下書きを作成してください：
 
 【元のメール情報】
-件名: {email_info['subject']}
-送信者: {email_info['sender']}
-日時: {email_info['date']}
-本文: {email_info['body']}
+件名: {email_info["subject"]}
+送信者: {email_info["sender"]}
+日時: {email_info["date"]}
+本文: {email_info["body"]}
 
 【関連タスク情報】
-タスクタイトル: {task_info['title']}
-タスク内容: {task_info['content']}"""
+タスクタイトル: {task_info["title"]}
+タスク内容: {task_info["content"]}"""
 
         # スケジュール調整が必要な場合の追加情報
         if schedule_context["needs_scheduling"]:
@@ -1067,7 +1006,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
                 prompt += f"""
 
 【私の空き時間情報】
-{schedule_context['available_times']}
+{schedule_context["available_times"]}
 
 【重要】上記の空き時間情報を活用して、具体的な日時候補を3つ選んで提案してください。
 曖昧な表現（「数日お時間をいただき」等）は避け、実際の日時を明記してください。
@@ -1084,9 +1023,7 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
         prompt += "\n\n適切な返信メールの件名と本文を作成してください。"
         return prompt
 
-    def _format_reply_subject(
-        self, original_subject: str, generated_subject: str
-    ) -> str:
+    def _format_reply_subject(self, original_subject: str, generated_subject: str) -> str:
         """返信件名をフォーマット"""
         # 生成された件名にRe:がない場合は追加
         if generated_subject and not generated_subject.startswith("Re:"):

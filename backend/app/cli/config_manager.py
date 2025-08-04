@@ -32,11 +32,7 @@ def list_plans():
     print("=" * 50)
 
     for plan_name, plan_config in plans.items():
-        limit_str = (
-            "Unlimited"
-            if plan_config.daily_limit == -1
-            else str(plan_config.daily_limit)
-        )
+        limit_str = "Unlimited" if plan_config.daily_limit == -1 else str(plan_config.daily_limit)
         print(f"\nPlan: {plan_name}")
         print(f"  Daily Limit: {limit_str}")
         print(f"  Description: {plan_config.description}")
@@ -53,9 +49,7 @@ def get_plan(plan_name: str):
         return
 
     plan_config = plans[plan_name]
-    limit_str = (
-        "Unlimited" if plan_config.daily_limit == -1 else str(plan_config.daily_limit)
-    )
+    limit_str = "Unlimited" if plan_config.daily_limit == -1 else str(plan_config.daily_limit)
 
     print(f"Plan Configuration: {plan_name}")
     print("=" * 30)
@@ -83,9 +77,7 @@ def set_plan(
 
         if success:
             limit_str = "Unlimited" if limit == -1 else str(limit)
-            print(
-                f"Successfully updated plan '{plan_name}' with daily limit: {limit_str}"
-            )
+            print(f"Successfully updated plan '{plan_name}' with daily limit: {limit_str}")
             if description:
                 print(f"Description: {description}")
             if features:
@@ -123,10 +115,7 @@ def export_config(output_file: str):
         plans = get_all_ai_chat_plans()
 
         config_data = {
-            "ai_chat_plans": {
-                plan_name: plan_config.to_dict()
-                for plan_name, plan_config in plans.items()
-            },
+            "ai_chat_plans": {plan_name: plan_config.to_dict() for plan_name, plan_config in plans.items()},
             "exported_at": config_manager._last_modified or "unknown",
         }
 
@@ -187,19 +176,13 @@ def main():
     subparsers.add_parser("list-plans", help="List all AI chat plans")
 
     # Get plan command
-    get_parser = subparsers.add_parser(
-        "get-plan", help="Get configuration for a specific plan"
-    )
+    get_parser = subparsers.add_parser("get-plan", help="Get configuration for a specific plan")
     get_parser.add_argument("plan_name", help="Name of the plan to retrieve")
 
     # Set plan command
-    set_parser = subparsers.add_parser(
-        "set-plan", help="Set or update plan configuration"
-    )
+    set_parser = subparsers.add_parser("set-plan", help="Set or update plan configuration")
     set_parser.add_argument("plan_name", help="Name of the plan to update")
-    set_parser.add_argument(
-        "--limit", type=int, required=True, help="Daily usage limit (-1 for unlimited)"
-    )
+    set_parser.add_argument("--limit", type=int, required=True, help="Daily usage limit (-1 for unlimited)")
     set_parser.add_argument("--description", help="Plan description")
     set_parser.add_argument("--features", nargs="*", help="List of plan features")
 
@@ -207,15 +190,11 @@ def main():
     subparsers.add_parser("reload-config", help="Reload configuration from file")
 
     # Export config command
-    export_parser = subparsers.add_parser(
-        "export-config", help="Export configuration to file"
-    )
+    export_parser = subparsers.add_parser("export-config", help="Export configuration to file")
     export_parser.add_argument("output_file", help="Output file path")
 
     # Import config command
-    import_parser = subparsers.add_parser(
-        "import-config", help="Import configuration from file"
-    )
+    import_parser = subparsers.add_parser("import-config", help="Import configuration from file")
     import_parser.add_argument("input_file", help="Input file path")
 
     args = parser.parse_args()

@@ -76,9 +76,7 @@ def temp_config_file():
 @pytest.fixture
 def isolated_config_manager(temp_config_file):
     """Create an isolated config manager for testing"""
-    with patch.object(
-        ConfigManager, "_get_config_file_path", return_value=temp_config_file
-    ):
+    with patch.object(ConfigManager, "_get_config_file_path", return_value=temp_config_file):
         return ConfigManager()
 
 
@@ -87,9 +85,7 @@ class TestAIChatPlanConfig:
 
     def test_plan_config_creation(self):
         """Test creating a plan configuration"""
-        config = AIChatPlanConfig(
-            daily_limit=10, description="Test plan", features=["feature1", "feature2"]
-        )
+        config = AIChatPlanConfig(daily_limit=10, description="Test plan", features=["feature1", "feature2"])
 
         assert config.daily_limit == 10
         assert config.description == "Test plan"
@@ -135,9 +131,7 @@ class TestConfigManager:
     @patch.dict(os.environ, {"AI_CHAT_LIMIT_BASIC": "20"})
     def test_environment_variable_override(self, temp_config_file):
         """Test that environment variables override default limits"""
-        with patch.object(
-            ConfigManager, "_get_config_file_path", return_value=temp_config_file
-        ):
+        with patch.object(ConfigManager, "_get_config_file_path", return_value=temp_config_file):
             config_manager = ConfigManager()
 
         # Basic plan should be overridden by environment variable
@@ -146,9 +140,7 @@ class TestConfigManager:
     @patch.dict(os.environ, {"AI_CHAT_LIMIT_BASIC": "invalid"})
     def test_invalid_environment_variable(self, temp_config_file):
         """Test handling of invalid environment variable values"""
-        with patch.object(
-            ConfigManager, "_get_config_file_path", return_value=temp_config_file
-        ):
+        with patch.object(ConfigManager, "_get_config_file_path", return_value=temp_config_file):
             config_manager = ConfigManager()
 
         # Should fall back to default value when environment variable is invalid
@@ -185,9 +177,7 @@ class TestConfigManager:
         config_manager = isolated_config_manager
 
         # Update existing plan
-        success = config_manager.update_ai_chat_plan_limit(
-            "basic", 15, "Updated basic plan", ["new_feature"]
-        )
+        success = config_manager.update_ai_chat_plan_limit("basic", 15, "Updated basic plan", ["new_feature"])
         assert success is True
 
         updated_config = config_manager.get_ai_chat_plan_config("basic")
@@ -196,9 +186,7 @@ class TestConfigManager:
         assert updated_config.features == ["new_feature"]
 
         # Create new plan
-        success = config_manager.update_ai_chat_plan_limit(
-            "custom", 25, "Custom plan", ["custom_feature"]
-        )
+        success = config_manager.update_ai_chat_plan_limit("custom", 25, "Custom plan", ["custom_feature"])
         assert success is True
 
         custom_config = config_manager.get_ai_chat_plan_config("custom")
@@ -237,9 +225,7 @@ class TestConfigManager:
 
         try:
             # Mock the config file path
-            with patch.object(
-                ConfigManager, "_get_config_file_path", return_value=Path(temp_file)
-            ):
+            with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
                 config_manager = ConfigManager()
 
                 # Check that the test plan was loaded
@@ -272,9 +258,7 @@ class TestConfigManager:
 
         try:
             # Mock the config file path
-            with patch.object(
-                ConfigManager, "_get_config_file_path", return_value=Path(temp_file)
-            ):
+            with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
                 config_manager = ConfigManager()
 
                 # Check initial configuration
@@ -345,9 +329,7 @@ class TestConfigManagerIntegration:
         try:
             # Set environment variable with different value
             with patch.dict(os.environ, {"AI_CHAT_LIMIT_BASIC": "15"}):
-                with patch.object(
-                    ConfigManager, "_get_config_file_path", return_value=Path(temp_file)
-                ):
+                with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
                     config_manager = ConfigManager()
 
                     # Environment variable should take precedence
@@ -369,9 +351,7 @@ class TestConfigManagerIntegration:
             temp_file = f.name
 
         try:
-            with patch.object(
-                ConfigManager, "_get_config_file_path", return_value=Path(temp_file)
-            ):
+            with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
                 # Should not raise exception, should fall back to defaults
                 config_manager = ConfigManager()
 

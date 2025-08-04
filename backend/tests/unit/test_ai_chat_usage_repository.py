@@ -39,9 +39,7 @@ class TestAIChatUsageRepository:
         """Test creating a daily usage record with default count."""
         usage_date = "2023-01-02"
 
-        usage_log = create_daily_usage(
-            session=session, user_id=test_user.id, usage_date=usage_date
-        )
+        usage_log = create_daily_usage(session=session, user_id=test_user.id, usage_date=usage_date)
 
         assert usage_log.usage_count == 1  # Default value
 
@@ -50,9 +48,7 @@ class TestAIChatUsageRepository:
         usage_date = "2023-01-02"
 
         # Create a usage record
-        created_log = create_daily_usage(
-            session=session, user_id=test_user.id, usage_date=usage_date, usage_count=3
-        )
+        created_log = create_daily_usage(session=session, user_id=test_user.id, usage_date=usage_date, usage_count=3)
 
         # Retrieve it
         retrieved_log = get_daily_usage(session, test_user.id, usage_date)
@@ -87,9 +83,7 @@ class TestAIChatUsageRepository:
 
         assert count == expected_count
 
-    def test_get_current_usage_count_nonexistent(
-        self, session: Session, test_user: User
-    ):
+    def test_get_current_usage_count_nonexistent(self, session: Session, test_user: User):
         """Test getting current usage count for non-existent record."""
         usage_date = "2023-01-02"
 
@@ -107,9 +101,7 @@ class TestAIChatUsageRepository:
         assert usage_log.usage_date == usage_date
         assert usage_log.usage_count == 1
 
-    def test_increment_daily_usage_existing_record(
-        self, session: Session, test_user: User
-    ):
+    def test_increment_daily_usage_existing_record(self, session: Session, test_user: User):
         """Test incrementing usage for an existing record."""
         usage_date = "2023-01-02"
         initial_count = 5
@@ -129,9 +121,7 @@ class TestAIChatUsageRepository:
         assert updated_log.user_id == test_user.id
         assert updated_log.usage_date == usage_date
 
-    def test_increment_daily_usage_multiple_times(
-        self, session: Session, test_user: User
-    ):
+    def test_increment_daily_usage_multiple_times(self, session: Session, test_user: User):
         """Test incrementing usage multiple times."""
         usage_date = "2023-01-02"
 

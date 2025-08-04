@@ -48,7 +48,7 @@ class TestTaskPriorityEnum:
 
         # Sort with None handling (None should be treated as highest value)
         def sort_key(priority):
-            return priority if priority is not None else float('inf')
+            return priority if priority is not None else float("inf")
 
         sorted_priorities = sorted(priorities, key=sort_key)
         expected_order = [TaskPriority.HIGH, TaskPriority.MIDDLE, TaskPriority.LOW, None, None]

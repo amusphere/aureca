@@ -38,13 +38,9 @@ async def google_oauth_callback(
         oauth_service = GoogleOauthService(session=session)
         oauth_service.save_oauth_tokens(request)
 
-        return GoogleAuthResponse(
-            success=True, message="Google account connected successfully"
-        )
+        return GoogleAuthResponse(success=True, message="Google account connected successfully")
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request: {str(e)}") from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -62,9 +58,7 @@ async def disconnect_google_account(
         calendar_service = GoogleOauthService(session)
         calendar_service.revoke_access(user.id)
 
-        return GoogleAuthResponse(
-            success=True, message="Google account disconnected successfully"
-        )
+        return GoogleAuthResponse(success=True, message="Google account disconnected successfully")
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

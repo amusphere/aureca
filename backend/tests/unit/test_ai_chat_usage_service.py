@@ -324,16 +324,12 @@ class TestAIChatUsageService:
         result = await service.increment_usage(mock_user)
 
         mock_check_limit.assert_called_once_with(mock_user)
-        mock_repo.increment_daily_usage.assert_called_once_with(
-            service.session, mock_user.id, "2023-01-15"
-        )
+        mock_repo.increment_daily_usage.assert_called_once_with(service.session, mock_user.id, "2023-01-15")
         assert result["remaining_count"] == 4
         assert result["current_usage"] == 6
 
     @patch.object(AIChatUsageService, "check_usage_limit")
-    async def test_increment_usage_limit_exceeded(
-        self, mock_check_limit, service: AIChatUsageService, mock_user: User
-    ):
+    async def test_increment_usage_limit_exceeded(self, mock_check_limit, service: AIChatUsageService, mock_user: User):
         """Test increment_usage raises exception when limit check fails."""
         mock_check_limit.side_effect = HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -371,9 +367,7 @@ class TestAIChatUsageService:
         assert "SYSTEM_ERROR" in str(exc_info.value.detail)
 
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
-    async def test_get_usage_history(
-        self, mock_repo, service: AIChatUsageService, mock_user: User
-    ):
+    async def test_get_usage_history(self, mock_repo, service: AIChatUsageService, mock_user: User):
         """Test get_usage_history returns repository results."""
         mock_logs = [
             AIChatUsageLog(id=1, user_id=1, usage_date="2023-01-15", usage_count=5),
@@ -383,9 +377,7 @@ class TestAIChatUsageService:
 
         result = await service.get_usage_history(mock_user, limit=10)
 
-        mock_repo.get_usage_history.assert_called_once_with(
-            service.session, mock_user.id, 10
-        )
+        mock_repo.get_usage_history.assert_called_once_with(service.session, mock_user.id, 10)
         assert result == mock_logs
 
     def test_update_plan_limits(self, session: Session):
@@ -499,9 +491,7 @@ class TestAIChatUsageService:
         assert limit == 0
 
     @patch("app.services.ai_chat_usage_service.datetime")
-    def test_edge_case_date_boundary_midnight(
-        self, mock_datetime, service: AIChatUsageService
-    ):
+    def test_edge_case_date_boundary_midnight(self, mock_datetime, service: AIChatUsageService):
         """Test edge case at exactly midnight."""
         # Mock exactly midnight
         mock_now = datetime(2023, 1, 15, 0, 0, 0, tzinfo=UTC)
@@ -516,9 +506,7 @@ class TestAIChatUsageService:
         assert reset_time == expected_reset.isoformat()
 
     @patch("app.services.ai_chat_usage_service.datetime")
-    def test_edge_case_date_boundary_before_midnight(
-        self, mock_datetime, service: AIChatUsageService
-    ):
+    def test_edge_case_date_boundary_before_midnight(self, mock_datetime, service: AIChatUsageService):
         """Test edge case just before midnight."""
         # Mock 23:59:59
         mock_now = datetime(2023, 1, 15, 23, 59, 59, tzinfo=UTC)
@@ -534,9 +522,7 @@ class TestAIChatUsageService:
 
     # Error handling tests
     @patch.object(AIChatUsageService, "get_usage_stats")
-    async def test_error_handling_invalid_user(
-        self, mock_get_stats, service: AIChatUsageService
-    ):
+    async def test_error_handling_invalid_user(self, mock_get_stats, service: AIChatUsageService):
         """Test error handling with invalid user."""
         invalid_user = User(id=None, clerk_sub="invalid")
         mock_get_stats.side_effect = Exception("Invalid user")
@@ -567,9 +553,7 @@ class TestAIChatUsageService:
         """Test error handling when repository raises exception."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
-        mock_repo.get_current_usage_count.side_effect = Exception(
-            "Database connection failed"
-        )
+        mock_repo.get_current_usage_count.side_effect = Exception("Database connection failed")
 
         with pytest.raises(Exception, match="Database connection failed"):
             await service.get_usage_stats(mock_user)

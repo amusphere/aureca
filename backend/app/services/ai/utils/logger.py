@@ -19,18 +19,14 @@ class AIAssistantLogger:
         # Console handler
         if not self.logger.handlers:
             console_handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
     def log_action_execution(self, next_action: NextAction):
         """Log action execution"""
         log_message = (
-            f"Spoke: {next_action.spoke_name}, "
-            f"Type: {next_action.action_type}, "
-            f"Parameters: {next_action.parameters}, "
+            f"Spoke: {next_action.spoke_name}, Type: {next_action.action_type}, Parameters: {next_action.parameters}, "
         )
         self.logger.info(log_message)
 

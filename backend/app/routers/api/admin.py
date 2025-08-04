@@ -2,7 +2,6 @@
 Admin API endpoints for configuration management
 """
 
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session
@@ -72,9 +71,7 @@ async def get_all_ai_chat_plans_endpoint(
 
 
 @router.get("/ai-chat/plans/{plan_name}", response_model=PlanConfigResponse)
-async def get_ai_chat_plan_endpoint(
-    plan_name: str, session: Session = Depends(get_session)
-) -> PlanConfigResponse:
+async def get_ai_chat_plan_endpoint(plan_name: str, session: Session = Depends(get_session)) -> PlanConfigResponse:
     """
     Get specific AI chat plan configuration
 
@@ -228,9 +225,7 @@ async def reload_ai_chat_config_endpoint() -> dict[str, str]:
         return {
             "message": "Configuration reloaded successfully",
             "timestamp": (
-                str(config_manager._last_modified)
-                if config_manager._last_modified
-                else "No file configured"
+                str(config_manager._last_modified) if config_manager._last_modified else "No file configured"
             ),
         }
 

@@ -30,8 +30,6 @@ async def clerk_webhook(
 
     if event["type"] == "user.deleted":
         clerk_user_id = event["data"]["id"]
-        if clerk_user_id and (
-            user := get_user_br_column(session, clerk_user_id, "clerk_sub")
-        ):
+        if clerk_user_id and (user := get_user_br_column(session, clerk_user_id, "clerk_sub")):
             delete_user(session, user)
     return {"received": True}

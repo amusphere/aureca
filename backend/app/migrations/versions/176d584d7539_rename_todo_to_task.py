@@ -74,9 +74,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=True,
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], name=op.f("todo_lists_user_id_fkey")
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("todo_lists_user_id_fkey")),
         sa.PrimaryKeyConstraint("id", name=op.f("todo_lists_pkey")),
     )
     op.create_index(op.f("ix_todo_lists_uuid"), "todo_lists", ["uuid"], unique=False)

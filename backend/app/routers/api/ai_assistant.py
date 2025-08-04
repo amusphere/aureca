@@ -103,9 +103,7 @@ async def get_ai_chat_usage_endpoint(
         raise
     except Exception as e:
         # Handle unexpected errors
-        logger.error(
-            f"Unexpected error in get_ai_chat_usage_endpoint: {e}", exc_info=True
-        )
+        logger.error(f"Unexpected error in get_ai_chat_usage_endpoint: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={
@@ -140,9 +138,7 @@ async def increment_ai_chat_usage_endpoint(
         raise
     except Exception as e:
         # Handle unexpected errors
-        logger.error(
-            f"Unexpected error in increment_ai_chat_usage_endpoint: {e}", exc_info=True
-        )
+        logger.error(f"Unexpected error in increment_ai_chat_usage_endpoint: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail={

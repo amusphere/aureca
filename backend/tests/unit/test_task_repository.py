@@ -52,9 +52,7 @@ class TestTaskRepositoryPriority:
         original_id = task.id
 
         # Update priority
-        updated_task = update_task(
-            session=session, id=task.id, priority=TaskPriority.HIGH
-        )
+        updated_task = update_task(session=session, id=task.id, priority=TaskPriority.HIGH)
 
         assert updated_task is not None
         assert updated_task.id == original_id
@@ -77,9 +75,7 @@ class TestTaskRepositoryPriority:
         assert updated_task is not None
         assert updated_task.priority is None
 
-    def test_find_tasks_priority_sorting_enabled(
-        self, session: Session, test_user: User
-    ):
+    def test_find_tasks_priority_sorting_enabled(self, session: Session, test_user: User):
         """Test find_tasks with priority sorting enabled."""
         # Create tasks with different priorities
         create_task(
@@ -111,9 +107,7 @@ class TestTaskRepositoryPriority:
             expires_at=1672617600.0,
         )
 
-        tasks = find_tasks(
-            session=session, user_id=test_user.id, order_by_priority=True
-        )
+        tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
 
         # Should be ordered: HIGH(1) -> MIDDLE(2) -> LOW(3) -> None(999)
         expected_titles = ["High Task", "Middle Task", "Low Task", "No Priority Task"]
@@ -121,9 +115,7 @@ class TestTaskRepositoryPriority:
 
         assert actual_titles == expected_titles
 
-    def test_find_tasks_priority_sorting_disabled(
-        self, session: Session, test_user: User
-    ):
+    def test_find_tasks_priority_sorting_disabled(self, session: Session, test_user: User):
         """Test find_tasks with priority sorting disabled."""
         # Create tasks with different priorities and expires_at times
         create_task(
@@ -141,9 +133,7 @@ class TestTaskRepositoryPriority:
             expires_at=1672617600.0,
         )
 
-        tasks = find_tasks(
-            session=session, user_id=test_user.id, order_by_priority=False
-        )
+        tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=False)
 
         # Should be ordered by expires_at when priority sorting is disabled
         assert tasks[0].title == "Earlier Task"
@@ -170,9 +160,7 @@ class TestTaskRepositoryPriority:
         )  # Future
 
         # Filter by expires_at
-        future_tasks = find_tasks(
-            session=session, user_id=test_user.id, expires_at=current_time
-        )
+        future_tasks = find_tasks(session=session, user_id=test_user.id, expires_at=current_time)
 
         assert len(future_tasks) == 1
         assert future_tasks[0].title == "Future Task"
@@ -180,31 +168,23 @@ class TestTaskRepositoryPriority:
     def test_find_tasks_completed_filter(self, session: Session, test_user: User):
         """Test find_tasks with completed filter."""
         # Create completed and incomplete tasks
-        incomplete_task = create_task(
-            session, test_user.id, "Incomplete Task", priority=TaskPriority.HIGH
-        )
+        incomplete_task = create_task(session, test_user.id, "Incomplete Task", priority=TaskPriority.HIGH)
         incomplete_task.completed = False
         session.add(incomplete_task)
 
-        completed_task = create_task(
-            session, test_user.id, "Completed Task", priority=TaskPriority.HIGH
-        )
+        completed_task = create_task(session, test_user.id, "Completed Task", priority=TaskPriority.HIGH)
         completed_task.completed = True
         session.add(completed_task)
 
         session.commit()
 
         # Test incomplete tasks
-        incomplete_tasks = find_tasks(
-            session=session, user_id=test_user.id, completed=False
-        )
+        incomplete_tasks = find_tasks(session=session, user_id=test_user.id, completed=False)
         assert len(incomplete_tasks) == 1
         assert incomplete_tasks[0].title == "Incomplete Task"
 
         # Test completed tasks
-        completed_tasks = find_tasks(
-            session=session, user_id=test_user.id, completed=True
-        )
+        completed_tasks = find_tasks(session=session, user_id=test_user.id, completed=True)
         assert len(completed_tasks) == 1
         assert completed_tasks[0].title == "Completed Task"
 
@@ -242,9 +222,7 @@ class TestTaskRepositoryPriority:
         assert len(tasks) == 0
         assert tasks == []
 
-    def test_priority_secondary_sorting_by_expires_at(
-        self, session: Session, test_user: User
-    ):
+    def test_priority_secondary_sorting_by_expires_at(self, session: Session, test_user: User):
         """Test that tasks with same priority are sorted by expires_at."""
         # Create multiple high priority tasks with different expiry times
         create_task(
@@ -269,14 +247,10 @@ class TestTaskRepositoryPriority:
             expires_at=1672660000.0,
         )
 
-        tasks = find_tasks(
-            session=session, user_id=test_user.id, order_by_priority=True
-        )
+        tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
 
         # All should be high priority, but sorted by expires_at
-        high_priority_tasks = [
-            task for task in tasks if task.priority == TaskPriority.HIGH
-        ]
+        high_priority_tasks = [task for task in tasks if task.priority == TaskPriority.HIGH]
         assert len(high_priority_tasks) == 3
 
         # Should be sorted by expires_at (earlier first)

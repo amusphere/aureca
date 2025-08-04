@@ -16,9 +16,7 @@ from app.schema import GoogleOAuthToken
 # Google OAuth設定
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv(
-    "GOOGLE_REDIRECT_URI", "http://localhost:3000/api/auth/google/callback"
-)
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/api/auth/google/callback")
 ENCRYPTION_KEY = os.getenv("GOOGLE_OAUTH_ENCRYPTION_KEY")
 
 # Google Calendar API のスコープ
@@ -37,9 +35,7 @@ class GoogleOauthService:
     def __init__(self, session: Session | None = None):
         # 環境変数のチェック
         if not ENCRYPTION_KEY:
-            raise ValueError(
-                "GOOGLE_OAUTH_ENCRYPTION_KEY environment variable is required"
-            )
+            raise ValueError("GOOGLE_OAUTH_ENCRYPTION_KEY environment variable is required")
         if not GOOGLE_CLIENT_ID:
             raise ValueError("GOOGLE_CLIENT_ID environment variable is required")
         if not GOOGLE_CLIENT_SECRET:
@@ -97,9 +93,7 @@ class GoogleOauthService:
         response = requests.get(userinfo_url, headers=headers)
 
         if response.status_code != 200:
-            raise Exception(
-                f"Failed to fetch user info: {response.status_code} {response.text}"
-            )
+            raise Exception(f"Failed to fetch user info: {response.status_code} {response.text}")
 
         return response.json()
 
@@ -152,11 +146,7 @@ class GoogleOauthService:
         return google_oauth_token.upsert_oauth_token(
             user_id=user_id,
             access_token=self._encrypt_token(credentials.token),
-            refresh_token=(
-                self._encrypt_token(credentials.refresh_token)
-                if credentials.refresh_token
-                else None
-            ),
+            refresh_token=(self._encrypt_token(credentials.refresh_token) if credentials.refresh_token else None),
             expires_at=expires_at,
             scope=" ".join(credentials.scopes) if credentials.scopes else None,
             google_user_id=google_user_id,
@@ -166,9 +156,7 @@ class GoogleOauthService:
 
     def get_credentials(self, user_id: int) -> Credentials | None:
         """ユーザーのGoogle認証情報を取得"""
-        oauth_token = google_oauth_token.find_active_token_by_user_id(
-            user_id=user_id, session=self.session
-        )
+        oauth_token = google_oauth_token.find_active_token_by_user_id(user_id=user_id, session=self.session)
 
         if not oauth_token:
             return None
@@ -181,9 +169,7 @@ class GoogleOauthService:
 
         # refresh_tokenが存在しない場合、適切なエラーメッセージと共にNoneを返す
         if not refresh_token:
-            raise ValueError(
-                "Refresh token not found. Please re-authenticate to grant access to your Google Calendar."
-            )
+            raise ValueError("Refresh token not found. Please re-authenticate to grant access to your Google Calendar.")
 
         credentials = Credentials(
             token=access_token,
@@ -205,9 +191,7 @@ class GoogleOauthService:
                 # 更新されたトークンを保存
                 self.update_tokens(oauth_token.id, credentials)
             except Exception as e:
-                raise ValueError(
-                    f"Failed to refresh access token: {str(e)}. Please re-authenticate."
-                ) from e
+                raise ValueError(f"Failed to refresh access token: {str(e)}. Please re-authenticate.") from e
 
         return credentials
 
@@ -218,17 +202,11 @@ class GoogleOauthService:
         google_oauth_token.update_token_data(
             token_id=token_id,
             access_token=self._encrypt_token(credentials.token),
-            refresh_token=(
-                self._encrypt_token(credentials.refresh_token)
-                if credentials.refresh_token
-                else None
-            ),
+            refresh_token=(self._encrypt_token(credentials.refresh_token) if credentials.refresh_token else None),
             expires_at=expires_at,
             session=self.session,
         )
 
     def revoke_access(self, user_id: int):
         """ユーザーのアクセスを取り消し（レコードを削除）"""
-        return google_oauth_token.delete_all_active_tokens_by_user_id(
-            user_id=user_id, session=self.session
-        )
+        return google_oauth_token.delete_all_active_tokens_by_user_id(user_id=user_id, session=self.session)

@@ -36,9 +36,7 @@ class BaseSpoke(ABC):
         self.current_user = current_user
         self.logger = AIAssistantLogger(self.__class__.__name__)
 
-    async def execute_action(
-        self, action: NextAction, action_definition: dict[str, Any]
-    ) -> SpokeResponse:
+    async def execute_action(self, action: NextAction, action_definition: dict[str, Any]) -> SpokeResponse:
         """Execute an action"""
         try:
             # Convert action name to method name (e.g., get_calendar_events -> action_get_calendar_events)
@@ -70,9 +68,7 @@ class BaseSpoke(ABC):
                     f"Failed to enhance parameters for {action.spoke_name}.{action.action_type}: {str(e)}"
                 )
 
-            self.logger.info(
-                f"Executing {action.spoke_name}.{action.action_type} with parameters: {parameters}"
-            )
+            self.logger.info(f"Executing {action.spoke_name}.{action.action_type} with parameters: {parameters}")
 
             return await getattr(self, method_name)(parameters)
 

@@ -35,9 +35,7 @@ class TestAIChatUsageIntegrationSimple:
         if auth_user in app.dependency_overrides:
             del app.dependency_overrides[auth_user]
 
-    def test_usage_endpoint_success_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_usage_endpoint_success_flow(self, client: TestClient, session: Session, test_user: User):
         """Test successful usage check flow."""
         current_date = "2023-01-01"
 
@@ -68,9 +66,7 @@ class TestAIChatUsageIntegrationSimple:
         finally:
             self._cleanup_auth()
 
-    def test_usage_increment_success_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_usage_increment_success_flow(self, client: TestClient, session: Session, test_user: User):
         """Test successful usage increment flow."""
         current_date = "2023-01-01"
 
@@ -95,16 +91,12 @@ class TestAIChatUsageIntegrationSimple:
             assert data["can_use_chat"] is True
 
             # Verify database was updated
-            current_usage = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 6
         finally:
             self._cleanup_auth()
 
-    def test_usage_limit_exceeded_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_usage_limit_exceeded_flow(self, client: TestClient, session: Session, test_user: User):
         """Test usage limit exceeded flow."""
         current_date = "2023-01-01"
 
@@ -157,9 +149,7 @@ class TestAIChatUsageIntegrationSimple:
         finally:
             self._cleanup_auth()
 
-    def test_daily_reset_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_daily_reset_flow(self, client: TestClient, session: Session, test_user: User):
         """Test daily reset flow."""
         # Create usage for previous day
         previous_date = "2023-01-01"
@@ -227,9 +217,7 @@ class TestAIChatUsageIntegrationSimple:
         finally:
             self._cleanup_auth()
 
-    def test_usage_tracking_accuracy_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_usage_tracking_accuracy_flow(self, client: TestClient, session: Session, test_user: User):
         """Test that usage tracking is accurate across multiple operations."""
         current_date = "2023-01-01"
 
@@ -251,9 +239,7 @@ class TestAIChatUsageIntegrationSimple:
                 assert increment_response.json()["remaining_count"] == 9
 
                 # Verify database consistency
-                db_usage = ai_chat_usage.get_current_usage_count(
-                    session, test_user.id, current_date
-                )
+                db_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
                 assert db_usage == 1
 
                 # Another increment
@@ -267,16 +253,12 @@ class TestAIChatUsageIntegrationSimple:
                 assert final_response.json()["remaining_count"] == 8
 
                 # Database should match
-                final_db_usage = ai_chat_usage.get_current_usage_count(
-                    session, test_user.id, current_date
-                )
+                final_db_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
                 assert final_db_usage == 2
         finally:
             self._cleanup_auth()
 
-    def test_response_format_consistency_flow(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_response_format_consistency_flow(self, client: TestClient, session: Session, test_user: User):
         """Test that response formats are consistent."""
         current_date = "2023-01-01"
 
@@ -303,9 +285,7 @@ class TestAIChatUsageIntegrationSimple:
                     assert data[field] is not None
 
                 # Test error response format
-                ai_chat_usage.create_daily_usage(
-                    session, test_user.id, current_date, 10
-                )
+                ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
                 response = client.get("/api/ai/usage")
                 assert response.status_code == 429
 
@@ -325,9 +305,7 @@ class TestAIChatUsageIntegrationSimple:
         finally:
             self._cleanup_auth()
 
-    def test_concurrent_users_isolation_flow(
-        self, client: TestClient, session: Session
-    ):
+    def test_concurrent_users_isolation_flow(self, client: TestClient, session: Session):
         """Test that usage limits are properly isolated between users."""
         # Create two test users
         user1 = User(

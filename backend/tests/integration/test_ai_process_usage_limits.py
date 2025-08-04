@@ -14,9 +14,7 @@ from app.services.ai_chat_usage_service import AIChatUsageService
 class TestAIProcessUsageLimits:
     """Test AI process endpoint with usage limits."""
 
-    async def test_ai_process_with_usage_limit_check(
-        self, session: Session, test_user: User
-    ):
+    async def test_ai_process_with_usage_limit_check(self, session: Session, test_user: User):
         """Test that AI process endpoint checks usage limits before processing."""
         # Create a usage record that's at the limit
         current_date = "2023-01-01"
@@ -25,9 +23,7 @@ class TestAIProcessUsageLimits:
         usage_service = AIChatUsageService(session)
 
         # Mock the date to match our test data
-        with patch.object(
-            usage_service, "_get_current_date", return_value=current_date
-        ):
+        with patch.object(usage_service, "_get_current_date", return_value=current_date):
             # Should raise HTTPException when limit is exceeded
             with pytest.raises(HTTPException) as exc_info:
                 await usage_service.check_usage_limit(test_user)
@@ -36,36 +32,26 @@ class TestAIProcessUsageLimits:
             assert exc_info.value.status_code == 429
             assert "本日の利用回数上限に達しました" in str(exc_info.value.detail)
 
-    async def test_ai_process_increments_usage_after_success(
-        self, session: Session, test_user: User
-    ):
+    async def test_ai_process_increments_usage_after_success(self, session: Session, test_user: User):
         """Test that AI process endpoint increments usage after successful processing."""
         current_date = "2023-01-01"
 
         usage_service = AIChatUsageService(session)
 
         # Mock the date to match our test data
-        with patch.object(
-            usage_service, "_get_current_date", return_value=current_date
-        ):
+        with patch.object(usage_service, "_get_current_date", return_value=current_date):
             # Initially should have 0 usage
-            initial_count = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            initial_count = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert initial_count == 0
 
             # Increment usage (simulating successful AI processing)
             await usage_service.increment_usage(test_user)
 
             # Should now have 1 usage
-            final_count = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            final_count = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert final_count == 1
 
-    async def test_ai_process_with_free_plan_restriction(
-        self, session: Session, test_user: User
-    ):
+    async def test_ai_process_with_free_plan_restriction(self, session: Session, test_user: User):
         """Test that free plan users cannot use AI process."""
         usage_service = AIChatUsageService(session)
 
@@ -77,22 +63,16 @@ class TestAIProcessUsageLimits:
 
             # Verify it's a 403 error (Forbidden)
             assert exc_info.value.status_code == 403
-            assert "現在のプランではAIChatをご利用いただけません" in str(
-                exc_info.value.detail
-            )
+            assert "現在のプランではAIChatをご利用いただけません" in str(exc_info.value.detail)
 
-    async def test_ai_process_with_available_usage(
-        self, session: Session, test_user: User
-    ):
+    async def test_ai_process_with_available_usage(self, session: Session, test_user: User):
         """Test that AI process works when usage is available."""
         current_date = "2023-01-01"
 
         usage_service = AIChatUsageService(session)
 
         # Mock the date to match our test data
-        with patch.object(
-            usage_service, "_get_current_date", return_value=current_date
-        ):
+        with patch.object(usage_service, "_get_current_date", return_value=current_date):
             # Should work fine when under limit
             result = await usage_service.check_usage_limit(test_user)
 
@@ -111,9 +91,7 @@ class TestAIProcessUsageLimits:
         usage_service = AIChatUsageService(session)
 
         # Mock the date to match our test data
-        with patch.object(
-            usage_service, "_get_current_date", return_value=current_date
-        ):
+        with patch.object(usage_service, "_get_current_date", return_value=current_date):
             stats = await usage_service.get_usage_stats(test_user)
 
             assert stats["current_usage"] == 3

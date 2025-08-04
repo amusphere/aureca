@@ -22,16 +22,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AIChatPlanConfig:
     """Configuration for AI chat plan limits"""
+
     daily_limit: int
     description: str
     features: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "daily_limit": self.daily_limit,
-            "description": self.description,
-            "features": self.features
-        }
+        return {"daily_limit": self.daily_limit, "description": self.description, "features": self.features}
 
 
 class ConfigManager:
@@ -76,25 +73,23 @@ class ConfigManager:
         # Default plan configurations
         default_plans = {
             "free": AIChatPlanConfig(
-                daily_limit=0,
-                description="Free plan - No AI chat access",
-                features=["Basic task management"]
+                daily_limit=0, description="Free plan - No AI chat access", features=["Basic task management"]
             ),
             "basic": AIChatPlanConfig(
                 daily_limit=10,
                 description="Basic plan - 10 AI chats per day",
-                features=["Basic task management", "AI chat assistance", "Google integrations"]
+                features=["Basic task management", "AI chat assistance", "Google integrations"],
             ),
             "premium": AIChatPlanConfig(
                 daily_limit=50,
                 description="Premium plan - 50 AI chats per day",
-                features=["All basic features", "Priority support", "Advanced AI features"]
+                features=["All basic features", "Priority support", "Advanced AI features"],
             ),
             "enterprise": AIChatPlanConfig(
                 daily_limit=-1,  # Unlimited
                 description="Enterprise plan - Unlimited AI chats",
-                features=["All premium features", "Custom integrations", "Dedicated support"]
-            )
+                features=["All premium features", "Custom integrations", "Dedicated support"],
+            ),
         }
 
         # Load from environment variables if available, preserving existing configurations
@@ -110,7 +105,7 @@ class ConfigManager:
                     self._ai_chat_plans[plan_name] = AIChatPlanConfig(
                         daily_limit=daily_limit,
                         description=existing_config.description,
-                        features=existing_config.features
+                        features=existing_config.features,
                     )
                     logger.info(f"Loaded {plan_name} plan limit from environment: {daily_limit}")
                 except ValueError:
@@ -125,7 +120,7 @@ class ConfigManager:
     def _load_from_file(self, config_file: Path) -> None:
         """Load configuration from JSON file"""
         try:
-            with open(config_file, encoding='utf-8') as f:
+            with open(config_file, encoding="utf-8") as f:
                 file_config = json.load(f)
 
             # Update AI chat plans from file (will be overridden by environment variables later)
@@ -134,7 +129,7 @@ class ConfigManager:
                     self._ai_chat_plans[plan_name] = AIChatPlanConfig(
                         daily_limit=plan_data.get("daily_limit", 0),
                         description=plan_data.get("description", f"{plan_name} plan"),
-                        features=plan_data.get("features", [])
+                        features=plan_data.get("features", []),
                     )
 
             # Cache other configuration
@@ -203,7 +198,9 @@ class ConfigManager:
         self._check_file_updates()
         return self._ai_chat_plans.copy()
 
-    def update_ai_chat_plan_limit(self, plan_name: str, daily_limit: int, description: str = None, features: list[str] = None) -> bool:
+    def update_ai_chat_plan_limit(
+        self, plan_name: str, daily_limit: int, description: str = None, features: list[str] = None
+    ) -> bool:
         """
         Update AI chat plan limit dynamically
 
@@ -224,14 +221,12 @@ class ConfigManager:
                 self._ai_chat_plans[plan_name] = AIChatPlanConfig(
                     daily_limit=daily_limit,
                     description=description or existing_config.description,
-                    features=features or existing_config.features
+                    features=features or existing_config.features,
                 )
             else:
                 # Create new plan
                 self._ai_chat_plans[plan_name] = AIChatPlanConfig(
-                    daily_limit=daily_limit,
-                    description=description or f"{plan_name} plan",
-                    features=features or []
+                    daily_limit=daily_limit, description=description or f"{plan_name} plan", features=features or []
                 )
 
             # Save to file if configured
@@ -258,14 +253,13 @@ class ConfigManager:
             config_data = {
                 **self._config_cache,  # Start with cached config
                 "ai_chat_plans": {
-                    plan_name: plan_config.to_dict()
-                    for plan_name, plan_config in self._ai_chat_plans.items()
+                    plan_name: plan_config.to_dict() for plan_name, plan_config in self._ai_chat_plans.items()
                 },
                 "last_updated": datetime.now().isoformat(),
             }
 
             # Write to file
-            with open(self._config_file_path, 'w', encoding='utf-8') as f:
+            with open(self._config_file_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=2, ensure_ascii=False)
 
             self._last_modified = self._config_file_path.stat().st_mtime
@@ -343,7 +337,9 @@ def get_all_ai_chat_plans() -> dict[str, AIChatPlanConfig]:
     return config_manager.get_all_ai_chat_plans()
 
 
-def update_ai_chat_plan_limit(plan_name: str, daily_limit: int, description: str = None, features: list[str] = None) -> bool:
+def update_ai_chat_plan_limit(
+    plan_name: str, daily_limit: int, description: str = None, features: list[str] = None
+) -> bool:
     """
     Convenience function to update AI chat plan limit
 

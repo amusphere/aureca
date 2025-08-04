@@ -70,9 +70,11 @@ def mock_config_manager():
     }
 
     # Mock the config manager methods
-    with patch.object(config_manager, "_ai_chat_plans", test_plans), patch.object(
-        config_manager, "_save_to_file", return_value=None
-    ), patch.object(config_manager, "_check_file_updates", return_value=None):
+    with (
+        patch.object(config_manager, "_ai_chat_plans", test_plans),
+        patch.object(config_manager, "_save_to_file", return_value=None),
+        patch.object(config_manager, "_check_file_updates", return_value=None),
+    ):
         yield
 
 
@@ -285,9 +287,7 @@ class TestAdminAPIIntegration:
             "features": ["unlimited_feature"],
         }
 
-        create_response = client.post(
-            "/api/admin/ai-chat/plans", json=unlimited_plan_data
-        )
+        create_response = client.post("/api/admin/ai-chat/plans", json=unlimited_plan_data)
         assert create_response.status_code == 200
 
         # Verify the unlimited plan

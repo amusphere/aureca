@@ -14,9 +14,7 @@ from main import app
 class TestAIChatUsageAPIIntegration:
     """Test AI Chat usage API endpoints integration."""
 
-    def test_get_usage_endpoint_success(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_get_usage_endpoint_success(self, client: TestClient, session: Session, test_user: User):
         """Test GET /api/ai/usage endpoint returns correct usage stats."""
         current_date = "2023-01-01"
 
@@ -52,9 +50,7 @@ class TestAIChatUsageAPIIntegration:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    def test_get_usage_endpoint_limit_exceeded(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_get_usage_endpoint_limit_exceeded(self, client: TestClient, session: Session, test_user: User):
         """Test GET /api/ai/usage endpoint when limit is exceeded."""
         current_date = "2023-01-01"
 
@@ -90,9 +86,7 @@ class TestAIChatUsageAPIIntegration:
         finally:
             app.dependency_overrides.clear()
 
-    def test_get_usage_endpoint_free_plan_restriction(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_get_usage_endpoint_free_plan_restriction(self, client: TestClient, session: Session, test_user: User):
         """Test GET /api/ai/usage endpoint for free plan users."""
 
         def get_test_user():
@@ -120,9 +114,7 @@ class TestAIChatUsageAPIIntegration:
         finally:
             app.dependency_overrides.clear()
 
-    def test_increment_usage_endpoint_success(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_increment_usage_endpoint_success(self, client: TestClient, session: Session, test_user: User):
         """Test POST /api/ai/usage/increment endpoint successfully increments usage."""
         current_date = "2023-01-01"
 
@@ -150,16 +142,12 @@ class TestAIChatUsageAPIIntegration:
             assert data["can_use_chat"] is True
 
             # Verify database was updated
-            current_usage = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 6
         finally:
             app.dependency_overrides.clear()
 
-    def test_increment_usage_endpoint_at_limit(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_increment_usage_endpoint_at_limit(self, client: TestClient, session: Session, test_user: User):
         """Test POST /api/ai/usage/increment endpoint when at limit."""
         current_date = "2023-01-01"
 
@@ -188,16 +176,12 @@ class TestAIChatUsageAPIIntegration:
             assert detail["remaining_count"] == 0
 
             # Verify database was not incremented beyond limit
-            current_usage = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 10  # Should not exceed limit
         finally:
             app.dependency_overrides.clear()
 
-    def test_ai_process_endpoint_with_usage_integration(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_ai_process_endpoint_with_usage_integration(self, client: TestClient, session: Session, test_user: User):
         """Test /api/ai/process endpoint integrates with usage limits."""
         current_date = "2023-01-01"
 
@@ -225,23 +209,17 @@ class TestAIChatUsageAPIIntegration:
                     return_value=mock_ai_response,
                 ):
                     # First request should succeed
-                    response = client.post(
-                        "/api/ai/process", json={"prompt": "Test prompt"}
-                    )
+                    response = client.post("/api/ai/process", json={"prompt": "Test prompt"})
 
             assert response.status_code == 200
 
             # Verify usage was incremented
-            current_usage = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 1
         finally:
             app.dependency_overrides.clear()
 
-    def test_ai_process_endpoint_blocked_by_usage_limit(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_ai_process_endpoint_blocked_by_usage_limit(self, client: TestClient, session: Session, test_user: User):
         """Test /api/ai/process endpoint is blocked when usage limit is exceeded."""
         current_date = "2023-01-01"
 
@@ -258,9 +236,7 @@ class TestAIChatUsageAPIIntegration:
                 "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
                 return_value=current_date,
             ):
-                response = client.post(
-                    "/api/ai/process", json={"prompt": "Test prompt"}
-                )
+                response = client.post("/api/ai/process", json={"prompt": "Test prompt"})
 
             assert response.status_code == 429
             data = response.json()
@@ -274,9 +250,7 @@ class TestAIChatUsageAPIIntegration:
         finally:
             app.dependency_overrides.clear()
 
-    def test_usage_reset_at_midnight(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_usage_reset_at_midnight(self, client: TestClient, session: Session, test_user: User):
         """Test that usage resets properly for new day."""
         # Create usage for previous day
         previous_date = "2023-01-01"
@@ -305,9 +279,7 @@ class TestAIChatUsageAPIIntegration:
         finally:
             app.dependency_overrides.clear()
 
-    def test_concurrent_usage_increment_consistency(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_concurrent_usage_increment_consistency(self, client: TestClient, session: Session, test_user: User):
         """Test that concurrent usage increments maintain data consistency."""
         current_date = "2023-01-01"
 
@@ -338,16 +310,12 @@ class TestAIChatUsageAPIIntegration:
             assert len(success_responses) >= 1
 
             # Verify final usage count doesn't exceed limit
-            final_usage = ai_chat_usage.get_current_usage_count(
-                session, test_user.id, current_date
-            )
+            final_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
             assert final_usage <= 10
         finally:
             app.dependency_overrides.clear()
 
-    def test_error_handling_system_errors(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_error_handling_system_errors(self, client: TestClient, session: Session, test_user: User):
         """Test that system errors are handled gracefully."""
 
         def get_test_user():
@@ -388,9 +356,7 @@ class TestAIChatUsageAPIIntegration:
         response = client.post("/api/ai/usage/increment")
         assert response.status_code == 403  # Forbidden
 
-    def test_response_format_consistency(
-        self, client: TestClient, session: Session, test_user: User
-    ):
+    def test_response_format_consistency(self, client: TestClient, session: Session, test_user: User):
         """Test that all endpoints return consistent response formats."""
         current_date = "2023-01-01"
 
@@ -420,9 +386,7 @@ class TestAIChatUsageAPIIntegration:
                     assert data[field] is not None
 
                 # Test error response format
-                ai_chat_usage.create_daily_usage(
-                    session, test_user.id, current_date, 10
-                )
+                ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
                 response = client.get("/api/ai/usage")
                 assert response.status_code == 429
 

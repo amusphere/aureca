@@ -61,18 +61,14 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_task_sources_source_id"), "task_sources", ["source_id"], unique=False
-    )
+    op.create_index(op.f("ix_task_sources_source_id"), "task_sources", ["source_id"], unique=False)
     op.create_index(
         op.f("ix_task_sources_source_type"),
         "task_sources",
         ["source_type"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_task_sources_uuid"), "task_sources", ["uuid"], unique=False
-    )
+    op.create_index(op.f("ix_task_sources_uuid"), "task_sources", ["uuid"], unique=False)
     # ### end Alembic commands ###
 
 

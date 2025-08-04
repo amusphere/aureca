@@ -81,19 +81,13 @@ class SpokeManager:
         excluded_dirs = {"__pycache__", ".git", "node_modules", "venv", ".venv", "base"}
 
         for spoke_dir in self.spokes_dir.iterdir():
-            if (
-                spoke_dir.is_dir()
-                and not spoke_dir.name.startswith(".")
-                and spoke_dir.name not in excluded_dirs
-            ):
+            if spoke_dir.is_dir() and not spoke_dir.name.startswith(".") and spoke_dir.name not in excluded_dirs:
                 self._load_spoke(spoke_dir)
 
         # Build action-to-spoke mapping
         self._build_action_mapping()
 
-        self.logger.info(
-            f"Loaded {len(self._spoke_configs)} spokes with {len(self._action_to_spoke)} total actions"
-        )
+        self.logger.info(f"Loaded {len(self._spoke_configs)} spokes with {len(self._action_to_spoke)} total actions")
 
     def _load_spoke(self, spoke_dir: Path):
         """Load a single spoke"""
@@ -158,14 +152,10 @@ class SpokeManager:
             actions=actions,
         )
 
-    def _load_spoke_class(
-        self, spoke_file: Path, spoke_name: str
-    ) -> type[BaseSpoke] | None:
+    def _load_spoke_class(self, spoke_file: Path, spoke_name: str) -> type[BaseSpoke] | None:
         """Dynamically load spoke class from file"""
         try:
-            spec = importlib.util.spec_from_file_location(
-                f"{spoke_name}_spoke", str(spoke_file)
-            )
+            spec = importlib.util.spec_from_file_location(f"{spoke_name}_spoke", str(spoke_file))
             if spec is None or spec.loader is None:
                 self.logger.error(f"Failed to create module spec for {spoke_name}")
                 return None
@@ -206,9 +196,7 @@ class SpokeManager:
             for action in config.actions:
                 self._action_to_spoke[action.action_type] = spoke_name
 
-    def get_spoke_instance(
-        self, spoke_name: str, current_user: User
-    ) -> BaseSpoke | None:
+    def get_spoke_instance(self, spoke_name: str, current_user: User) -> BaseSpoke | None:
         """Get spoke instance (with caching)"""
         cache_key = f"{spoke_name}_{current_user.id}"
 
@@ -228,9 +216,7 @@ class SpokeManager:
             self.logger.error(f"Failed to instantiate spoke {spoke_name}: {str(e)}")
             return None
 
-    async def execute_action(
-        self, action: NextAction, current_user: User
-    ) -> SpokeResponse:
+    async def execute_action(self, action: NextAction, current_user: User) -> SpokeResponse:
         """Execute action through appropriate spoke"""
         try:
             # Find spoke for action
@@ -242,9 +228,7 @@ class SpokeManager:
                 )
 
             # Get action definition
-            action_definition = self._get_action_definition(
-                spoke_name, action.action_type
-            )
+            action_definition = self._get_action_definition(spoke_name, action.action_type)
             if action_definition is None:
                 return SpokeResponse(
                     success=False,
@@ -261,9 +245,7 @@ class SpokeManager:
 
             # Execute action
             self.logger.info(f"Executing action: {spoke_name}.{action.action_type}")
-            result = await spoke_instance.execute_action(
-                action, action_definition.__dict__
-            )
+            result = await spoke_instance.execute_action(action, action_definition.__dict__)
 
             return result
 
@@ -278,9 +260,7 @@ class SpokeManager:
             )
             return SpokeResponse(success=False, error=error_msg)
 
-    def _get_action_definition(
-        self, spoke_name: str, action_type: str
-    ) -> ActionDefinition | None:
+    def _get_action_definition(self, spoke_name: str, action_type: str) -> ActionDefinition | None:
         """Get action definition for specific spoke and action"""
         config = self._spoke_configs.get(spoke_name)
         if config:
@@ -299,17 +279,13 @@ class SpokeManager:
 
         for config in self._spoke_configs.values():
             actions_list.append(
-                f"\n## {config.display_name}\n"
-                f"スポーク名: {config.spoke_name}\n"
-                f"説明: {config.description}"
+                f"\n## {config.display_name}\nスポーク名: {config.spoke_name}\n説明: {config.description}"
             )
 
             actions_list.append("\n### アクション名 : 説明 : パラメータ")
 
             for action in config.actions:
-                actions_list.append(
-                    f"- {action.action_type} : {action.description} : {action.parameters}"
-                )
+                actions_list.append(f"- {action.action_type} : {action.description} : {action.parameters}")
 
         return "\n".join(actions_list)
 
