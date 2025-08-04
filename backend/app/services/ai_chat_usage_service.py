@@ -1,13 +1,16 @@
+import logging
 from datetime import datetime, timezone
 from typing import Dict
 
-from app.config import get_ai_chat_plan_limit, get_ai_chat_plan_config, get_all_ai_chat_plans
-from app.database import get_session
+from app.config import (
+    get_ai_chat_plan_config,
+    get_ai_chat_plan_limit,
+    get_all_ai_chat_plans,
+)
 from app.repositories import ai_chat_usage
 from app.schema import AIChatUsageLog, User
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from sqlmodel import Session
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +18,7 @@ logger = logging.getLogger(__name__)
 class AIChatUsageService:
     """Service for managing AI chat usage limits and tracking"""
 
-    def __init__(self, session: Session = Depends(get_session)):
+    def __init__(self, session: Session):
         self.session = session
 
     def get_user_plan(self, user: User) -> str:
@@ -235,7 +238,7 @@ class AIChatUsageService:
                 "plan_name": user_plan,
                 "daily_limit": plan_config.daily_limit,
                 "description": plan_config.description,
-                "features": plan_config.features
+                "features": plan_config.features,
             }
 
         # Return default free plan config if plan not found
@@ -245,7 +248,7 @@ class AIChatUsageService:
             "plan_name": "free",
             "daily_limit": free_config.daily_limit if free_config else 0,
             "description": free_config.description if free_config else "Free plan",
-            "features": free_config.features if free_config else []
+            "features": free_config.features if free_config else [],
         }
 
     def update_plan_limits(self, new_limits: Dict[str, int]) -> None:
@@ -262,7 +265,9 @@ class AIChatUsageService:
         for plan_name, daily_limit in new_limits.items():
             update_ai_chat_plan_limit(plan_name, daily_limit)
 
-        logger.warning("update_plan_limits is deprecated. Use configuration management system instead.")
+        logger.warning(
+            "update_plan_limits is deprecated. Use configuration management system instead."
+        )
 
     def get_all_plan_limits(self) -> Dict[str, int]:
         """
@@ -272,7 +277,10 @@ class AIChatUsageService:
             Dictionary of all plan limits
         """
         all_plans = get_all_ai_chat_plans()
-        return {plan_name: plan_config.daily_limit for plan_name, plan_config in all_plans.items()}
+        return {
+            plan_name: plan_config.daily_limit
+            for plan_name, plan_config in all_plans.items()
+        }
 
     def get_all_plan_configs(self) -> Dict[str, Dict]:
         """
@@ -286,7 +294,7 @@ class AIChatUsageService:
             plan_name: {
                 "daily_limit": plan_config.daily_limit,
                 "description": plan_config.description,
-                "features": plan_config.features
+                "features": plan_config.features,
             }
             for plan_name, plan_config in all_plans.items()
         }

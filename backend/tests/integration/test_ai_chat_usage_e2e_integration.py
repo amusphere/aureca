@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+from app.database import get_session
 from app.repositories import ai_chat_usage
 from app.schema import User
 from app.services.auth import auth_user
@@ -19,11 +20,19 @@ class TestAIChatUsageE2EIntegration:
         def get_test_user():
             return test_user
 
+        # Store existing overrides to preserve database session override
+        existing_overrides = app.dependency_overrides.copy()
         app.dependency_overrides[auth_user] = get_test_user
 
+        # Ensure database session override is preserved
+        if get_session not in app.dependency_overrides and get_session in existing_overrides:
+            app.dependency_overrides[get_session] = existing_overrides[get_session]
+
     def _cleanup_auth(self):
-        """Helper to cleanup authentication override."""
-        app.dependency_overrides.clear()
+        """Helper to cleanup authentication override while preserving session override."""
+        # Remove only the auth override, keep session override
+        if auth_user in app.dependency_overrides:
+            del app.dependency_overrides[auth_user]
 
     def test_complete_user_journey_within_limits(
         self, client: TestClient, session: Session, test_user: User
@@ -254,7 +263,6 @@ class TestAIChatUsageE2EIntegration:
                 self._setup_auth(user1)
                 response = client.get("/api/ai/usage")
                 assert response.status_code == 429
-                self._cleanup_auth()
 
                 # User2 should have full quota
                 self._setup_auth(user2)

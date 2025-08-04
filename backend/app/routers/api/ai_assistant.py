@@ -1,3 +1,5 @@
+import logging
+
 from app.database import get_session
 from app.models.ai_assistant import (
     AIRequestModel,
@@ -13,6 +15,7 @@ from app.services.auth import auth_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 
 
@@ -31,8 +34,8 @@ async def process_ai_request_endpoint(
     user: User = Depends(auth_user),
 ):
     """AIアシスタントにリクエストを送信して処理結果を取得"""
-    # Initialize usage service
-    usage_service = AIChatUsageService(session)
+    # Initialize usage service with the injected session
+    usage_service = AIChatUsageService(session=session)
 
     try:
         # Check usage limits before processing
@@ -81,16 +84,27 @@ async def get_ai_chat_usage_endpoint(
     user: User = Depends(auth_user),
 ):
     """AI Chat利用状況を取得"""
-    usage_service = AIChatUsageService(session)
+    # Create service with the session that's already injected
+    usage_service = AIChatUsageService(session=session)
 
     try:
         usage_stats = await usage_service.check_usage_limit(user)
-        return AIChatUsageResponse(**usage_stats)
+        # Extract only the fields needed for the response model
+        response_data = {
+            "remaining_count": usage_stats["remaining_count"],
+            "daily_limit": usage_stats["daily_limit"],
+            "reset_time": usage_stats["reset_time"],
+            "can_use_chat": usage_stats["can_use_chat"],
+        }
+        return AIChatUsageResponse(**response_data)
     except HTTPException:
         # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
         raise
-    except Exception:
+    except Exception as e:
         # Handle unexpected errors
+        logger.error(
+            f"Unexpected error in get_ai_chat_usage_endpoint: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
             detail={
@@ -108,16 +122,26 @@ async def increment_ai_chat_usage_endpoint(
     user: User = Depends(auth_user),
 ):
     """AI Chat利用回数を記録（内部API）"""
-    usage_service = AIChatUsageService(session)
+    usage_service = AIChatUsageService(session=session)
 
     try:
         updated_stats = await usage_service.increment_usage(user)
-        return AIChatUsageResponse(**updated_stats)
+        # Extract only the fields needed for the response model
+        response_data = {
+            "remaining_count": updated_stats["remaining_count"],
+            "daily_limit": updated_stats["daily_limit"],
+            "reset_time": updated_stats["reset_time"],
+            "can_use_chat": updated_stats["can_use_chat"],
+        }
+        return AIChatUsageResponse(**response_data)
     except HTTPException:
         # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
         raise
-    except Exception:
+    except Exception as e:
         # Handle unexpected errors
+        logger.error(
+            f"Unexpected error in increment_ai_chat_usage_endpoint: {e}", exc_info=True
+        )
         raise HTTPException(
             status_code=500,
             detail={

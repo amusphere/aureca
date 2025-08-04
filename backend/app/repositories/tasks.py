@@ -21,14 +21,22 @@ def find_tasks(
         stmt = stmt.where(Tasks.expires_at >= expires_at)
 
     if order_by_priority:
-        # Efficient priority sorting: 1(High) -> 2(Middle) -> 3(Low) -> NULL
-        # Using nullslast() to put tasks without priority at the end
+        # Priority sorting: HIGH(1) -> MIDDLE(2) -> LOW(3) -> NULL(999)
+        # Since priority is stored as string enum, we need to map string values to numbers
+        from sqlalchemy import case
+
+        priority_order = case(
+            (Tasks.priority == "HIGH", 1),
+            (Tasks.priority == "MIDDLE", 2),
+            (Tasks.priority == "LOW", 3),
+            else_=999,  # NULL or any other value
+        )
         stmt = stmt.order_by(
-            Tasks.priority.asc().nullslast(),
-            Tasks.expires_at.asc().nullslast(),
+            priority_order.asc(),
+            Tasks.expires_at.asc(),
         )
     else:
-        stmt = stmt.order_by(Tasks.expires_at.asc().nullslast())
+        stmt = stmt.order_by(Tasks.expires_at.asc())
 
     return session.exec(stmt).all()
 
@@ -77,6 +85,7 @@ def create_task(
 
 # Sentinel object to distinguish between "not provided" and "explicitly None"
 _UNSET = object()
+
 
 def update_task(
     session: Session,
