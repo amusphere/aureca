@@ -1,5 +1,5 @@
-import { apiPost } from "@/utils/api";
 import { AIChatUsage, AIChatUsageError } from "@/types/AIChatUsage";
+import { apiPost } from "@/utils/api";
 import { NextResponse } from "next/server";
 
 /**
@@ -16,7 +16,8 @@ import { NextResponse } from "next/server";
 export async function POST(): Promise<NextResponse> {
   try {
     // Call backend API to increment usage
-    const response = await apiPost<AIChatUsage>('/api/ai/usage/increment');
+    // Note: Remove /api prefix since API_BASE_URL already includes it
+    const response = await apiPost<AIChatUsage>('/ai/usage/increment');
 
     if (response.error) {
       // Handle different types of errors from backend

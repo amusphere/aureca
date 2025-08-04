@@ -1,5 +1,5 @@
-import { apiGet } from "@/utils/api";
 import { AIChatUsage, AIChatUsageError } from "@/types/AIChatUsage";
+import { apiGet } from "@/utils/api";
 import { NextResponse } from "next/server";
 
 /**
@@ -15,7 +15,8 @@ import { NextResponse } from "next/server";
 export async function GET(): Promise<NextResponse> {
   try {
     // Call backend API through server-side proxy
-    const response = await apiGet<AIChatUsage>('/api/ai/usage');
+    // Note: Remove /api prefix since API_BASE_URL already includes it
+    const response = await apiGet<AIChatUsage>('/ai/usage');
 
     if (response.error) {
       // Handle different types of errors from backend
