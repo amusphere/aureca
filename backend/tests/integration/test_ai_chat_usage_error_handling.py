@@ -129,7 +129,7 @@ class TestAIChatUsageErrorHandlingIntegration:
             # Test with invalid JSON for POST endpoint
             response = client.post(
                 "/api/ai/usage/increment",
-                data="invalid json",
+                content="invalid json",
                 headers={"Content-Type": "application/json"},
             )
 

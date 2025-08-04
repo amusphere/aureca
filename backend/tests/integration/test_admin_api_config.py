@@ -345,7 +345,7 @@ class TestAdminAPIErrorHandling:
         """Test handling of invalid JSON data"""
         response = client.put(
             "/api/admin/ai-chat/plans/basic",
-            data="invalid json",
+            content="invalid json",
             headers={"Content-Type": "application/json"},
         )
         assert response.status_code == 422
