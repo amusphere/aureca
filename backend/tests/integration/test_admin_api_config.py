@@ -25,6 +25,7 @@ def mock_config_manager():
     # Create test data
     test_plans = {
         "free": AIChatPlanConfig(
+            plan_name="free",
             daily_limit=0,
             description="Free plan - No AI chat access",
             features=[
@@ -34,6 +35,7 @@ def mock_config_manager():
             ],
         ),
         "basic": AIChatPlanConfig(
+            plan_name="basic",
             daily_limit=10,
             description="Basic plan - 10 AI chats per day",
             features=[
@@ -45,6 +47,7 @@ def mock_config_manager():
             ],
         ),
         "premium": AIChatPlanConfig(
+            plan_name="premium",
             daily_limit=50,
             description="Premium plan - 50 AI chats per day",
             features=[
@@ -56,6 +59,7 @@ def mock_config_manager():
             ],
         ),
         "enterprise": AIChatPlanConfig(
+            plan_name="enterprise",
             daily_limit=-1,
             description="Enterprise plan - Unlimited AI chats",
             features=[
@@ -73,7 +77,6 @@ def mock_config_manager():
     with (
         patch.object(config_manager, "_ai_chat_plans", test_plans),
         patch.object(config_manager, "_save_to_file", return_value=None),
-        patch.object(config_manager, "_check_file_updates", return_value=None),
     ):
         yield
 

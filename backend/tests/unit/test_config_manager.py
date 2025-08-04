@@ -85,8 +85,11 @@ class TestAIChatPlanConfig:
 
     def test_plan_config_creation(self):
         """Test creating a plan configuration"""
-        config = AIChatPlanConfig(daily_limit=10, description="Test plan", features=["feature1", "feature2"])
+        config = AIChatPlanConfig(
+            plan_name="test", daily_limit=10, description="Test plan", features=["feature1", "feature2"]
+        )
 
+        assert config.plan_name == "test"
         assert config.daily_limit == 10
         assert config.description == "Test plan"
         assert config.features == ["feature1", "feature2"]
@@ -94,6 +97,7 @@ class TestAIChatPlanConfig:
     def test_plan_config_to_dict(self):
         """Test converting plan configuration to dictionary"""
         config = AIChatPlanConfig(
+            plan_name="premium",
             daily_limit=50,
             description="Premium plan",
             features=["ai_chat", "integrations"],
@@ -101,6 +105,7 @@ class TestAIChatPlanConfig:
 
         result = config.to_dict()
         expected = {
+            "plan_name": "premium",
             "daily_limit": 50,
             "description": "Premium plan",
             "features": ["ai_chat", "integrations"],
@@ -115,6 +120,9 @@ class TestConfigManager:
     def test_default_plan_loading(self, isolated_config_manager):
         """Test that default plans are loaded correctly"""
         config_manager = isolated_config_manager
+
+        # Ensure plans are loaded
+        config_manager._ensure_plans_loaded()
 
         # Check that default plans exist
         assert "free" in config_manager._ai_chat_plans
@@ -134,6 +142,9 @@ class TestConfigManager:
         with patch.object(ConfigManager, "_get_config_file_path", return_value=temp_config_file):
             config_manager = ConfigManager()
 
+        # Ensure plans are loaded
+        config_manager._ensure_plans_loaded()
+
         # Basic plan should be overridden by environment variable
         assert config_manager._ai_chat_plans["basic"].daily_limit == 20
 
@@ -142,6 +153,9 @@ class TestConfigManager:
         """Test handling of invalid environment variable values"""
         with patch.object(ConfigManager, "_get_config_file_path", return_value=temp_config_file):
             config_manager = ConfigManager()
+
+        # Ensure plans are loaded
+        config_manager._ensure_plans_loaded()
 
         # Should fall back to default value when environment variable is invalid
         assert config_manager._ai_chat_plans["basic"].daily_limit == 10
