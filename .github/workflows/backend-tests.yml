@@ -116,78 +116,22 @@ jobs:
       - name: Run mypy
         run: uv run mypy .
 
-  backend-coverage:
-    name: Backend Coverage
-    runs-on: ubuntu-latest
-
-    env:
-      DATABASE_URL: sqlite:///./test_database.db
-      CLERK_PUBLISHABLE_KEY: pk_test_test
-      CLERK_SECRET_KEY: sk_test_test
-      CLERK_WEBHOOK_SECRET: whsec_test_test
-      OPENAI_API_KEY: sk-test-test
-      GOOGLE_CLIENT_ID: test_client_id
-      GOOGLE_CLIENT_SECRET: test_client_secret
-      GOOGLE_OAUTH_ENCRYPTION_KEY: test_encryption_key_32_characters_long
-      FRONTEND_URL: http://localhost:3000
-
-    defaults:
-      run:
-        working-directory: ./backend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Set up uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-
-      - name: Install dependencies
-        run: uv sync --dev
-
-      - name: Run tests with coverage
-        run: uv run pytest --cov=app --cov-report=xml --cov-report=term-missing
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./backend/coverage.xml
-          flags: backend
-          name: backend-coverage
-
   backend-status:
     name: Backend Tests Status
     runs-on: ubuntu-latest
-    needs: [backend-tests, backend-lint, backend-coverage]
+    needs: [backend-tests, backend-lint]
     if: always()
 
     steps:
       - name: Check results
         run: |
           if [[ "${{ needs.backend-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.backend-lint.result }}" == "success" ]] && \
-             [[ "${{ needs.backend-coverage.result }}" == "success" ]]; then
+             [[ "${{ needs.backend-lint.result }}" == "success" ]]; then
             echo "All backend checks passed!"
             exit 0
           else
             echo "Some backend checks failed:"
             echo "Tests: ${{ needs.backend-tests.result }}"
             echo "Lint: ${{ needs.backend-lint.result }}"
-            echo "Coverage: ${{ needs.backend-coverage.result }}"
             exit 1
           fi
