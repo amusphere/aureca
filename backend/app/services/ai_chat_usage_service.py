@@ -1,24 +1,19 @@
 from datetime import datetime, timezone
 from typing import Dict
 
+from app.config import get_ai_chat_plan_limit, get_ai_chat_plan_config, get_all_ai_chat_plans
 from app.database import get_session
 from app.repositories import ai_chat_usage
 from app.schema import AIChatUsageLog, User
 from fastapi import Depends, HTTPException, status
 from sqlmodel import Session
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AIChatUsageService:
     """Service for managing AI chat usage limits and tracking"""
-
-    # Plan-based usage limits configuration
-    # free: 0 (no access), basic: 10 per day, future plans can be added here
-    PLAN_LIMITS: Dict[str, int] = {
-        "free": 0,  # No AI chat access for free users
-        "basic": 10,  # 10 chats per day for basic plan
-        "premium": 50,  # Future expansion
-        "enterprise": -1,  # Unlimited (future expansion)
-    }
 
     def __init__(self, session: Session = Depends(get_session)):
         self.session = session
@@ -51,7 +46,9 @@ class AIChatUsageService:
         Returns:
             int: Daily usage limit (-1 for unlimited, 0 for no access)
         """
-        return self.PLAN_LIMITS.get(user_plan, 0)  # Default to free plan (no access)
+        limit = get_ai_chat_plan_limit(user_plan)
+        logger.debug(f"Retrieved daily limit for plan '{user_plan}': {limit}")
+        return limit
 
     def _get_current_date(self) -> str:
         """Get current date in YYYY-MM-DD format"""
@@ -91,12 +88,18 @@ class AIChatUsageService:
             daily_limit > 0 and current_usage < daily_limit
         )
 
+        # Get plan configuration for additional context
+        plan_config = self.get_plan_config(user_plan)
+
         return {
             "remaining_count": remaining_count,
             "daily_limit": daily_limit,
             "current_usage": current_usage,
             "reset_time": self._get_reset_time(),
             "can_use_chat": can_use_chat,
+            "plan_name": user_plan,
+            "plan_description": plan_config.get("description", ""),
+            "plan_features": plan_config.get("features", []),
         }
 
     async def check_usage_limit(self, user: User) -> Dict:
@@ -216,14 +219,50 @@ class AIChatUsageService:
         """
         return ai_chat_usage.get_usage_history(self.session, user.id, limit)
 
+    def get_plan_config(self, user_plan: str) -> Dict:
+        """
+        Get full plan configuration including features and description
+
+        Args:
+            user_plan: User's subscription plan
+
+        Returns:
+            Dict containing plan configuration
+        """
+        plan_config = get_ai_chat_plan_config(user_plan)
+        if plan_config:
+            return {
+                "plan_name": user_plan,
+                "daily_limit": plan_config.daily_limit,
+                "description": plan_config.description,
+                "features": plan_config.features
+            }
+
+        # Return default free plan config if plan not found
+        logger.warning(f"Plan '{user_plan}' not found, returning free plan config")
+        free_config = get_ai_chat_plan_config("free")
+        return {
+            "plan_name": "free",
+            "daily_limit": free_config.daily_limit if free_config else 0,
+            "description": free_config.description if free_config else "Free plan",
+            "features": free_config.features if free_config else []
+        }
+
     def update_plan_limits(self, new_limits: Dict[str, int]) -> None:
         """
-        Update plan limits configuration (for future admin functionality)
+        Update plan limits configuration (for backward compatibility)
+
+        This method is deprecated. Use the configuration management system instead.
 
         Args:
             new_limits: Dictionary of plan names to daily limits
         """
-        self.PLAN_LIMITS.update(new_limits)
+        from app.config import update_ai_chat_plan_limit
+
+        for plan_name, daily_limit in new_limits.items():
+            update_ai_chat_plan_limit(plan_name, daily_limit)
+
+        logger.warning("update_plan_limits is deprecated. Use configuration management system instead.")
 
     def get_all_plan_limits(self) -> Dict[str, int]:
         """
@@ -232,4 +271,22 @@ class AIChatUsageService:
         Returns:
             Dictionary of all plan limits
         """
-        return self.PLAN_LIMITS.copy()
+        all_plans = get_all_ai_chat_plans()
+        return {plan_name: plan_config.daily_limit for plan_name, plan_config in all_plans.items()}
+
+    def get_all_plan_configs(self) -> Dict[str, Dict]:
+        """
+        Get all plan configurations with full details
+
+        Returns:
+            Dictionary of all plan configurations
+        """
+        all_plans = get_all_ai_chat_plans()
+        return {
+            plan_name: {
+                "daily_limit": plan_config.daily_limit,
+                "description": plan_config.description,
+                "features": plan_config.features
+            }
+            for plan_name, plan_config in all_plans.items()
+        }

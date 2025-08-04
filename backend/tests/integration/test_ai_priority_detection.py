@@ -38,11 +38,9 @@ class TestAIPriorityDetection:
                 priority=email_data['expected_priority']
             )
 
-            with patch('app.services.ai_task_service.openai_client') as mock_openai:
-                # Mock the OpenAI client response
-                mock_openai.beta.chat.completions.parse.return_value.choices = [
-                    Mock(message=Mock(parsed=mock_response))
-                ]
+            with patch('app.utils.llm.llm_chat_completions_perse') as mock_llm:
+                # Mock the LLM response
+                mock_llm.return_value = mock_response
 
                 # Since the actual AI service requires complex mocking,
                 # we'll test the logic by directly creating a TaskGenerationResponse
@@ -158,8 +156,8 @@ class TestAIPriorityDetection:
         all_keywords = set(high_priority_keywords + middle_priority_keywords + low_priority_keywords)
         assert len(all_keywords) == len(high_priority_keywords) + len(middle_priority_keywords) + len(low_priority_keywords)
 
-    @patch('app.services.ai_task_service.openai_client')
-    def test_ai_priority_assignment_consistency(self, mock_openai, session: Session, test_user: User):
+    @patch('app.utils.llm.llm_chat_completions_perse')
+    def test_ai_priority_assignment_consistency(self, mock_llm, session: Session, test_user: User):
         """Test that AI priority assignment is consistent for similar content."""
         # Mock multiple AI responses for the same content
         mock_responses = [
@@ -177,9 +175,7 @@ class TestAIPriorityDetection:
 
         # Configure mock to return consistent high priority
         for mock_response in mock_responses:
-            mock_openai.beta.chat.completions.parse.return_value.choices = [
-                Mock(message=Mock(parsed=mock_response))
-            ]
+            mock_llm.return_value = mock_response
 
             # Verify consistent priority assignment
             assert mock_response.priority == TaskPriority.HIGH

@@ -75,6 +75,9 @@ def create_task(
     return task
 
 
+# Sentinel object to distinguish between "not provided" and "explicitly None"
+_UNSET = object()
+
 def update_task(
     session: Session,
     id: int,
@@ -82,7 +85,7 @@ def update_task(
     description: str | None = None,
     expires_at: float | None = None,
     completed: bool | None = None,
-    priority: TaskPriority | None = None,
+    priority: TaskPriority | None | object = _UNSET,
 ) -> Tasks:
     """Update an existing task"""
     task = get_task_by_id(session, id)
@@ -97,7 +100,7 @@ def update_task(
         task.expires_at = expires_at
     if completed is not None:
         task.completed = completed
-    if priority is not None:
+    if priority is not _UNSET:
         task.priority = priority
 
     session.commit()

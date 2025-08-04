@@ -21,7 +21,6 @@ class TestTaskAPIIntegration:
 
         for i, (title, priority) in enumerate(tasks_data):
             task = Tasks(
-                id=f"api-test-task-{i}",
                 user_id=test_user.id,
                 title=title,
                 description=f"Description for {title}",
@@ -93,7 +92,6 @@ class TestTaskAPIIntegration:
         """Test updating a task's priority."""
         # Create a task
         task = Tasks(
-            id="update-test-task",
             user_id=test_user.id,
             title="Task to Update",
             description="Original description",
@@ -110,8 +108,7 @@ class TestTaskAPIIntegration:
         # Test the update logic directly
         updated_task = update_task(
             session=session,
-            task_id=task.id,
-            user_id=test_user.id,
+            id=task.id,
             priority=TaskPriority.HIGH
         )
 
@@ -147,7 +144,6 @@ class TestTaskAPIIntegration:
         for i in range(num_tasks):
             priority = [TaskPriority.HIGH, TaskPriority.MIDDLE, TaskPriority.LOW, None][i % 4]
             task = Tasks(
-                id=f"perf-test-task-{i}",
                 user_id=test_user.id,
                 title=f"Performance Test Task {i}",
                 description=f"Description {i}",

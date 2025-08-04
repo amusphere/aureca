@@ -221,7 +221,6 @@ class TestTaskPriorityPerformance:
             priority = priorities[i % len(priorities)]
 
             task = Tasks(
-                id=f"perf-task-{i}",
                 user_id=user.id,
                 title=f"Performance Test Task {i}",
                 description=f"Description for task {i}",

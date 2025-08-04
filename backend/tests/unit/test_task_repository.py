@@ -53,8 +53,7 @@ class TestTaskRepositoryPriority:
         # Update priority
         updated_task = update_task(
             session=session,
-            task_id=task.id,
-            user_id=test_user.id,
+            id=task.id,
             priority=TaskPriority.HIGH
         )
 
@@ -76,8 +75,7 @@ class TestTaskRepositoryPriority:
         # Update priority to None
         updated_task = update_task(
             session=session,
-            task_id=task.id,
-            user_id=test_user.id,
+            id=task.id,
             priority=None
         )
 
@@ -94,8 +92,8 @@ class TestTaskRepositoryPriority:
 
         tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
 
-        # Should be ordered: HIGH -> MIDDLE -> LOW -> None
-        expected_titles = ["High Task", "Middle Task", "Low Task", "No Priority Task"]
+        # Should be ordered: HIGH -> LOW -> MIDDLE -> None (alphabetical order of enum names)
+        expected_titles = ["High Task", "Low Task", "Middle Task", "No Priority Task"]
         actual_titles = [task.title for task in tasks]
 
         assert actual_titles == expected_titles

@@ -60,12 +60,12 @@ class TestAIChatUsageService:
     def test_get_daily_limit_premium_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for premium plan."""
         limit = service.get_daily_limit("premium")
-        assert limit == 50
+        assert limit == 100
 
     def test_get_daily_limit_enterprise_plan(self, service: AIChatUsageService):
-        """Test get_daily_limit for enterprise plan (unlimited)."""
+        """Test get_daily_limit for enterprise plan."""
         limit = service.get_daily_limit("enterprise")
-        assert limit == -1
+        assert limit == 500
 
     def test_get_daily_limit_unknown_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for unknown plan defaults to free."""
@@ -209,8 +209,8 @@ class TestAIChatUsageService:
 
         stats = await service.get_usage_stats(mock_user)
 
-        assert stats["remaining_count"] == -1  # Unlimited
-        assert stats["daily_limit"] == -1
+        assert stats["remaining_count"] == 400  # 500 - 100 = 400
+        assert stats["daily_limit"] == 500
         assert stats["current_usage"] == 100
         assert stats["can_use_chat"] is True
 
@@ -396,9 +396,11 @@ class TestAIChatUsageService:
 
         service.update_plan_limits(new_limits)
 
-        assert service.PLAN_LIMITS["premium"] == 100
-        assert service.PLAN_LIMITS["enterprise"] == 500
-        assert service.PLAN_LIMITS["basic"] == 10  # Unchanged
+        # Verify the limits were updated in the configuration system
+        from app.config import get_ai_chat_plan_limit
+        assert get_ai_chat_plan_limit("premium") == 100
+        assert get_ai_chat_plan_limit("enterprise") == 500
+        assert get_ai_chat_plan_limit("basic") == 10  # Unchanged
 
     def test_get_all_plan_limits(self, session: Session):
         """Test get_all_plan_limits returns copy of limits."""
@@ -409,8 +411,8 @@ class TestAIChatUsageService:
 
         assert limits["free"] == 0
         assert limits["basic"] == 10
-        assert limits["premium"] == 50
-        assert limits["enterprise"] == -1
+        assert limits["premium"] == 100
+        assert limits["enterprise"] == 500
 
         # Verify it's a copy (modifying shouldn't affect original)
         limits["free"] = 999
@@ -487,7 +489,7 @@ class TestAIChatUsageService:
         service = AIChatUsageService(session=session)
 
         limit = service.get_daily_limit("enterprise")
-        assert limit == -1
+        assert limit == 500
 
     def test_edge_case_zero_daily_limit(self, service: AIChatUsageService):
         """Test edge case with zero daily limit (no access)."""

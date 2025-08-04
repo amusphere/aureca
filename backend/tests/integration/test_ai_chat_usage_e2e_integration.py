@@ -50,7 +50,7 @@ class TestAIChatUsageE2EIntegration:
                 # Step 2: User uses AI chat (mock successful processing)
                 with patch(
                     "app.services.ai.AIHub.process_request",
-                    return_value={"response": "AI response"},
+                    return_value={"success": True, "operator_response": None, "execution_results": [], "summary": {"message": "Test summary"}, "error": None},
                 ):
                     ai_response = client.post(
                         "/api/ai/process", json={"prompt": "Test prompt"}
@@ -101,7 +101,7 @@ class TestAIChatUsageE2EIntegration:
                 # Step 2: Use last available AI chat
                 with patch(
                     "app.services.ai.AIHub.process_request",
-                    return_value={"response": "Final AI response"},
+                    return_value={"success": True, "operator_response": None, "execution_results": [], "summary": {"message": "Final summary"}, "error": None},
                 ):
                     ai_response = client.post(
                         "/api/ai/process", json={"prompt": "Final prompt"}
@@ -113,9 +113,11 @@ class TestAIChatUsageE2EIntegration:
                 assert response.status_code == 429
 
                 error_data = response.json()
-                assert error_data["error_code"] == "USAGE_LIMIT_EXCEEDED"
-                assert error_data["remaining_count"] == 0
-                assert "本日の利用回数上限に達しました" in error_data["error"]
+                assert "detail" in error_data
+                detail = error_data["detail"]
+                assert detail["error_code"] == "USAGE_LIMIT_EXCEEDED"
+                assert detail["remaining_count"] == 0
+                assert "本日の利用回数上限に達しました" in detail["error"]
 
                 # Step 4: Attempt to use AI chat when at limit
                 ai_response = client.post(
@@ -153,7 +155,9 @@ class TestAIChatUsageE2EIntegration:
                 assert response.status_code == 429
 
                 error_data = response.json()
-                assert error_data["remaining_count"] == 0
+                assert "detail" in error_data
+                detail = error_data["detail"]
+                assert detail["remaining_count"] == 0
 
             # Day 2 - should reset
             with patch(
@@ -170,7 +174,7 @@ class TestAIChatUsageE2EIntegration:
                 # Should be able to use AI chat again
                 with patch(
                     "app.services.ai.AIHub.process_request",
-                    return_value={"response": "New day response"},
+                    return_value={"success": True, "operator_response": None, "execution_results": [], "summary": {"message": "New day response"}, "error": None},
                 ):
                     ai_response = client.post(
                         "/api/ai/process", json={"prompt": "New day prompt"}
@@ -193,10 +197,12 @@ class TestAIChatUsageE2EIntegration:
                 assert response.status_code == 403
 
                 error_data = response.json()
-                assert error_data["error_code"] == "PLAN_RESTRICTION"
+                assert "detail" in error_data
+                detail = error_data["detail"]
+                assert detail["error_code"] == "PLAN_RESTRICTION"
                 assert (
                     "現在のプランではAIChatをご利用いただけません"
-                    in error_data["error"]
+                    in detail["error"]
                 )
 
                 # Step 2: Attempt AI chat - should be blocked
@@ -262,7 +268,7 @@ class TestAIChatUsageE2EIntegration:
                 # User2 should be able to use AI chat
                 with patch(
                     "app.services.ai.AIHub.process_request",
-                    return_value={"response": "User2 response"},
+                    return_value={"success": True, "operator_response": None, "execution_results": [], "summary": {"message": "User2 response"}, "error": None},
                 ):
                     ai_response = client.post(
                         "/api/ai/process", json={"prompt": "User2 prompt"}
@@ -297,7 +303,9 @@ class TestAIChatUsageE2EIntegration:
                     assert error_response.status_code == 500
 
                     error_data = error_response.json()
-                    assert error_data["error_code"] == "SYSTEM_ERROR"
+                    assert "detail" in error_data
+                    detail = error_data["detail"]
+                    assert detail["error_code"] == "SYSTEM_ERROR"
 
                 # Step 3: System recovers
                 recovery_response = client.get("/api/ai/usage")
@@ -368,7 +376,7 @@ class TestAIChatUsageE2EIntegration:
             ):
                 with patch(
                     "app.services.ai.AIHub.process_request",
-                    return_value={"response": "AI response"},
+                    return_value={"success": True, "operator_response": None, "execution_results": [], "summary": {"message": "Test summary"}, "error": None},
                 ):
                     # Use AI chat 9 times (approaching limit)
                     for i in range(9):

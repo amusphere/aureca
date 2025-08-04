@@ -16,6 +16,14 @@ from sqlmodel import Session
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 
 
+def _safe_get_reset_time(usage_service: AIChatUsageService) -> str:
+    """Safely get reset time, returning 'unknown' if there's an error."""
+    try:
+        return usage_service._get_reset_time()
+    except Exception:
+        return "unknown"
+
+
 @router.post("/process", response_model=AIResponseModel)
 async def process_ai_request_endpoint(
     request: AIRequestModel,
@@ -50,7 +58,7 @@ async def process_ai_request_endpoint(
                 "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
                 "error_code": "SYSTEM_ERROR",
                 "remaining_count": 0,
-                "reset_time": usage_service._get_reset_time(),
+                "reset_time": _safe_get_reset_time(usage_service),
             },
         )
 
@@ -89,7 +97,7 @@ async def get_ai_chat_usage_endpoint(
                 "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
                 "error_code": "SYSTEM_ERROR",
                 "remaining_count": 0,
-                "reset_time": usage_service._get_reset_time(),
+                "reset_time": _safe_get_reset_time(usage_service),
             },
         )
 
@@ -116,6 +124,6 @@ async def increment_ai_chat_usage_endpoint(
                 "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
                 "error_code": "SYSTEM_ERROR",
                 "remaining_count": 0,
-                "reset_time": usage_service._get_reset_time(),
+                "reset_time": _safe_get_reset_time(usage_service),
             },
         )

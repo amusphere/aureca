@@ -55,7 +55,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=later_date
+            expires_at=later_date.timestamp()
         )
 
         create_task(
@@ -64,7 +64,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=earlier_date
+            expires_at=earlier_date.timestamp()
         )
 
         tasks = find_tasks(session=session, user_id=test_user.id)
