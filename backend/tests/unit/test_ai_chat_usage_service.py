@@ -541,7 +541,7 @@ class TestAIChatUsageService:
         invalid_user = User(id=None, clerk_sub="invalid")
         mock_get_stats.side_effect = Exception("Invalid user")
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="Invalid user"):
             await service.check_usage_limit(invalid_user)
 
     def test_error_handling_invalid_plan_name(self, service: AIChatUsageService):
@@ -571,5 +571,5 @@ class TestAIChatUsageService:
             "Database connection failed"
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="Database connection failed"):
             await service.get_usage_stats(mock_user)

@@ -22,12 +22,12 @@ dependencies = [
     "pytest-cov>=6.0.0",
     "python-jose>=3.4.0",
     "python-multipart>=0.0.20",
-    "ruff>=0.8.0",
     "mypy>=1.9.0",
     "setuptools>=79.0.0",
     "sqlmodel>=0.0.24",
     "svix>=1.69.0",
     "uvicorn>=0.34.0",
+    "ruff>=0.12.7",
 ]
 
 [tool.pytest.ini_options]
@@ -41,6 +41,8 @@ addopts = "-v --tb=short"
 [tool.ruff]
 target-version = "py312"
 line-length = 120
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -56,7 +58,7 @@ ignore = [
     "C901", # too complex
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-third-party = ["fastapi", "pydantic", "starlette"]
 
 [tool.mypy]

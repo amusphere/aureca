@@ -55,7 +55,7 @@ def test_debug_priority_sorting(session: Session, test_user: User):
 
     stmt = select(Tasks).where(
         Tasks.user_id == test_user.id,
-        Tasks.completed == False,
+        not Tasks.completed,
     )
 
     priority_order = case(

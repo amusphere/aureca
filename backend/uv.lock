@@ -463,7 +463,7 @@ requires-dist = [
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "python-jose", specifier = ">=3.4.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
-    { name = "ruff", specifier = ">=0.8.0" },
+    { name = "ruff", specifier = ">=0.12.7" },
     { name = "setuptools", specifier = ">=79.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
     { name = "svix", specifier = ">=1.69.0" },

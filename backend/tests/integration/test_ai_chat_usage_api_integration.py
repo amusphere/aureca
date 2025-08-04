@@ -332,7 +332,7 @@ class TestAIChatUsageAPIIntegration:
             # both requests might succeed. Check the final state instead.
             responses = [response1, response2]
             success_responses = [r for r in responses if r.status_code == 200]
-            error_responses = [r for r in responses if r.status_code == 429]
+            # error_responses = [r for r in responses if r.status_code == 429]  # Unused for now
 
             # At least one should succeed, and total shouldn't exceed limit
             assert len(success_responses) >= 1

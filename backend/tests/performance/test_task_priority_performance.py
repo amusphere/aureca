@@ -182,7 +182,7 @@ class TestTaskPriorityPerformance:
         execution_times = []
 
         # Run the same query multiple times sequentially
-        for i in range(5):
+        for _i in range(5):
             start_time = time.time()
             tasks = find_tasks(session=session, user_id=test_user.id, order_by_priority=True)
             end_time = time.time()
