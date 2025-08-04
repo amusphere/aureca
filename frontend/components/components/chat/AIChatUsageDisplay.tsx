@@ -77,6 +77,7 @@ export function AIChatUsageDisplay({
                     onClick={onRefresh}
                     disabled={loading}
                     className="h-7 text-xs"
+                    data-testid="usage-display-refresh-button"
                   >
                     <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
                     再確認
@@ -136,7 +137,7 @@ export function AIChatUsageDisplay({
 
         {/* Detailed information */}
         {variant === 'detailed' && (
-          <div className="space-y-1">
+          <div className="space-y-1" data-testid="detailed-usage-info">
             <p className="text-xs text-muted-foreground">
               残り利用回数: {usage.remainingCount}回
             </p>
@@ -154,7 +155,7 @@ export function AIChatUsageDisplay({
 
         {/* Exhausted warning */}
         {isExhausted && variant === 'detailed' && (
-          <div className="p-2 bg-muted/50 border border-border/30 rounded text-xs text-muted-foreground">
+          <div className="p-2 bg-muted/50 border border-border/30 rounded text-xs text-muted-foreground" data-testid="usage-exhausted-warning">
             本日の利用回数上限に達しました。
             {usage.resetTime && (
               <span className="block mt-1">

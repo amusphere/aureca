@@ -1,5 +1,5 @@
 import { AI_CHAT_USAGE_ERROR_CODES } from '@/types/AIChatUsage'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AIChatModal from '../../../components/components/chat/AIChatModal'
@@ -116,6 +116,8 @@ describe('AIChatModal', () => {
   })
 
   afterEach(() => {
+    cleanup() // DOM要素をクリーンアップ
+    vi.clearAllMocks()
     vi.restoreAllMocks()
   })
 
@@ -746,7 +748,7 @@ describe('AIChatModal', () => {
       render(<AIChatModal {...defaultProps} />)
 
       // Check for screen reader friendly content
-      expect(screen.getByText('残り利用回数:')).toBeInTheDocument()
+      expect(screen.getByTestId('mobile-usage-display')).toBeInTheDocument()
       expect(screen.getAllByText('AIアシスタント')).toHaveLength(2) // Header and empty state
     })
   })
@@ -766,7 +768,7 @@ describe('AIChatModal', () => {
 
       const { rerender } = render(<AIChatModal {...defaultProps} />)
 
-      expect(screen.getByText('利用回数上限に達しました')).toBeInTheDocument()
+      expect(screen.getByTestId('usage-exhausted-message')).toBeInTheDocument()
 
       // Simulate error recovery
       Object.assign(mockUseAIChatUsage, {
@@ -803,7 +805,7 @@ describe('AIChatModal', () => {
 
       render(<AIChatModal {...defaultProps} />)
 
-      const refreshButton = screen.getByText('再確認')
+      const refreshButton = screen.getByTestId('modal-refresh-button')
       await user.click(refreshButton)
 
       expect(refreshUsage).toHaveBeenCalledTimes(1)

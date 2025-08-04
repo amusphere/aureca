@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { AIChatUsage, AIChatUsageError } from '@/types/AIChatUsage'
 
 // Mock the useAIChatUsage hook
@@ -69,6 +69,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.restoreAllMocks()
   })
 

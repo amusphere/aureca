@@ -168,7 +168,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
         {/* Mobile Usage Display */}
         {usage && (
-          <div className="sm:hidden px-6 py-3 bg-muted/30 border-b border-border/20">
+          <div className="sm:hidden px-6 py-3 bg-muted/30 border-b border-border/20" data-testid="mobile-usage-display">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">
@@ -197,7 +197,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         <div className="flex flex-col flex-1 min-h-0">
           {/* Usage Error Display */}
           {usageError && (
-            <div className="p-4 bg-destructive/5 border-b border-destructive/20">
+            <div className="p-4 bg-destructive/5 border-b border-destructive/20" data-testid="usage-exhausted-message">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
@@ -231,6 +231,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                       variant="outline"
                       onClick={refreshUsage}
                       className="h-7 text-xs"
+                      data-testid="modal-refresh-button"
                     >
                       <RefreshCw className="h-3 w-3 mr-1" />
                       再確認
@@ -300,7 +301,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
             {/* Usage Exhausted Message */}
             {isUsageExhausted && !usageError && (
-              <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg">
+              <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg" data-testid="usage-exhausted-message">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground font-medium">
