@@ -21,7 +21,7 @@
       ]
     },
     "premium": {
-      "daily_limit": 100,
+      "daily_limit": 50,
       "description": "Premium plan - 50 AI chats per day",
       "features": [
         "All basic features",
@@ -32,7 +32,7 @@
       ]
     },
     "enterprise": {
-      "daily_limit": 500,
+      "daily_limit": -1,
       "description": "Enterprise plan - Unlimited AI chats",
       "features": [
         "All premium features",
@@ -42,106 +42,6 @@
         "Team collaboration",
         "Custom workflows"
       ]
-    },
-    "test_plan_88b4f073": {
-      "daily_limit": 25,
-      "description": "Test plan created via API",
-      "features": [
-        "test_feature1",
-        "test_feature2"
-      ]
-    },
-    "unlimited_test_7ee0a686": {
-      "daily_limit": -1,
-      "description": "Unlimited test plan",
-      "features": [
-        "unlimited_feature"
-      ]
-    },
-    "no_access_test_b6d5286d": {
-      "daily_limit": 0,
-      "description": "No access test plan",
-      "features": []
-    },
-    "test_plan_b112df7b": {
-      "daily_limit": 25,
-      "description": "Test plan created via API",
-      "features": [
-        "test_feature1",
-        "test_feature2"
-      ]
-    },
-    "unlimited_test_a9ac2e46": {
-      "daily_limit": -1,
-      "description": "Unlimited test plan",
-      "features": [
-        "unlimited_feature"
-      ]
-    },
-    "no_access_test_3ad0a063": {
-      "daily_limit": 0,
-      "description": "No access test plan",
-      "features": []
-    },
-    "test_plan_12a7d66e": {
-      "daily_limit": 25,
-      "description": "Test plan created via API",
-      "features": [
-        "test_feature1",
-        "test_feature2"
-      ]
-    },
-    "unlimited_test_cb741680": {
-      "daily_limit": -1,
-      "description": "Unlimited test plan",
-      "features": [
-        "unlimited_feature"
-      ]
-    },
-    "no_access_test_34ef5b28": {
-      "daily_limit": 0,
-      "description": "No access test plan",
-      "features": []
-    },
-    "test_plan_576d24b3": {
-      "daily_limit": 25,
-      "description": "Test plan created via API",
-      "features": [
-        "test_feature1",
-        "test_feature2"
-      ]
-    },
-    "unlimited_test_639d8569": {
-      "daily_limit": -1,
-      "description": "Unlimited test plan",
-      "features": [
-        "unlimited_feature"
-      ]
-    },
-    "no_access_test_1863a9cd": {
-      "daily_limit": 0,
-      "description": "No access test plan",
-      "features": []
-    },
-    "test_plan_45034112": {
-      "daily_limit": 25,
-      "description": "Test plan created via API",
-      "features": [
-        "test_feature1",
-        "test_feature2"
-      ]
-    },
-    "unlimited_test_3ab1f09b": {
-      "daily_limit": -1,
-      "description": "Unlimited test plan",
-      "features": [
-        "unlimited_feature"
-      ]
-    },
-    "no_access_test_d02276ea": {
-      "daily_limit": 0,
-      "description": "No access test plan",
-      "features": []
     }
   },
   "settings": {
@@ -150,5 +50,5 @@
     "reset_timezone": "UTC",
     "enable_usage_analytics": true
   },
-  "last_updated": "2025-08-04T12:48:33.174742"
+  "last_updated": "2025-01-03T00:00:00Z"
 }
