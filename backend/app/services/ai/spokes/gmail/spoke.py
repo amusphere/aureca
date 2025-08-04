@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from app.services.ai.core.models import SpokeResponse
 from app.services.ai.spokes.base import BaseSpoke
@@ -62,7 +62,7 @@ class GmailSpoke(BaseSpoke):
         return decorator
 
     def _create_success_response(
-        self, data: Dict[str, Any], message: str
+        self, data: dict[str, Any], message: str
     ) -> SpokeResponse:
         """Create a standardized success response"""
         return SpokeResponse(
@@ -79,7 +79,7 @@ class GmailSpoke(BaseSpoke):
             data={"error_type": "parameter_error"},
         )
 
-    def _validate_email_id(self, parameters: Dict[str, Any]) -> str:
+    def _validate_email_id(self, parameters: dict[str, Any]) -> str:
         """Validate email ID parameter"""
         email_id = parameters.get("email_id")
         if not email_id:
@@ -88,7 +88,7 @@ class GmailSpoke(BaseSpoke):
 
     async def _execute_email_action(
         self, email_id: str, action_method_name: str, success_message: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute an email action (mark as read/unread) and return result"""
         async with get_authenticated_gmail_service(
             self.current_user, self.session
@@ -98,7 +98,7 @@ class GmailSpoke(BaseSpoke):
 
         return {"result": result}
 
-    def _validate_email_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_email_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Validate email parameters and return validated data"""
         to = parameters.get("to")
         subject = parameters.get("subject")
@@ -124,7 +124,7 @@ class GmailSpoke(BaseSpoke):
 
     async def _execute_gmail_query(
         self, query: str, max_results: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute Gmail query and return results with metadata"""
         async with get_authenticated_gmail_service(
             self.current_user, self.session
@@ -143,7 +143,7 @@ class GmailSpoke(BaseSpoke):
     # Action functions
     # =================
 
-    async def action_get_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_get_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get email list action"""
         # Extract and validate parameters
         query = parameters.get("query", "")
@@ -183,7 +183,7 @@ class GmailSpoke(BaseSpoke):
             )
 
     async def action_get_email_content(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Get specific email content action"""
         # Validate required parameters
@@ -227,7 +227,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_send_email(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_send_email(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Send email action"""
 
         try:
@@ -274,7 +274,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_create_draft(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_create_draft(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Create email draft action"""
 
         try:
@@ -321,7 +321,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_mark_as_read(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_mark_as_read(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Mark email as read action"""
 
         try:
@@ -361,7 +361,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_mark_as_unread(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_mark_as_unread(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Mark email as unread action"""
 
         try:
@@ -401,7 +401,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    def _build_search_query(self, parameters: Dict[str, Any]) -> str:
+    def _build_search_query(self, parameters: dict[str, Any]) -> str:
         """Build Gmail search query from parameters"""
         gmail_query_parts = []
 
@@ -439,7 +439,7 @@ class GmailSpoke(BaseSpoke):
 
         return " ".join(gmail_query_parts)
 
-    async def action_search_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_search_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Search emails with specific criteria action"""
 
         # Extract and validate parameters
@@ -484,7 +484,7 @@ class GmailSpoke(BaseSpoke):
             )
 
     async def action_get_unread_emails(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Get unread emails action"""
 
@@ -527,7 +527,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_get_new_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_get_new_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get new emails (unread and not archived) action"""
 
         # Extract and validate parameters
@@ -568,7 +568,7 @@ class GmailSpoke(BaseSpoke):
             )
 
     async def action_create_reply_draft(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Create email reply draft action"""
 

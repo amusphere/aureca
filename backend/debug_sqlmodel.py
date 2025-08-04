@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
+
 sys.path.append('/Users/shuto/src/amusphere/aureca/backend')
 
-from sqlmodel import Session, create_engine, select
 from sqlalchemy import case
-from app.schema import Tasks, TaskPriority, User
+from sqlmodel import Session, create_engine, select
+
+from app.schema import TaskPriority, Tasks, User
 
 # Create in-memory SQLite database
 engine = create_engine("sqlite:///:memory:", echo=True)  # echo=True to see SQL

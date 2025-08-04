@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from app.schema import TaskSource
 from sqlmodel import Session, select
+
+from app.schema import TaskSource
 
 
 def get_task_source_by_uuid(

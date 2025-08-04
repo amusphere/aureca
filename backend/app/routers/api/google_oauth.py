@@ -1,3 +1,6 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session
+
 from app.database import get_session
 from app.models.google_oauth import (
     GoogleAuthResponse,
@@ -7,8 +10,6 @@ from app.models.google_oauth import (
 from app.schema import User
 from app.services.auth import auth_user
 from app.services.google_oauth import GoogleOauthService
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
 
 router = APIRouter(prefix="/google")
 

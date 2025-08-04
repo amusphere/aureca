@@ -1,3 +1,5 @@
+from fastapi import APIRouter
+
 from app.routers.api.admin import router as admin_router
 from app.routers.api.ai_assistant import router as ai_assistant_router
 from app.routers.api.google_oauth import router as google_oauth_router
@@ -6,7 +8,6 @@ from app.routers.api.mail import router as mail_router
 from app.routers.api.tasks import router as tasks_router
 from app.routers.api.users import router as users_router
 from app.routers.api.webhooks import router as webhooks_router
-from fastapi import APIRouter
 
 api_router = APIRouter()
 

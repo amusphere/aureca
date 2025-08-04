@@ -2,14 +2,14 @@
 Admin API endpoints for configuration management
 """
 
-from typing import Dict, List
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlmodel import Session
 
 from app.config import config_manager, get_all_ai_chat_plans, update_ai_chat_plan_limit
 from app.database import get_session
 from app.services.ai_chat_usage_service import AIChatUsageService
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlmodel import Session
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -20,7 +20,7 @@ class PlanLimitUpdateRequest(BaseModel):
     plan_name: str
     daily_limit: int
     description: str = None
-    features: List[str] = None
+    features: list[str] = None
 
 
 class PlanConfigResponse(BaseModel):
@@ -29,13 +29,13 @@ class PlanConfigResponse(BaseModel):
     plan_name: str
     daily_limit: int
     description: str
-    features: List[str]
+    features: list[str]
 
 
 class AllPlansResponse(BaseModel):
     """Response model for all plan configurations"""
 
-    plans: Dict[str, PlanConfigResponse]
+    plans: dict[str, PlanConfigResponse]
     total_plans: int
 
 
@@ -107,7 +107,7 @@ async def update_ai_chat_plan_endpoint(
     plan_name: str,
     request: PlanLimitUpdateRequest,
     session: Session = Depends(get_session),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Update AI chat plan configuration
 
@@ -158,7 +158,7 @@ async def update_ai_chat_plan_endpoint(
 @router.post("/ai-chat/plans")
 async def create_ai_chat_plan_endpoint(
     request: PlanLimitUpdateRequest, session: Session = Depends(get_session)
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Create new AI chat plan configuration
 
@@ -214,7 +214,7 @@ async def create_ai_chat_plan_endpoint(
 
 
 @router.get("/ai-chat/config/reload")
-async def reload_ai_chat_config_endpoint() -> Dict[str, str]:
+async def reload_ai_chat_config_endpoint() -> dict[str, str]:
     """
     Reload AI chat configuration from file
 

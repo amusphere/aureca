@@ -1,6 +1,8 @@
 import logging
-from datetime import datetime, timezone
-from typing import Dict
+from datetime import UTC, datetime
+
+from fastapi import HTTPException, status
+from sqlmodel import Session
 
 from app.config import (
     get_ai_chat_plan_config,
@@ -9,8 +11,6 @@ from app.config import (
 )
 from app.repositories import ai_chat_usage
 from app.schema import AIChatUsageLog, User
-from fastapi import HTTPException, status
-from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +55,11 @@ class AIChatUsageService:
 
     def _get_current_date(self) -> str:
         """Get current date in YYYY-MM-DD format"""
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return datetime.now(UTC).strftime("%Y-%m-%d")
 
     def _get_reset_time(self) -> str:
         """Get next reset time (midnight UTC) in ISO 8601 format"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
         # Add one day to get next midnight
         from datetime import timedelta
@@ -67,7 +67,7 @@ class AIChatUsageService:
         next_midnight += timedelta(days=1)
         return next_midnight.isoformat()
 
-    async def get_usage_stats(self, user: User) -> Dict:
+    async def get_usage_stats(self, user: User) -> dict:
         """
         Get current usage statistics for a user
 
@@ -105,7 +105,7 @@ class AIChatUsageService:
             "plan_features": plan_config.get("features", []),
         }
 
-    async def check_usage_limit(self, user: User) -> Dict:
+    async def check_usage_limit(self, user: User) -> dict:
         """
         Check if user can use AI chat based on their plan and current usage
 
@@ -138,7 +138,7 @@ class AIChatUsageService:
             reset_time = datetime.fromisoformat(
                 stats["reset_time"].replace("Z", "+00:00")
             )
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             time_diff = reset_time - now
             hours_until_reset = max(0, int(time_diff.total_seconds() / 3600))
 
@@ -165,7 +165,7 @@ class AIChatUsageService:
             "can_use_chat": stats["can_use_chat"],
         }
 
-    async def increment_usage(self, user: User) -> Dict:
+    async def increment_usage(self, user: User) -> dict:
         """
         Increment usage count for a user after successful AI chat usage
 
@@ -222,7 +222,7 @@ class AIChatUsageService:
         """
         return ai_chat_usage.get_usage_history(self.session, user.id, limit)
 
-    def get_plan_config(self, user_plan: str) -> Dict:
+    def get_plan_config(self, user_plan: str) -> dict:
         """
         Get full plan configuration including features and description
 
@@ -251,7 +251,7 @@ class AIChatUsageService:
             "features": free_config.features if free_config else [],
         }
 
-    def update_plan_limits(self, new_limits: Dict[str, int]) -> None:
+    def update_plan_limits(self, new_limits: dict[str, int]) -> None:
         """
         Update plan limits configuration (for backward compatibility)
 
@@ -269,7 +269,7 @@ class AIChatUsageService:
             "update_plan_limits is deprecated. Use configuration management system instead."
         )
 
-    def get_all_plan_limits(self) -> Dict[str, int]:
+    def get_all_plan_limits(self) -> dict[str, int]:
         """
         Get all configured plan limits
 
@@ -282,7 +282,7 @@ class AIChatUsageService:
             for plan_name, plan_config in all_plans.items()
         }
 
-    def get_all_plan_configs(self) -> Dict[str, Dict]:
+    def get_all_plan_configs(self) -> dict[str, dict]:
         """
         Get all plan configurations with full details
 

@@ -1,12 +1,12 @@
 """Simple test to debug the AI usage service issue."""
 
-from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from app.schema import User
 from app.services.auth import auth_user
-from fastapi.testclient import TestClient
 from main import app
-from sqlmodel import Session
 
 
 def test_simple_ai_usage_debug(client: TestClient, session: Session):
@@ -61,7 +61,7 @@ def test_simple_ai_usage_debug(client: TestClient, session: Session):
 
 def test_config_loading_debug():
     """Test if the config is loading properly."""
-    from app.config import get_ai_chat_plan_limit, get_ai_chat_plan_config
+    from app.config import get_ai_chat_plan_config, get_ai_chat_plan_limit
 
     try:
         # Test config loading

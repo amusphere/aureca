@@ -3,13 +3,14 @@ import os
 import sys
 
 import httpx
-from app.repositories.user import get_user_br_column
-from app.schema import User
 from clerk_backend_api import AuthenticateRequestOptions, Clerk
 from clerk_backend_api import User as ClerkUser
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
 from sqlmodel import Session
+
+from app.repositories.user import get_user_br_column
+from app.schema import User
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)

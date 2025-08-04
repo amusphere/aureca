@@ -1,5 +1,7 @@
 """Unit tests for AI chat usage repository functionality."""
 
+from sqlmodel import Session
+
 from app.repositories.ai_chat_usage import (
     create_daily_usage,
     get_current_usage_count,
@@ -9,7 +11,6 @@ from app.repositories.ai_chat_usage import (
     update_usage_count,
 )
 from app.schema import User
-from sqlmodel import Session
 
 
 class TestAIChatUsageRepository:

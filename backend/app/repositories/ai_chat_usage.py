@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import Optional
+
+from sqlalchemy import and_
+from sqlmodel import Session, select
 
 from app.schema import AIChatUsageLog
-from sqlmodel import Session, select
-from sqlalchemy import and_
 
 
-def get_daily_usage(session: Session, user_id: int, usage_date: str) -> Optional[AIChatUsageLog]:
+def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsageLog | None:
     """Get daily usage record for a specific user and date"""
     stmt = select(AIChatUsageLog).where(
         and_(

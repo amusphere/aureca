@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from app.schema import TaskPriority, Tasks
 from sqlmodel import Session, select
+
+from app.schema import TaskPriority, Tasks
 
 
 def find_tasks(

@@ -1,13 +1,14 @@
 """Unit tests for AI chat usage service functionality."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from app.schema import AIChatUsageLog, User
-from app.services.ai_chat_usage_service import AIChatUsageService
 from fastapi import HTTPException, status
 from sqlmodel import Session
+
+from app.schema import AIChatUsageLog, User
+from app.services.ai_chat_usage_service import AIChatUsageService
 
 
 class TestAIChatUsageService:
@@ -76,7 +77,7 @@ class TestAIChatUsageService:
     def test_get_current_date(self, mock_datetime, service: AIChatUsageService):
         """Test _get_current_date returns correct format."""
         # Mock current time
-        mock_now = datetime(2023, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
+        mock_now = datetime(2023, 1, 15, 14, 30, 0, tzinfo=UTC)
         mock_datetime.now.return_value = mock_now
 
         date = service._get_current_date()
@@ -86,13 +87,13 @@ class TestAIChatUsageService:
     def test_get_reset_time(self, mock_datetime, service: AIChatUsageService):
         """Test _get_reset_time returns correct next midnight."""
         # Mock current time: 2023-01-15 14:30:00 UTC
-        mock_now = datetime(2023, 1, 15, 14, 30, 0, tzinfo=timezone.utc)
+        mock_now = datetime(2023, 1, 15, 14, 30, 0, tzinfo=UTC)
         mock_datetime.now.return_value = mock_now
 
         reset_time = service._get_reset_time()
 
         # Should return next midnight: 2023-01-16 00:00:00 UTC
-        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=timezone.utc)
+        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=UTC)
         assert reset_time == expected_reset.isoformat()
 
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
@@ -503,7 +504,7 @@ class TestAIChatUsageService:
     ):
         """Test edge case at exactly midnight."""
         # Mock exactly midnight
-        mock_now = datetime(2023, 1, 15, 0, 0, 0, tzinfo=timezone.utc)
+        mock_now = datetime(2023, 1, 15, 0, 0, 0, tzinfo=UTC)
         mock_datetime.now.return_value = mock_now
 
         date = service._get_current_date()
@@ -511,7 +512,7 @@ class TestAIChatUsageService:
 
         assert date == "2023-01-15"
         # Next reset should be tomorrow midnight
-        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=timezone.utc)
+        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=UTC)
         assert reset_time == expected_reset.isoformat()
 
     @patch("app.services.ai_chat_usage_service.datetime")
@@ -520,7 +521,7 @@ class TestAIChatUsageService:
     ):
         """Test edge case just before midnight."""
         # Mock 23:59:59
-        mock_now = datetime(2023, 1, 15, 23, 59, 59, tzinfo=timezone.utc)
+        mock_now = datetime(2023, 1, 15, 23, 59, 59, tzinfo=UTC)
         mock_datetime.now.return_value = mock_now
 
         date = service._get_current_date()
@@ -528,7 +529,7 @@ class TestAIChatUsageService:
 
         assert date == "2023-01-15"
         # Next reset should be in 1 second
-        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=timezone.utc)
+        expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=UTC)
         assert reset_time == expected_reset.isoformat()
 
     # Error handling tests

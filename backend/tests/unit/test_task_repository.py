@@ -1,8 +1,9 @@
 """Unit tests for task repository priority functionality."""
 
+from sqlmodel import Session
+
 from app.repositories.tasks import create_task, find_tasks, update_task
 from app.schema import TaskPriority, User
-from sqlmodel import Session
 
 
 class TestTaskRepositoryPriority:

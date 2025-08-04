@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Optional
+
+from sqlmodel import Session, select
 
 from app.schema import GoogleOAuthToken
-from sqlmodel import Session, select
 
 
 def find_active_token_by_user_id(
     user_id: int,
     session: Session,
-) -> Optional[GoogleOAuthToken]:
+) -> GoogleOAuthToken | None:
     """ユーザーIDでアクティブなトークンを検索"""
     return session.exec(
         select(GoogleOAuthToken).where(
@@ -44,9 +44,9 @@ def update_token_data(
     token_id: int,
     access_token: str,
     session: Session,
-    refresh_token: Optional[str] = None,
-    expires_at: Optional[float] = None,
-) -> Optional[GoogleOAuthToken]:
+    refresh_token: str | None = None,
+    expires_at: float | None = None,
+) -> GoogleOAuthToken | None:
     """トークンデータを更新"""
     oauth_token = session.get(GoogleOAuthToken, token_id)
     if oauth_token:
@@ -80,11 +80,11 @@ def upsert_oauth_token(
     session: Session,
     user_id: int,
     access_token: str,
-    refresh_token: Optional[str] = None,
-    expires_at: Optional[float] = None,
-    scope: Optional[str] = None,
-    google_user_id: Optional[str] = None,
-    google_email: Optional[str] = None,
+    refresh_token: str | None = None,
+    expires_at: float | None = None,
+    scope: str | None = None,
+    google_user_id: str | None = None,
+    google_email: str | None = None,
 ) -> GoogleOAuthToken:
     """OAuth トークンをアップサート（存在すれば更新、なければ作成）"""
     existing_token = find_active_token_by_user_id(user_id, session)

@@ -4,12 +4,13 @@ Main AI Hub - Consolidated orchestrator and operator functionality
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from zoneinfo import ZoneInfo
+
+from sqlmodel import Session
 
 from app.schema import User
 from app.utils.llm import llm_chat_completions, llm_chat_completions_perse
-from sqlmodel import Session
 
 from ..spokes.manager import SpokeManager
 from ..utils.exceptions import InvalidParameterError
@@ -28,7 +29,7 @@ class AIHub:
     def __init__(
         self,
         user_id: int,
-        session: Optional[Session] = None,
+        session: Session | None = None,
     ):
         self.user_id = user_id
         self.session = session
@@ -42,7 +43,7 @@ class AIHub:
         self,
         prompt: str,
         current_user: User,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process user request through the hub-and-spoke system
 
@@ -152,9 +153,9 @@ class AIHub:
 
     async def _execute_actions(
         self,
-        actions: List[NextAction],
+        actions: list[NextAction],
         current_user: User,
-    ) -> List[SpokeResponse]:
+    ) -> list[SpokeResponse]:
         """Execute actions through spoke system"""
         # Sort by priority (lower numbers = higher priority)
         sorted_actions = sorted(actions, key=lambda x: x.priority)
@@ -236,8 +237,8 @@ class AIHub:
         self,
         prompt: str,
         operator_response: OperatorResponse,
-        execution_results: List[SpokeResponse],
-    ) -> Dict[str, Any]:
+        execution_results: list[SpokeResponse],
+    ) -> dict[str, Any]:
         """Create execution summary"""
         total_actions = len(execution_results)
         successful_actions = sum(1 for result in execution_results if result.success)

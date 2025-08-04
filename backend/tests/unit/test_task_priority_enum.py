@@ -1,6 +1,7 @@
 """Unit tests for task priority enum and validation."""
 
 import pytest
+
 from app.schema import TaskPriority
 
 

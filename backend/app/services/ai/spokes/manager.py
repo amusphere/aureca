@@ -4,13 +4,12 @@ Simplified spoke manager - Handles spoke discovery, loading, and execution
 
 import importlib.util
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Type, Any
+
+from sqlmodel import Session
 
 from app.schema import User
-from sqlmodel import Session
 
 from ..core.models import NextAction, SpokeResponse
 from ..utils.exceptions import ActionExecutionError
@@ -25,8 +24,8 @@ class ActionParameter:
     type: str
     required: bool
     description: str
-    format: Optional[str] = None
-    default: Optional[str] = None
+    format: str | None = None
+    default: str | None = None
 
 
 @dataclass
@@ -36,7 +35,7 @@ class ActionDefinition:
     action_type: str
     display_name: str
     description: str
-    parameters: Dict[str, ActionParameter]
+    parameters: dict[str, ActionParameter]
 
 
 @dataclass
@@ -46,7 +45,7 @@ class SpokeConfig:
     spoke_name: str
     display_name: str
     description: str
-    actions: List[ActionDefinition]
+    actions: list[ActionDefinition]
 
 
 class SpokeManager:
@@ -57,16 +56,16 @@ class SpokeManager:
     DynamicSpokeLoader, and SpokeManager into a single, simpler class.
     """
 
-    def __init__(self, spokes_dir: str, session: Optional[Session] = None):
+    def __init__(self, spokes_dir: str, session: Session | None = None):
         self.spokes_dir = Path(spokes_dir)
         self.session = session
         self.logger = AIAssistantLogger("spoke_manager")
 
         # Internal storage
-        self._spoke_configs: Dict[str, SpokeConfig] = {}
-        self._spoke_classes: Dict[str, Type[BaseSpoke]] = {}
-        self._spoke_instances: Dict[str, BaseSpoke] = {}
-        self._action_to_spoke: Dict[str, str] = {}
+        self._spoke_configs: dict[str, SpokeConfig] = {}
+        self._spoke_classes: dict[str, type[BaseSpoke]] = {}
+        self._spoke_instances: dict[str, BaseSpoke] = {}
+        self._action_to_spoke: dict[str, str] = {}
 
         # Load all spokes during initialization
         self._load_all_spokes()
@@ -128,7 +127,7 @@ class SpokeManager:
 
     def _load_spoke_config(self, config_file: Path) -> SpokeConfig:
         """Load spoke configuration from JSON file"""
-        with open(config_file, "r", encoding="utf-8") as f:
+        with open(config_file, encoding="utf-8") as f:
             data = json.load(f)
 
         # Parse action definitions
@@ -161,7 +160,7 @@ class SpokeManager:
 
     def _load_spoke_class(
         self, spoke_file: Path, spoke_name: str
-    ) -> Optional[Type[BaseSpoke]]:
+    ) -> type[BaseSpoke] | None:
         """Dynamically load spoke class from file"""
         try:
             spec = importlib.util.spec_from_file_location(
@@ -209,7 +208,7 @@ class SpokeManager:
 
     def get_spoke_instance(
         self, spoke_name: str, current_user: User
-    ) -> Optional[BaseSpoke]:
+    ) -> BaseSpoke | None:
         """Get spoke instance (with caching)"""
         cache_key = f"{spoke_name}_{current_user.id}"
 
@@ -281,7 +280,7 @@ class SpokeManager:
 
     def _get_action_definition(
         self, spoke_name: str, action_type: str
-    ) -> Optional[ActionDefinition]:
+    ) -> ActionDefinition | None:
         """Get action definition for specific spoke and action"""
         config = self._spoke_configs.get(spoke_name)
         if config:
@@ -290,7 +289,7 @@ class SpokeManager:
                     return action
         return None
 
-    def get_all_action_types(self) -> List[str]:
+    def get_all_action_types(self) -> list[str]:
         """Get all available action types"""
         return sorted(self._action_to_spoke.keys())
 
@@ -314,6 +313,6 @@ class SpokeManager:
 
         return "\n".join(actions_list)
 
-    def get_spoke_configs(self) -> Dict[str, SpokeConfig]:
+    def get_spoke_configs(self) -> dict[str, SpokeConfig]:
         """Get all spoke configurations"""
         return self._spoke_configs.copy()

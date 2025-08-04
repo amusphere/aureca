@@ -1,12 +1,12 @@
 """Performance tests for task priority system."""
 
-import time
 import statistics
-from typing import List
+import time
+
 from sqlmodel import Session
 
 from app.repositories.tasks import find_tasks
-from app.schema import Tasks, TaskPriority, User
+from app.schema import TaskPriority, Tasks, User
 
 
 class TestTaskPriorityPerformance:
@@ -204,7 +204,7 @@ class TestTaskPriorityPerformance:
 
         print(f"Sequential query stats - Avg: {avg_time:.4f}s, Min: {min_time:.4f}s, Max: {max_time:.4f}s")
 
-    def _create_test_tasks(self, session: Session, user: User, count: int) -> List[Tasks]:
+    def _create_test_tasks(self, session: Session, user: User, count: int) -> list[Tasks]:
         """Create test tasks with mixed priorities."""
         tasks = []
         priorities = [TaskPriority.HIGH, TaskPriority.MIDDLE, TaskPriority.LOW, None]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sqlite3
+
 from app.schema import TaskPriority
 
 # Create test database

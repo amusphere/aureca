@@ -3,11 +3,12 @@
 from unittest.mock import patch
 
 import pytest
+from fastapi import HTTPException
+from sqlmodel import Session
+
 from app.repositories import ai_chat_usage
 from app.schema import User
 from app.services.ai_chat_usage_service import AIChatUsageService
-from fastapi import HTTPException
-from sqlmodel import Session
 
 
 class TestAIProcessUsageLimits:

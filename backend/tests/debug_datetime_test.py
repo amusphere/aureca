@@ -1,11 +1,13 @@
 """Test to debug the datetime parsing issue."""
+from datetime import UTC
+
 
 def test_datetime_debug():
     """Test datetime operations that might be causing the issue."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     # Simulate _get_reset_time
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     from datetime import timedelta
     next_midnight += timedelta(days=1)
@@ -32,11 +34,10 @@ def test_datetime_debug():
 
 def test_usage_service_check_limit_debug():
     """Test the specific method that's failing."""
-    from app.services.ai_chat_usage_service import AIChatUsageService
-    from app.schema import User
-    from app.database import get_session
-    from unittest.mock import patch
     import asyncio
+
+    from app.schema import User
+    from app.services.ai_chat_usage_service import AIChatUsageService
 
     # Create test user
     user = User(

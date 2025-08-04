@@ -2,14 +2,14 @@
 
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+from sqlmodel import Session
+
 from app.repositories import ai_chat_usage
 from app.schema import User
-from app.services.auth import auth_user
 from app.services.ai_chat_usage_service import AIChatUsageService
-from fastapi.testclient import TestClient
+from app.services.auth import auth_user
 from main import app
-from sqlmodel import Session
-import asyncio
 
 
 async def test_debug_concurrent_users_isolation(client: TestClient, session: Session):

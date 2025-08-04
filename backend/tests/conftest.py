@@ -1,16 +1,17 @@
 """Test configuration and shared fixtures."""
 
-from typing import Generator
+from collections.abc import Generator
 from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel.pool import StaticPool
+
 from app.config import config_manager
 from app.database import get_session
 from app.schema import TaskPriority, Tasks, User
-from fastapi.testclient import TestClient
 from main import app
-from sqlmodel import Session, SQLModel, create_engine
-from sqlmodel.pool import StaticPool
 
 
 # Protect config file from being modified during tests

@@ -9,12 +9,12 @@ This module provides centralized configuration management with support for:
 """
 
 import json
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class AIChatPlanConfig:
     description: str
     features: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "daily_limit": self.daily_limit,
             "description": self.description,
@@ -40,10 +40,10 @@ class ConfigManager:
     """
 
     def __init__(self):
-        self._config_cache: Dict[str, Any] = {}
-        self._config_file_path: Optional[Path] = None
-        self._last_modified: Optional[float] = None
-        self._ai_chat_plans: Dict[str, AIChatPlanConfig] = {}
+        self._config_cache: dict[str, Any] = {}
+        self._config_file_path: Path | None = None
+        self._last_modified: float | None = None
+        self._ai_chat_plans: dict[str, AIChatPlanConfig] = {}
 
         # Initialize configuration
         self._load_configuration()
@@ -58,7 +58,7 @@ class ConfigManager:
         # Load AI chat plan limits from environment or defaults (this will override file values)
         self._load_ai_chat_plans()
 
-    def _get_config_file_path(self) -> Optional[Path]:
+    def _get_config_file_path(self) -> Path | None:
         """Get the configuration file path"""
         # Check environment variable first
         config_path = os.getenv("AI_CHAT_CONFIG_FILE")
@@ -125,7 +125,7 @@ class ConfigManager:
     def _load_from_file(self, config_file: Path) -> None:
         """Load configuration from JSON file"""
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
+            with open(config_file, encoding='utf-8') as f:
                 file_config = json.load(f)
 
             # Update AI chat plans from file (will be overridden by environment variables later)
@@ -180,7 +180,7 @@ class ConfigManager:
         logger.warning(f"Unknown plan '{plan_name}', defaulting to free plan")
         return self._ai_chat_plans.get("free", AIChatPlanConfig(0, "Unknown plan")).daily_limit
 
-    def get_ai_chat_plan_config(self, plan_name: str) -> Optional[AIChatPlanConfig]:
+    def get_ai_chat_plan_config(self, plan_name: str) -> AIChatPlanConfig | None:
         """
         Get full configuration for a specific plan
 
@@ -193,7 +193,7 @@ class ConfigManager:
         self._check_file_updates()
         return self._ai_chat_plans.get(plan_name)
 
-    def get_all_ai_chat_plans(self) -> Dict[str, AIChatPlanConfig]:
+    def get_all_ai_chat_plans(self) -> dict[str, AIChatPlanConfig]:
         """
         Get all AI chat plan configurations
 
@@ -320,7 +320,7 @@ def get_ai_chat_plan_limit(plan_name: str) -> int:
     return config_manager.get_ai_chat_plan_limit(plan_name)
 
 
-def get_ai_chat_plan_config(plan_name: str) -> Optional[AIChatPlanConfig]:
+def get_ai_chat_plan_config(plan_name: str) -> AIChatPlanConfig | None:
     """
     Convenience function to get AI chat plan configuration
 
@@ -333,7 +333,7 @@ def get_ai_chat_plan_config(plan_name: str) -> Optional[AIChatPlanConfig]:
     return config_manager.get_ai_chat_plan_config(plan_name)
 
 
-def get_all_ai_chat_plans() -> Dict[str, AIChatPlanConfig]:
+def get_all_ai_chat_plans() -> dict[str, AIChatPlanConfig]:
     """
     Convenience function to get all AI chat plan configurations
 

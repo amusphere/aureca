@@ -6,8 +6,9 @@ import uuid
 from unittest.mock import patch
 
 import pytest
-from app.config import AIChatPlanConfig, config_manager
 from fastapi.testclient import TestClient
+
+from app.config import AIChatPlanConfig, config_manager
 from main import app
 
 client = TestClient(app)

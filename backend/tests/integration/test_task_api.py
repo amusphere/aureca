@@ -2,8 +2,9 @@
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from app.schema import Tasks, TaskPriority, User
-from app.repositories.tasks import find_tasks, create_task, update_task
+
+from app.repositories.tasks import create_task, find_tasks, update_task
+from app.schema import TaskPriority, Tasks, User
 
 
 class TestTaskAPIIntegration:

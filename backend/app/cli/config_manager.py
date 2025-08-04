@@ -13,7 +13,6 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 # Add the app directory to the path so we can import modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -70,8 +69,8 @@ def get_plan(plan_name: str):
 def set_plan(
     plan_name: str,
     limit: int,
-    description: Optional[str] = None,
-    features: Optional[List[str]] = None,
+    description: str | None = None,
+    features: list[str] | None = None,
 ):
     """Set or update configuration for a plan"""
     try:
@@ -152,7 +151,7 @@ def import_config(input_file: str):
             print(f"Configuration file not found: {input_path}")
             return
 
-        with open(input_path, "r", encoding="utf-8") as f:
+        with open(input_path, encoding="utf-8") as f:
             config_data = json.load(f)
 
         if "ai_chat_plans" not in config_data:

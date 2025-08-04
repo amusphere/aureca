@@ -15,16 +15,17 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 from zoneinfo import ZoneInfo
 
-from app.schema import User
-from app.services.google_oauth import GoogleOauthService
 from google.oauth2.credentials import Credentials as OAuth2Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from pydantic import BaseModel
 from sqlmodel import Session
+
+from app.schema import User
+from app.services.google_oauth import GoogleOauthService
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class AvailableTimeSlot(BaseModel):
 class CalendarFreeTimeResponse(BaseModel):
     """カレンダー空き時間情報"""
 
-    available_slots: List[AvailableTimeSlot]
+    available_slots: list[AvailableTimeSlot]
     search_period: str
     total_free_hours: float
 
@@ -98,11 +99,11 @@ class GoogleCalendarService:
     Can be used as a context manager for automatic connection management.
     """
 
-    def __init__(self, user: Optional[User] = None, session: Optional[Session] = None):
+    def __init__(self, user: User | None = None, session: Session | None = None):
         self.user = user
         self.db_session = session
         self.calendar_service = None
-        self._credentials: Optional[OAuth2Credentials] = None
+        self._credentials: OAuth2Credentials | None = None
         self._is_connected = False
 
     async def __aenter__(self):
@@ -212,7 +213,7 @@ class GoogleCalendarService:
 
     # Calendar operation methods
 
-    async def list_calendars(self) -> List[Dict[str, Any]]:
+    async def list_calendars(self) -> list[dict[str, Any]]:
         """
         List all calendars for the authenticated user
 
@@ -251,7 +252,7 @@ class GoogleCalendarService:
         end_date: datetime,
         calendar_id: str = "primary",
         max_results: int = GoogleCalendarConfig.DEFAULT_MAX_RESULTS,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve calendar events for a specified date range
 
@@ -311,7 +312,7 @@ class GoogleCalendarService:
         except Exception as e:
             self._handle_calendar_api_error("get events", e)
 
-    async def _process_event_data(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_event_data(self, event: dict[str, Any]) -> dict[str, Any]:
         """Process raw event data from Google Calendar API"""
         start = event["start"].get("dateTime", event["start"].get("date"))
         end = event["end"].get("dateTime", event["end"].get("date"))
@@ -348,11 +349,11 @@ class GoogleCalendarService:
         start_time: datetime,
         end_time: datetime,
         calendar_id: str = "primary",
-        description: Optional[str] = None,
-        location: Optional[str] = None,
-        attendees: Optional[List[str]] = None,
-        recurrence: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        location: str | None = None,
+        attendees: list[str] | None = None,
+        recurrence: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a new calendar event
 
@@ -427,11 +428,11 @@ class GoogleCalendarService:
         start_time: datetime,
         end_time: datetime,
         calendar_id: str = "primary",
-        description: Optional[str] = None,
-        location: Optional[str] = None,
-        attendees: Optional[List[str]] = None,
-        recurrence: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        description: str | None = None,
+        location: str | None = None,
+        attendees: list[str] | None = None,
+        recurrence: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Update an existing calendar event
 
@@ -511,7 +512,7 @@ class GoogleCalendarService:
         self,
         event_id: str,
         calendar_id: str = "primary",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Delete a calendar event
 
@@ -548,7 +549,7 @@ class GoogleCalendarService:
         self,
         event_id: str,
         calendar_id: str = "primary",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get a specific calendar event
 
@@ -580,7 +581,7 @@ class GoogleCalendarService:
         start_date: datetime,
         end_date: datetime,
         calendar_id: str = "primary",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Calculate free time slots in the calendar within a specific date range
 
@@ -733,11 +734,11 @@ class GoogleCalendarService:
         self,
         start_date: datetime,
         end_date: datetime,
-        occupied_slots: List[tuple],
+        occupied_slots: list[tuple],
         min_slot_minutes: int = 30,
         work_start_hour: int = 9,
         work_end_hour: int = 18,
-    ) -> List["AvailableTimeSlot"]:
+    ) -> list["AvailableTimeSlot"]:
         """
         空き時間スロットを計算する
 
@@ -826,7 +827,7 @@ class GoogleCalendarService:
 
 @asynccontextmanager
 async def get_google_calendar_service(
-    user: Optional[User] = None, session: Optional[Session] = None
+    user: User | None = None, session: Session | None = None
 ):
     """
     Create and manage GoogleCalendarService as a context manager

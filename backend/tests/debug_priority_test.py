@@ -1,8 +1,9 @@
 """Debug test for priority sorting."""
 
 from sqlmodel import Session
-from app.schema import Tasks, TaskPriority, User
+
 from app.repositories.tasks import find_tasks
+from app.schema import TaskPriority, Tasks, User
 
 
 def test_debug_priority_sorting(session: Session, test_user: User):
@@ -49,8 +50,8 @@ def test_debug_priority_sorting(session: Session, test_user: User):
     print(f"Expected order: {expected_order}")
 
     # Debugging the SQL query
-    from sqlmodel import select
     from sqlalchemy import case
+    from sqlmodel import select
 
     stmt = select(Tasks).where(
         Tasks.user_id == test_user.id,

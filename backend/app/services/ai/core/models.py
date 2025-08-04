@@ -3,7 +3,7 @@ Core data models for AI services
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -26,7 +26,7 @@ class NextAction(BaseModel):
             return json.dumps(v)
         return v
 
-    def get_parameters_dict(self) -> Dict[str, Any]:
+    def get_parameters_dict(self) -> dict[str, Any]:
         """Get parameters as dictionary"""
         try:
             return json.loads(self.parameters)
@@ -39,7 +39,7 @@ class OperatorResponse(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    actions: List[NextAction]
+    actions: list[NextAction]
     analysis: str  # Prompt analysis result description
     confidence: float = Field(ge=0.0, le=1.0)  # Confidence level (0.0-1.0)
 
@@ -50,6 +50,6 @@ class SpokeResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     success: bool
-    data: Optional[Any] = None
-    error: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    data: Any | None = None
+    error: str | None = None
+    metadata: dict[str, Any] | None = None

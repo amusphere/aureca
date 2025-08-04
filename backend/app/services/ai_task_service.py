@@ -1,7 +1,9 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List
+
+from pydantic import BaseModel
+from sqlmodel import Session
 
 from app.models.google_mail import DraftModel
 from app.repositories.task_source import (
@@ -17,8 +19,6 @@ from app.services.google_calendar_service import (
     get_authenticated_google_calendar_service,
 )
 from app.utils.llm import llm_chat_completions_perse
-from pydantic import BaseModel
-from sqlmodel import Session
 
 
 class TaskGenerationRequest(BaseModel):
@@ -86,7 +86,7 @@ class AiTaskService:
 
     async def generate_tasks_from_new_emails(
         self, user: User, max_emails: int = 10
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         新着メールを取得し、LLMでタスクを生成してデータベースに保存する
 
@@ -183,7 +183,7 @@ class AiTaskService:
 
     async def generate_tasks_from_calendar_events(
         self, user: User, days_ahead: int = 7, max_events: int = 20
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         カレンダーイベントからタスクを生成してデータベースに保存する
 

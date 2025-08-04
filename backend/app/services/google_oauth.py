@@ -1,17 +1,17 @@
 import base64
 import os
 from datetime import datetime
-from typing import Optional
 
 import requests
-from app.models.google_oauth import GoogleCallbackRequest
-from app.repositories import google_oauth_token
-from app.schema import GoogleOAuthToken
 from cryptography.fernet import Fernet
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from sqlmodel import Session
+
+from app.models.google_oauth import GoogleCallbackRequest
+from app.repositories import google_oauth_token
+from app.schema import GoogleOAuthToken
 
 # Google OAuth設定
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -164,7 +164,7 @@ class GoogleOauthService:
             session=self.session,
         )
 
-    def get_credentials(self, user_id: int) -> Optional[Credentials]:
+    def get_credentials(self, user_id: int) -> Credentials | None:
         """ユーザーのGoogle認証情報を取得"""
         oauth_token = google_oauth_token.find_active_token_by_user_id(
             user_id=user_id, session=self.session

@@ -4,7 +4,7 @@ Logging system for AI assistant
 
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from ..core.models import NextAction
 
@@ -46,7 +46,7 @@ class AIAssistantLogger:
         """General warning log"""
         self.logger.warning(message)
 
-    def log_error(self, error: Exception, context: Dict[str, Any] = None):
+    def log_error(self, error: Exception, context: dict[str, Any] = None):
         """Error log with context"""
         log_message = f"Error occurred: {type(error).__name__}: {str(error)}"
 

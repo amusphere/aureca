@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.repositories.tasks import (
     complete_task,
@@ -38,7 +38,7 @@ class TasksSpoke(BaseSpoke):
             data={"error_type": error_type},
         )
 
-    def _validate_task_id(self, parameters: Dict[str, Any]) -> str:
+    def _validate_task_id(self, parameters: dict[str, Any]) -> str:
         """Validate and extract task ID from parameters"""
         task_id = parameters.get("task_id")
         if not task_id:
@@ -46,7 +46,7 @@ class TasksSpoke(BaseSpoke):
         return task_id
 
     def _validate_required_parameters(
-        self, parameters: Dict[str, Any], required_fields: List[str]
+        self, parameters: dict[str, Any], required_fields: list[str]
     ) -> None:
         """Validate that all required parameters are present and non-empty"""
         missing_fields = []
@@ -59,7 +59,7 @@ class TasksSpoke(BaseSpoke):
                 f"Required parameters are missing: {', '.join(missing_fields)}"
             )
 
-    def _convert_task_to_dict(self, task) -> Dict[str, Any]:
+    def _convert_task_to_dict(self, task) -> dict[str, Any]:
         """Convert Task object to dictionary for JSON serialization"""
         return {
             "uuid": str(task.uuid),
@@ -72,13 +72,13 @@ class TasksSpoke(BaseSpoke):
             "updated_at": task.updated_at,
         }
 
-    def _convert_tasks_to_list(self, tasks: List[Any]) -> List[Dict[str, Any]]:
+    def _convert_tasks_to_list(self, tasks: list[Any]) -> list[dict[str, Any]]:
         """Convert list of Task objects to list of dictionaries"""
         return [self._convert_task_to_dict(task) for task in tasks]
 
     async def _get_user_tasks(
-        self, completed: Optional[bool] = None, expires_at: Optional[Any] = None
-    ) -> List[Dict[str, Any]]:
+        self, completed: bool | None = None, expires_at: Any | None = None
+    ) -> list[dict[str, Any]]:
         """Get tasks for the current user with optional filters"""
         tasks = find_tasks(
             session=self.session,
@@ -93,7 +93,7 @@ class TasksSpoke(BaseSpoke):
     # =================
 
     async def action_get_incomplete_tasks(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Get all incomplete tasks for the current user"""
         try:
@@ -109,7 +109,7 @@ class TasksSpoke(BaseSpoke):
             )
 
     async def action_get_completed_tasks(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Get all completed tasks for the current user"""
         try:
@@ -125,7 +125,7 @@ class TasksSpoke(BaseSpoke):
             )
 
     async def action_search_tasks_more_than_expires_at(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Search tasks that expire after a specified timestamp"""
         try:
@@ -145,7 +145,7 @@ class TasksSpoke(BaseSpoke):
             self.logger.error(f"Error searching tasks: {str(e)}")
             return self._create_error_response(f"Error searching tasks: {str(e)}")
 
-    async def action_add_task(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_add_task(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Add a new task for the current user"""
         try:
             self._validate_required_parameters(parameters, ["title"])
@@ -170,7 +170,7 @@ class TasksSpoke(BaseSpoke):
             return self._create_error_response(f"Error adding task: {str(e)}")
 
     async def action_to_complete_task(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Mark a task as completed"""
         try:
@@ -189,7 +189,7 @@ class TasksSpoke(BaseSpoke):
             return self._create_error_response(f"Error completing task: {str(e)}")
 
     async def action_to_incomplete_task(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Mark a task as incomplete"""
         try:
@@ -210,7 +210,7 @@ class TasksSpoke(BaseSpoke):
             )
 
     async def action_update_user_task(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Update an existing task"""
         try:
@@ -236,7 +236,7 @@ class TasksSpoke(BaseSpoke):
             return self._create_error_response(f"Error updating task: {str(e)}")
 
     async def action_delete_user_task(
-        self, parameters: Dict[str, Any]
+        self, parameters: dict[str, Any]
     ) -> SpokeResponse:
         """Delete a task"""
         try:

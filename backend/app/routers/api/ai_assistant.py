@@ -1,5 +1,8 @@
 import logging
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session
+
 from app.database import get_session
 from app.models.ai_assistant import (
     AIRequestModel,
@@ -12,8 +15,6 @@ from app.services.ai import AIHub
 from app.services.ai_chat_usage_service import AIChatUsageService
 from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])

@@ -1,8 +1,11 @@
 """Integration tests for task priority sorting functionality."""
 
+from datetime import UTC
+
 from sqlmodel import Session
-from app.repositories.tasks import find_tasks, create_task
-from app.schema import Tasks, TaskPriority, User
+
+from app.repositories.tasks import create_task, find_tasks
+from app.schema import TaskPriority, Tasks, User
 
 
 class TestTaskPrioritySorting:
@@ -43,11 +46,11 @@ class TestTaskPrioritySorting:
 
     def test_priority_secondary_sorting_by_expires_at(self, session: Session, test_user: User):
         """Test secondary sorting by expires_at within same priority."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Create tasks with same priority but different expires_at
-        earlier_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
-        later_date = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        earlier_date = datetime(2024, 1, 15, tzinfo=UTC)
+        later_date = datetime(2024, 1, 20, tzinfo=UTC)
 
         create_task(
             session=session,

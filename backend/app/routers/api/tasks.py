@@ -1,5 +1,8 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session
+
 from app.database import get_session
-from app.models.task import TaskModel, CreateTaskRequest, UpdateTaskRequest
+from app.models.task import CreateTaskRequest, TaskModel, UpdateTaskRequest
 from app.repositories.tasks import (
     create_task,
     delete_task_by_uuid,
@@ -9,8 +12,6 @@ from app.repositories.tasks import (
 )
 from app.schema import User
 from app.services.auth import auth_user
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 

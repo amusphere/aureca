@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.15.2",
-    "black>=25.1.0",
     "clerk-backend-api>=2.0.2",
     "cryptography>=44.0.0",
     "dotenv>=0.9.9",

@@ -2,13 +2,14 @@
 
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+from sqlmodel import Session
+
 from app.database import get_session
 from app.repositories import ai_chat_usage
 from app.schema import User
 from app.services.auth import auth_user
-from fastapi.testclient import TestClient
 from main import app
-from sqlmodel import Session
 
 
 class TestAIChatUsageE2EIntegration:

@@ -24,8 +24,8 @@ from .core.models import NextAction, OperatorResponse, SpokeResponse
 from .spokes.base import BaseSpoke
 from .spokes.manager import SpokeManager
 from .utils.exceptions import (
-    AIAssistantError,
     ActionExecutionError,
+    AIAssistantError,
     AuthenticationError,
     ExternalServiceError,
     InvalidParameterError,

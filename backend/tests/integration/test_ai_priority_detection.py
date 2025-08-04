@@ -1,10 +1,11 @@
 """Tests for AI priority detection functionality."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+
 from sqlmodel import Session
 
-from app.services.ai_task_service import TaskGenerationResponse
 from app.schema import TaskPriority, User
+from app.services.ai_task_service import TaskGenerationResponse
 
 
 class TestAIPriorityDetection:

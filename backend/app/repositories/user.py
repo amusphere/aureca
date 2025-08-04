@@ -1,6 +1,7 @@
-from app.schema import User
 from sqlalchemy import select
 from sqlmodel import Session
+
+from app.schema import User
 
 
 def create_user(session: Session, data: dict) -> User:

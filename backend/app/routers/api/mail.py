@@ -1,3 +1,6 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import Session
+
 from app.database import get_session
 from app.models.google_mail import DraftModel
 from app.repositories.task_source import get_task_source_by_uuid
@@ -5,8 +8,6 @@ from app.schema import SourceType, User
 from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
 from app.services.gmail_service import get_authenticated_gmail_service
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
 
 router = APIRouter(prefix="/mail", tags=["Mail"])
 
