@@ -11,7 +11,7 @@ from app.models.ai_assistant import (
 )
 from app.models.ai_chat_usage import AIChatUsageResponse
 from app.schema import User
-from app.services.ai import AIHub
+from app.services.ai.core.hub import AIHub
 from app.services.ai_chat_usage_service import AIChatUsageService
 from app.services.ai_task_service import AiTaskService
 from app.services.auth import auth_user
