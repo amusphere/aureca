@@ -390,7 +390,7 @@ class TestAIChatUsageService:
         service.update_plan_limits(new_limits)
 
         # Verify the limits were updated in the configuration system
-        from app.config import get_ai_chat_plan_limit
+        from app.config.manager import get_ai_chat_plan_limit
 
         assert get_ai_chat_plan_limit("premium") == 100
         assert get_ai_chat_plan_limit("enterprise") == 500

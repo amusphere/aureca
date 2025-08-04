@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.config import AIChatPlanConfig, ConfigManager
+from app.config.manager import AIChatPlanConfig, ConfigManager
 
 
 @pytest.fixture

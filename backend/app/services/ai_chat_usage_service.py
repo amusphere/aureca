@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
-from app.config import (
+from app.config.manager import (
     get_ai_chat_plan_config,
     get_ai_chat_plan_limit,
     get_all_ai_chat_plans,
@@ -248,7 +248,7 @@ class AIChatUsageService:
         Args:
             new_limits: Dictionary of plan names to daily limits
         """
-        from app.config import update_ai_chat_plan_limit
+        from app.config.manager import update_ai_chat_plan_limit
 
         for plan_name, daily_limit in new_limits.items():
             update_ai_chat_plan_limit(plan_name, daily_limit)

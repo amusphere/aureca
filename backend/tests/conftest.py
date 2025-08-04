@@ -1,6 +1,8 @@
 """Test configuration and shared fixtures."""
 
+import sys
 from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -8,10 +10,15 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.config import config_manager
-from app.database import get_session
-from app.schema import TaskPriority, Tasks, User
-from main import app
+# Add the backend directory to Python path so we can import app modules
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+# Now import app modules after adding to path
+from app.config.manager import config_manager  # noqa: E402
+from app.database import get_session  # noqa: E402
+from app.schema import TaskPriority, Tasks, User  # noqa: E402
+from main import app  # noqa: E402
 
 
 # Protect config file from being modified during tests

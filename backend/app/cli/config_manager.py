@@ -17,7 +17,7 @@ from pathlib import Path
 # Add the app directory to the path so we can import modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.config import config_manager, get_all_ai_chat_plans, update_ai_chat_plan_limit
+from app.config.manager import config_manager, get_all_ai_chat_plans, update_ai_chat_plan_limit
 
 
 def list_plans():
