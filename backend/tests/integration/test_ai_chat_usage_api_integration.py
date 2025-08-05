@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -13,6 +14,22 @@ from main import app
 
 class TestAIChatUsageAPIIntegration:
     """Test AI Chat usage API endpoints integration."""
+
+    @pytest.fixture(autouse=True)
+    def mock_config_values(self):
+        """Mock config values to ensure consistent test behavior."""
+        with patch('app.services.ai_chat_usage_service.get_ai_chat_plan_limit') as mock_get_limit:
+            def get_limit_side_effect(plan_name):
+                limits = {
+                    "free": 0,
+                    "basic": 10,
+                    "premium": 50,
+                    "enterprise": -1,
+                }
+                return limits.get(plan_name, 0)
+
+            mock_get_limit.side_effect = get_limit_side_effect
+            yield
 
     def test_get_usage_endpoint_success(self, client: TestClient, session: Session, test_user: User):
         """Test GET /api/ai/usage endpoint returns correct usage stats."""

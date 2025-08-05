@@ -354,7 +354,7 @@ class TestAdminAPIErrorHandling:
         )
         assert response.status_code == 422
 
-    @patch("app.config.config_manager.update_ai_chat_plan_limit")
+    @patch("app.routers.api.admin.update_ai_chat_plan_limit")
     def test_config_update_failure(self, mock_update):
         """Test handling of configuration update failures"""
         # Mock the update to fail

@@ -14,6 +14,22 @@ from app.services.ai_chat_usage_service import AIChatUsageService
 class TestAIProcessUsageLimits:
     """Test AI process endpoint with usage limits."""
 
+    @pytest.fixture(autouse=True)
+    def mock_config_values(self):
+        """Mock config values to ensure consistent test behavior."""
+        with patch('app.services.ai_chat_usage_service.get_ai_chat_plan_limit') as mock_get_limit:
+            def get_limit_side_effect(plan_name):
+                limits = {
+                    "free": 0,
+                    "basic": 10,
+                    "premium": 50,
+                    "enterprise": -1,
+                }
+                return limits.get(plan_name, 0)
+
+            mock_get_limit.side_effect = get_limit_side_effect
+            yield
+
     async def test_ai_process_with_usage_limit_check(self, session: Session, test_user: User):
         """Test that AI process endpoint checks usage limits before processing."""
         # Create a usage record that's at the limit
