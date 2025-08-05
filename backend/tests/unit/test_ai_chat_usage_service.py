@@ -17,7 +17,8 @@ class TestAIChatUsageService:
     @pytest.fixture(autouse=True)
     def mock_config_values(self):
         """Mock config values to ensure consistent test behavior."""
-        with patch('app.services.ai_chat_usage_service.get_ai_chat_plan_limit') as mock_get_limit:
+        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+
             def get_limit_side_effect(plan_name):
                 limits = {
                     "free": 0,
@@ -29,33 +30,53 @@ class TestAIChatUsageService:
 
             mock_get_limit.side_effect = get_limit_side_effect
 
-            with patch('app.services.ai_chat_usage_service.get_all_ai_chat_plans') as mock_get_all:
+            with patch("app.services.ai_chat_usage_service.get_all_ai_chat_plans") as mock_get_all:
                 from app.config.manager import AIChatPlanConfig
+
                 mock_plans = {
                     "free": AIChatPlanConfig(
                         plan_name="free",
                         daily_limit=0,
                         description="Free plan - No AI chat access",
-                        features=["Basic task management", "Manual task creation", "Google Calendar integration"]
+                        features=["Basic task management", "Manual task creation", "Google Calendar integration"],
                     ),
                     "basic": AIChatPlanConfig(
                         plan_name="basic",
                         daily_limit=10,
                         description="Basic plan - 10 AI chats per day",
-                        features=["Basic task management", "AI chat assistance", "Google integrations", "Email task generation", "Calendar task sync"]
+                        features=[
+                            "Basic task management",
+                            "AI chat assistance",
+                            "Google integrations",
+                            "Email task generation",
+                            "Calendar task sync",
+                        ],
                     ),
                     "premium": AIChatPlanConfig(
                         plan_name="premium",
                         daily_limit=50,
                         description="Premium plan - 50 AI chats per day",
-                        features=["All basic features", "Priority support", "Advanced AI features", "Bulk task operations", "Custom integrations"]
+                        features=[
+                            "All basic features",
+                            "Priority support",
+                            "Advanced AI features",
+                            "Bulk task operations",
+                            "Custom integrations",
+                        ],
                     ),
                     "enterprise": AIChatPlanConfig(
                         plan_name="enterprise",
                         daily_limit=-1,
                         description="Enterprise plan - Unlimited AI chats",
-                        features=["All premium features", "Custom integrations", "Dedicated support", "Advanced analytics", "Team collaboration", "Custom workflows"]
-                    )
+                        features=[
+                            "All premium features",
+                            "Custom integrations",
+                            "Dedicated support",
+                            "Advanced analytics",
+                            "Team collaboration",
+                            "Custom workflows",
+                        ],
+                    ),
                 }
                 mock_get_all.return_value = mock_plans
                 yield

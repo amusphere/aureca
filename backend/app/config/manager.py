@@ -49,7 +49,7 @@ class ConfigManager:
                     self._config_data = json.load(f)
                 # Update last modified time
                 self._last_modified = os.path.getmtime(self.config_file)
-            except (FileNotFoundError, json.JSONDecodeError) as e:
+            except (FileNotFoundError, json.JSONDecodeError):
                 # Return default configuration if file doesn't exist or is invalid
                 self._config_data = self._get_default_config()
                 self._last_modified = None
@@ -62,11 +62,7 @@ class ConfigManager:
                 "free": {
                     "daily_limit": 0,
                     "description": "Free plan - No AI chat access",
-                    "features": [
-                        "Basic task management",
-                        "Manual task creation",
-                        "Google Calendar integration"
-                    ]
+                    "features": ["Basic task management", "Manual task creation", "Google Calendar integration"],
                 },
                 "basic": {
                     "daily_limit": 10,
@@ -76,8 +72,8 @@ class ConfigManager:
                         "AI chat assistance",
                         "Google integrations",
                         "Email task generation",
-                        "Calendar task sync"
-                    ]
+                        "Calendar task sync",
+                    ],
                 },
                 "premium": {
                     "daily_limit": 50,
@@ -87,8 +83,8 @@ class ConfigManager:
                         "Priority support",
                         "Advanced AI features",
                         "Bulk task operations",
-                        "Custom integrations"
-                    ]
+                        "Custom integrations",
+                    ],
                 },
                 "enterprise": {
                     "daily_limit": -1,
@@ -99,17 +95,17 @@ class ConfigManager:
                         "Dedicated support",
                         "Advanced analytics",
                         "Team collaboration",
-                        "Custom workflows"
-                    ]
-                }
+                        "Custom workflows",
+                    ],
+                },
             },
             "settings": {
                 "enable_dynamic_limits": True,
                 "cache_duration_minutes": 5,
                 "reset_timezone": "UTC",
-                "enable_usage_analytics": True
+                "enable_usage_analytics": True,
             },
-            "last_updated": "2025-01-03T00:00:00Z"
+            "last_updated": "2025-01-03T00:00:00Z",
         }
 
     def _load_plans(self) -> dict[str, AIChatPlanConfig]:
@@ -214,7 +210,14 @@ class ConfigManager:
         return self.get_all_plans()
 
     def update_ai_chat_plan_limit(
-        self, plan_name: str, limit_or_daily_limit=None, description: str = None, features: list[str] = None, *, daily_limit: int = None, new_limit: int = None
+        self,
+        plan_name: str,
+        limit_or_daily_limit=None,
+        description: str = None,
+        features: list[str] = None,
+        *,
+        daily_limit: int = None,
+        new_limit: int = None,
     ) -> bool:
         """Update daily limit for a specific plan (alias)."""
         # Support multiple calling patterns for backward compatibility
@@ -231,7 +234,9 @@ class ConfigManager:
             raise ValueError("Either positional limit, daily_limit, or new_limit must be provided")
         return self.update_plan_limit(plan_name, limit, description, features)
 
-    def update_plan_limit(self, plan_name: str, new_limit: int, description: str = None, features: list[str] = None) -> bool:
+    def update_plan_limit(
+        self, plan_name: str, new_limit: int, description: str = None, features: list[str] = None
+    ) -> bool:
         """Update daily limit for a specific plan."""
         config = self._load_config()
 
@@ -278,7 +283,15 @@ def get_ai_chat_plan_limit(plan_name: str) -> int:
     return config_manager.get_plan_limit(plan_name)
 
 
-def update_ai_chat_plan_limit(plan_name: str, limit_or_daily_limit=None, description: str = None, features: list[str] = None, *, daily_limit: int = None, new_limit: int = None) -> bool:
+def update_ai_chat_plan_limit(
+    plan_name: str,
+    limit_or_daily_limit=None,
+    description: str = None,
+    features: list[str] = None,
+    *,
+    daily_limit: int = None,
+    new_limit: int = None,
+) -> bool:
     """Update daily limit for a specific AI chat plan."""
     # Support multiple calling patterns for backward compatibility
     if limit_or_daily_limit is not None:

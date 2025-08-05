@@ -19,7 +19,8 @@ class TestAIChatUsageE2EIntegration:
     @pytest.fixture(autouse=True)
     def mock_config_values(self):
         """Mock config values to ensure consistent test behavior."""
-        with patch('app.services.ai_chat_usage_service.get_ai_chat_plan_limit') as mock_get_limit:
+        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+
             def get_limit_side_effect(plan_name):
                 limits = {
                     "free": 0,
