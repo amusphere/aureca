@@ -242,6 +242,7 @@ class ConfigManager:
         # Dynamic plan configuration should be handled through database or environment variables
         # This method is kept for backward compatibility but does not modify the config file
         import logging
+
         logger = logging.getLogger(__name__)
         logger.warning(f"Configuration file updates are disabled. Plan '{plan_name}' update ignored.")
         return False

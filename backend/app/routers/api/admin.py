@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session
 
-from app.config.manager import config_manager, get_all_ai_chat_plans, update_ai_chat_plan_limit
+from app.config.manager import config_manager
 from app.database import get_session
 from app.services.ai_chat_usage_service import AIChatUsageService
 
