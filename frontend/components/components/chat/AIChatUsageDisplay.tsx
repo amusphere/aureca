@@ -36,23 +36,23 @@ export function AIChatUsageDisplay({
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-destructive">
-              {AIChatUsageUtils.getErrorTitle(error.errorCode as AIChatUsageErrorCode)}
+              {AIChatUsageUtils.getErrorTitle(error.error_code as AIChatUsageErrorCode)}
             </p>
             {variant === 'detailed' && (
               <p className="text-xs text-destructive/90 mt-1">
-                {AIChatUsageUtils.getErrorMessage(error.errorCode as AIChatUsageErrorCode, 'detailed')}
+                {AIChatUsageUtils.getErrorMessage(error.error_code as AIChatUsageErrorCode, 'detailed')}
               </p>
             )}
 
             {/* Reset time information */}
-            {error.resetTime && (
+            {error.reset_time && (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center gap-1 text-xs text-destructive/80">
                   <Clock className="h-3 w-3" />
-                  <span>リセット時刻: {AIChatUsageUtils.formatResetTime(error.resetTime)}</span>
+                  <span>リセット時刻: {AIChatUsageUtils.formatResetTime(error.reset_time)}</span>
                 </div>
                 <p className="text-xs text-destructive/70 ml-4">
-                  ({AIChatUsageUtils.getTimeUntilReset(error.resetTime)}にリセット)
+                  ({AIChatUsageUtils.getTimeUntilReset(error.reset_time)}にリセット)
                 </p>
               </div>
             )}
@@ -83,8 +83,8 @@ export function AIChatUsageDisplay({
                     再確認
                   </Button>
                 )}
-                {AIChatUsageUtils.getErrorActionText(error.errorCode as AIChatUsageErrorCode) &&
-                  AIChatUsageUtils.isRecoverableError(error.errorCode as AIChatUsageErrorCode) && (
+                {AIChatUsageUtils.getErrorActionText(error.error_code as AIChatUsageErrorCode) &&
+                  AIChatUsageUtils.isRecoverableError(error.error_code as AIChatUsageErrorCode) && (
                     <Button
                       size="sm"
                       variant="default"
@@ -94,7 +94,7 @@ export function AIChatUsageDisplay({
                         console.log('Navigate to plan upgrade');
                       }}
                     >
-                      {AIChatUsageUtils.getErrorActionText(error.errorCode as AIChatUsageErrorCode)}
+                      {AIChatUsageUtils.getErrorActionText(error.error_code as AIChatUsageErrorCode)}
                     </Button>
                   )}
               </div>
@@ -117,8 +117,8 @@ export function AIChatUsageDisplay({
 
   // Usage display
   if (usage) {
-    const canUseChat = usage.canUseChat;
-    const isExhausted = usage.remainingCount <= 0;
+    const canUseChat = usage.can_use_chat;
+    const isExhausted = usage.remaining_count <= 0;
 
     return (
       <div className={`space-y-2 ${className}`}>
@@ -126,9 +126,9 @@ export function AIChatUsageDisplay({
         <div className="flex items-center gap-2">
           <Badge
             variant={canUseChat ? "default" : "destructive"}
-            className={`text-xs font-medium ${AIChatUsageUtils.getUsageStatusColor(usage.remainingCount, usage.dailyLimit)}`}
+            className={`text-xs font-medium ${AIChatUsageUtils.getUsageStatusColor(usage.remaining_count, usage.daily_limit)}`}
           >
-            {AIChatUsageUtils.formatUsageDisplay(usage.remainingCount, usage.dailyLimit)}
+            {AIChatUsageUtils.formatUsageDisplay(usage.remaining_count, usage.daily_limit)}
           </Badge>
           {loading && (
             <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -139,14 +139,14 @@ export function AIChatUsageDisplay({
         {variant === 'detailed' && (
           <div className="space-y-1" data-testid="detailed-usage-info">
             <p className="text-xs text-muted-foreground">
-              残り利用回数: {usage.remainingCount}回
+              残り利用回数: {usage.remaining_count}回
             </p>
-            {usage.resetTime && (
+            {usage.reset_time && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
                 <Clock className="h-3 w-3" />
                 <span>
-                  リセット: {AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}後
-                  ({AIChatUsageUtils.formatResetTime(usage.resetTime)})
+                  リセット: {AIChatUsageUtils.getTimeUntilReset(usage.reset_time)}後
+                  ({AIChatUsageUtils.formatResetTime(usage.reset_time)})
                 </span>
               </div>
             )}
@@ -157,9 +157,9 @@ export function AIChatUsageDisplay({
         {isExhausted && variant === 'detailed' && (
           <div className="p-2 bg-muted/50 border border-border/30 rounded text-xs text-muted-foreground" data-testid="usage-exhausted-warning">
             本日の利用回数上限に達しました。
-            {usage.resetTime && (
+            {usage.reset_time && (
               <span className="block mt-1">
-                {AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}後にリセットされます。
+                {AIChatUsageUtils.getTimeUntilReset(usage.reset_time)}後にリセットされます。
               </span>
             )}
           </div>

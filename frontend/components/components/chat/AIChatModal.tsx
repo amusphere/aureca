@@ -144,9 +144,9 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               <div className="hidden sm:flex items-center gap-2 ml-auto mr-4">
                 <Badge
                   variant={canUseChat ? "default" : "destructive"}
-                  className={`text-xs font-medium ${AIChatUsageUtils.getUsageStatusColor(usage.remainingCount, usage.dailyLimit)}`}
+                  className={`text-xs font-medium ${AIChatUsageUtils.getUsageStatusColor(usage.remaining_count, usage.daily_limit)}`}
                 >
-                  {AIChatUsageUtils.formatUsageDisplay(usage.remainingCount, usage.dailyLimit)}
+                  {AIChatUsageUtils.formatUsageDisplay(usage.remaining_count, usage.daily_limit)}
                 </Badge>
                 {usageLoading && (
                   <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -176,18 +176,18 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                 </span>
                 <Badge
                   variant={canUseChat ? "default" : "destructive"}
-                  className={`text-xs ${AIChatUsageUtils.getUsageStatusColor(usage.remainingCount, usage.dailyLimit)}`}
+                  className={`text-xs ${AIChatUsageUtils.getUsageStatusColor(usage.remaining_count, usage.daily_limit)}`}
                 >
-                  {AIChatUsageUtils.formatUsageDisplay(usage.remainingCount, usage.dailyLimit)}
+                  {AIChatUsageUtils.formatUsageDisplay(usage.remaining_count, usage.daily_limit)}
                 </Badge>
               </div>
               {usageLoading && (
                 <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
               )}
             </div>
-            {usage.resetTime && (
+            {usage.reset_time && (
               <div className="mt-2 text-xs text-muted-foreground/70">
-                リセット: {AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}後
+                リセット: {AIChatUsageUtils.getTimeUntilReset(usage.reset_time)}後
               </div>
             )}
           </div>
@@ -202,18 +202,18 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                 <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-destructive">
-                    {AIChatUsageUtils.getErrorTitle(usageError.errorCode as AIChatUsageErrorCode)}
+                    {AIChatUsageUtils.getErrorTitle(usageError.error_code as AIChatUsageErrorCode)}
                   </p>
                   <p className="text-xs text-destructive/90 mt-1">
-                    {AIChatUsageUtils.getErrorMessage(usageError.errorCode as AIChatUsageErrorCode, 'detailed')}
+                    {AIChatUsageUtils.getErrorMessage(usageError.error_code as AIChatUsageErrorCode, 'detailed')}
                   </p>
-                  {usageError.resetTime && (
+                  {usageError.reset_time && (
                     <div className="mt-2 space-y-1">
                       <p className="text-xs text-destructive/80">
-                        リセット時刻: {AIChatUsageUtils.formatResetTime(usageError.resetTime)}
+                        リセット時刻: {AIChatUsageUtils.formatResetTime(usageError.reset_time)}
                       </p>
                       <p className="text-xs text-destructive/70">
-                        ({AIChatUsageUtils.getTimeUntilReset(usageError.resetTime)}にリセット)
+                        ({AIChatUsageUtils.getTimeUntilReset(usageError.reset_time)}にリセット)
                       </p>
                     </div>
                   )}
@@ -236,8 +236,8 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                       <RefreshCw className="h-3 w-3 mr-1" />
                       再確認
                     </Button>
-                    {AIChatUsageUtils.getErrorActionText(usageError.errorCode as AIChatUsageErrorCode) &&
-                      AIChatUsageUtils.isRecoverableError(usageError.errorCode as AIChatUsageErrorCode) && (
+                    {AIChatUsageUtils.getErrorActionText(usageError.error_code as AIChatUsageErrorCode) &&
+                      AIChatUsageUtils.isRecoverableError(usageError.error_code as AIChatUsageErrorCode) && (
                         <Button
                           size="sm"
                           variant="default"
@@ -247,7 +247,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                             console.log('Navigate to plan upgrade');
                           }}
                         >
-                          {AIChatUsageUtils.getErrorActionText(usageError.errorCode as AIChatUsageErrorCode)}
+                          {AIChatUsageUtils.getErrorActionText(usageError.error_code as AIChatUsageErrorCode)}
                         </Button>
                       )}
                   </div>
@@ -308,13 +308,13 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                     本日の利用回数上限に達しました
                   </p>
                 </div>
-                {usage?.resetTime && (
+                {usage?.reset_time && (
                   <div className="mt-2 ml-6 space-y-1">
                     <p className="text-xs text-muted-foreground/80">
-                      リセット時刻: {AIChatUsageUtils.formatResetTime(usage.resetTime)}
+                      リセット時刻: {AIChatUsageUtils.formatResetTime(usage.reset_time)}
                     </p>
                     <p className="text-xs text-muted-foreground/70">
-                      ({AIChatUsageUtils.getTimeUntilReset(usage.resetTime)}にリセット)
+                      ({AIChatUsageUtils.getTimeUntilReset(usage.reset_time)}にリセット)
                     </p>
                   </div>
                 )}

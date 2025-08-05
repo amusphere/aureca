@@ -88,9 +88,9 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
       setUsageError({
         error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-        remainingCount: 0,
-        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+        error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+        remaining_count: 0,
+        reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
       });
 
       setUsage(null);
@@ -164,9 +164,9 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
       const systemError: AIChatUsageError = {
         error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-        remainingCount: 0,
-        resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+        remaining_count: 0,
+        reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
       setUsageError(systemError);
@@ -200,14 +200,16 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
   // Determine the primary error to return (usage errors take precedence)
   const primaryError = usageError || (systemError ? {
     error: AIChatUsageUtils.getErrorMessage(AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR, 'detailed'),
-    errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-    remainingCount: 0,
-    resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+    remaining_count: 0,
+    reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   } : null);
 
   // Computed values for easier usage in components
-  const isUsageExhausted = usage ? usage.remainingCount <= 0 : true;
-  const canUseChat = usage ? usage.canUseChat : false;
+  const isUsageExhausted = usage ? usage.remaining_count <= 0 : true;
+  const canUseChat = usage ? usage.can_use_chat : false;
+
+
 
   return {
     // State

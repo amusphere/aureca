@@ -9,7 +9,7 @@ const mockUseAIChatUsage = {
   usage: null,
   loading: false,
   error: null,
-  canUseChat: true,
+  can_use_chat: true,
   isUsageExhausted: false,
   refreshUsage: vi.fn(),
   incrementUsage: vi.fn(),
@@ -38,7 +38,7 @@ vi.mock('../../../components/components/chat/ChatInput', () => ({
     onSendMessage: (message: string) => void;
     isLoading: boolean;
     disabled: boolean;
-    usage?: { remainingCount: number; dailyLimit: number } | null;
+    usage?: { remaining_count: number; daily_limit: number } | null;
     usageError?: { error: string } | null;
   }) => (
     <div data-testid="chat-input">
@@ -55,7 +55,7 @@ vi.mock('../../../components/components/chat/ChatInput', () => ({
       >
         Send
       </button>
-      {usage && <div data-testid="usage-info">{usage.remainingCount}/{usage.dailyLimit}</div>}
+      {usage && <div data-testid="usage-info">{usage.remaining_count}/{usage.daily_limit}</div>}
       {usageError && <div data-testid="usage-error">{usageError.error}</div>}
     </div>
   ),
@@ -100,7 +100,7 @@ describe('AIChatModal', () => {
       usage: null,
       loading: false,
       error: null,
-      canUseChat: true,
+      can_use_chat: true,
       isUsageExhausted: false,
       refreshUsage: vi.fn(),
       incrementUsage: vi.fn(),
@@ -177,12 +177,12 @@ describe('AIChatModal', () => {
     it('利用状況が正常に表示される', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
-        canUseChat: true,
+        can_use_chat: true,
         isUsageExhausted: false,
       })
 
@@ -194,12 +194,12 @@ describe('AIChatModal', () => {
     it('利用回数が0の場合、適切なメッセージが表示される', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 0,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: false,
+          remaining_count: 0,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: false,
         },
-        canUseChat: false,
+        can_use_chat: false,
         isUsageExhausted: true,
       })
 
@@ -212,10 +212,10 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         loading: true,
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
       })
 
@@ -231,14 +231,14 @@ describe('AIChatModal', () => {
     it('利用制限エラーが適切に表示される', () => {
       const usageError = {
         error: '本日の利用回数上限に達しました',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -250,14 +250,14 @@ describe('AIChatModal', () => {
     it('プラン制限エラーが適切に表示される', () => {
       const usageError = {
         error: '現在のプランではAIChatをご利用いただけません',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -269,14 +269,14 @@ describe('AIChatModal', () => {
     it('システムエラーが適切に表示される', () => {
       const usageError = {
         error: '一時的なエラーが発生しました',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -292,9 +292,9 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         error: {
           error: '本日の利用回数上限に達しました',
-          errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-          remainingCount: 0,
-          resetTime: '2024-01-02T00:00:00Z',
+          error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+          remaining_count: 0,
+          reset_time: '2024-01-02T00:00:00Z',
         },
         clearError,
       })
@@ -314,9 +314,9 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         error: {
           error: '本日の利用回数上限に達しました',
-          errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-          remainingCount: 0,
-          resetTime: '2024-01-02T00:00:00Z',
+          error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+          remaining_count: 0,
+          reset_time: '2024-01-02T00:00:00Z',
         },
         refreshUsage,
       })
@@ -370,21 +370,24 @@ describe('AIChatModal', () => {
       const user = userEvent.setup()
       const sendMessage = vi.fn()
       const incrementUsage = vi.fn().mockResolvedValue({
-        remainingCount: 4,
-        dailyLimit: 10,
-        resetTime: '2024-01-02T00:00:00Z',
-        canUseChat: true,
+        remaining_count: 4,
+        daily_limit: 10,
+        reset_time: '2024-01-02T00:00:00Z',
+        can_use_chat: true,
       })
 
       Object.assign(mockUseMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: true,
+        can_use_chat: true,
         incrementUsage,
       })
 
       render(<AIChatModal {...defaultProps} />)
 
+      const messageInput = screen.getByTestId('message-input')
       const sendButton = screen.getByTestId('send-button')
+
+      await user.type(messageInput, 'test message')
       await user.click(sendButton)
 
       expect(sendMessage).toHaveBeenCalledWith('test message')
@@ -397,7 +400,7 @@ describe('AIChatModal', () => {
 
       Object.assign(mockUseMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: false,
+        can_use_chat: false,
         isUsageExhausted: true,
       })
 
@@ -420,7 +423,7 @@ describe('AIChatModal', () => {
         isLoading: true,
       })
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: true,
+        can_use_chat: true,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -439,7 +442,7 @@ describe('AIChatModal', () => {
 
       Object.assign(mockUseMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: true,
+        can_use_chat: true,
         loading: true,
       })
 
@@ -457,7 +460,7 @@ describe('AIChatModal', () => {
   describe('UI制御', () => {
     it('利用可能な場合、緑色のステータスインジケーターが表示される', () => {
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: true,
+        can_use_chat: true,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -468,7 +471,7 @@ describe('AIChatModal', () => {
 
     it('利用不可の場合、赤色のステータスインジケーターが表示される', () => {
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -479,7 +482,7 @@ describe('AIChatModal', () => {
 
     it('入力フィールドが利用状況に応じて無効化される', () => {
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: false,
+        can_use_chat: false,
         isUsageExhausted: true,
       })
 
@@ -491,7 +494,7 @@ describe('AIChatModal', () => {
 
     it('送信ボタンが利用状況に応じて無効化される', () => {
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: false,
+        can_use_chat: false,
         isUsageExhausted: true,
       })
 
@@ -506,10 +509,10 @@ describe('AIChatModal', () => {
     it('デスクトップ表示で利用状況が適切に表示される', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
       })
 
@@ -523,10 +526,10 @@ describe('AIChatModal', () => {
     it('モバイル表示で利用状況が適切に表示される', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
       })
 
@@ -544,14 +547,14 @@ describe('AIChatModal', () => {
       const resetTime = '2024-01-02T15:30:00Z'
       const usageError = {
         error: '本日の利用回数上限に達しました',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-        remainingCount: 0,
+        error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+        remaining_count: 0,
         resetTime,
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -563,14 +566,14 @@ describe('AIChatModal', () => {
     it('プラン制限エラーでアップグレードボタンが表示される', () => {
       const usageError = {
         error: '現在のプランではAIChatをご利用いただけません',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -581,14 +584,14 @@ describe('AIChatModal', () => {
     it('システムエラーではアップグレードボタンが表示されない', () => {
       const usageError = {
         error: '一時的なエラーが発生しました',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -599,14 +602,14 @@ describe('AIChatModal', () => {
     it('エラー状態でもメッセージ履歴は表示される', () => {
       const usageError = {
         error: '本日の利用回数上限に達しました',
-        errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-        remainingCount: 0,
-        resetTime: '2024-01-02T00:00:00Z',
+        error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+        remaining_count: 0,
+        reset_time: '2024-01-02T00:00:00Z',
       }
 
       Object.assign(mockUseAIChatUsage, {
         error: usageError,
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       Object.assign(mockUseMessages, {
@@ -634,12 +637,12 @@ describe('AIChatModal', () => {
       testCases.forEach(({ remaining, daily }) => {
         Object.assign(mockUseAIChatUsage, {
           usage: {
-            remainingCount: remaining,
-            dailyLimit: daily,
-            resetTime: '2024-01-02T00:00:00Z',
-            canUseChat: remaining > 0,
+            remaining_count: remaining,
+            daily_limit: daily,
+            reset_time: '2024-01-02T00:00:00Z',
+            can_use_chat: remaining > 0,
           },
-          canUseChat: remaining > 0,
+          can_use_chat: remaining > 0,
           isUsageExhausted: remaining === 0,
         })
 
@@ -656,12 +659,12 @@ describe('AIChatModal', () => {
     it('無制限プランの場合、適切な表示がされる', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 999,
-          dailyLimit: -1,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 999,
+          daily_limit: -1,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
-        canUseChat: true,
+        can_use_chat: true,
         isUsageExhausted: false,
       })
 
@@ -675,10 +678,10 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         loading: true,
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
       })
 
@@ -694,7 +697,7 @@ describe('AIChatModal', () => {
       })
 
       Object.assign(mockUseAIChatUsage, {
-        canUseChat: true,
+        can_use_chat: true,
         isUsageExhausted: false,
       })
 
@@ -738,10 +741,10 @@ describe('AIChatModal', () => {
     it('スクリーンリーダー用のテキストが適切に設定されている', () => {
       Object.assign(mockUseAIChatUsage, {
         usage: {
-          remainingCount: 3,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 3,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
       })
 
@@ -759,11 +762,11 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         error: {
           error: '本日の利用回数上限に達しました',
-          errorCode: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
-          remainingCount: 0,
-          resetTime: '2024-01-02T00:00:00Z',
+          error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
+          remaining_count: 0,
+          reset_time: '2024-01-02T00:00:00Z',
         },
-        canUseChat: false,
+        can_use_chat: false,
       })
 
       const { rerender } = render(<AIChatModal {...defaultProps} />)
@@ -774,12 +777,12 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         error: null,
         usage: {
-          remainingCount: 5,
-          dailyLimit: 10,
-          resetTime: '2024-01-02T00:00:00Z',
-          canUseChat: true,
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
         },
-        canUseChat: true,
+        can_use_chat: true,
         isUsageExhausted: false,
       })
 
@@ -796,9 +799,9 @@ describe('AIChatModal', () => {
       Object.assign(mockUseAIChatUsage, {
         error: {
           error: '一時的なエラーが発生しました',
-          errorCode: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
-          remainingCount: 0,
-          resetTime: '2024-01-02T00:00:00Z',
+          error_code: AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR,
+          remaining_count: 0,
+          reset_time: '2024-01-02T00:00:00Z',
         },
         refreshUsage,
       })

@@ -26,9 +26,9 @@ export async function GET(): Promise<NextResponse> {
       if (status === 403 || status === 429) {
         const errorResponse: AIChatUsageError = {
           error: response.error.message,
-          errorCode: response.error.details?.error_code || 'SYSTEM_ERROR',
-          remainingCount: response.error.details?.remaining_count || 0,
-          resetTime: response.error.details?.reset_time || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          error_code: response.error.details?.error_code || 'SYSTEM_ERROR',
+          remaining_count: response.error.details?.remaining_count || 0,
+          reset_time: response.error.details?.reset_time || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         };
 
         return NextResponse.json(errorResponse, { status });
@@ -38,9 +38,9 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json(
         {
           error: response.error.message || 'システムエラーが発生しました',
-          errorCode: 'SYSTEM_ERROR',
-          remainingCount: 0,
-          resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          error_code: 'SYSTEM_ERROR',
+          remaining_count: 0,
+          reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         } as AIChatUsageError,
         { status }
       );
@@ -55,9 +55,9 @@ export async function GET(): Promise<NextResponse> {
 
     const errorResponse: AIChatUsageError = {
       error: 'システムエラーが発生しました',
-      errorCode: 'SYSTEM_ERROR',
-      remainingCount: 0,
-      resetTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      error_code: 'SYSTEM_ERROR',
+      remaining_count: 0,
+      reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
 
     return NextResponse.json(errorResponse, { status: 500 });

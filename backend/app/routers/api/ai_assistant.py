@@ -90,14 +90,8 @@ async def get_ai_chat_usage_endpoint(
 
     try:
         usage_stats = await usage_service.check_usage_limit(user)
-        # Extract only the fields needed for the response model
-        response_data = {
-            "remaining_count": usage_stats["remaining_count"],
-            "daily_limit": usage_stats["daily_limit"],
-            "reset_time": usage_stats["reset_time"],
-            "can_use_chat": usage_stats["can_use_chat"],
-        }
-        return AIChatUsageResponse(**response_data)
+        # Return the usage stats directly as they already match the response model
+        return AIChatUsageResponse(**usage_stats)
     except HTTPException:
         # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
         raise
@@ -125,14 +119,8 @@ async def increment_ai_chat_usage_endpoint(
 
     try:
         updated_stats = await usage_service.increment_usage(user)
-        # Extract only the fields needed for the response model
-        response_data = {
-            "remaining_count": updated_stats["remaining_count"],
-            "daily_limit": updated_stats["daily_limit"],
-            "reset_time": updated_stats["reset_time"],
-            "can_use_chat": updated_stats["can_use_chat"],
-        }
-        return AIChatUsageResponse(**response_data)
+        # Return the updated stats directly as they already match the response model
+        return AIChatUsageResponse(**updated_stats)
     except HTTPException:
         # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
         raise

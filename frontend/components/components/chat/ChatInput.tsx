@@ -31,16 +31,16 @@ export default function AIChatInput({
   const [message, setMessage] = useState("");
 
   // Determine if usage limits should disable the input
-  const isUsageLimited = usageError !== null || (usage && !usage.canUseChat);
+  const isUsageLimited = usageError !== null || (usage && !usage.can_use_chat);
   const isInputDisabled = disabled || isUsageLimited;
 
   // Generate appropriate placeholder text based on usage status
   const getPlaceholderText = (): string => {
     if (usageError) {
-      return AIChatUsageUtils.getErrorMessage(usageError.errorCode as AIChatUsageErrorCode, 'placeholder');
+      return AIChatUsageUtils.getErrorMessage(usageError.error_code as AIChatUsageErrorCode, 'placeholder');
     }
 
-    if (usage && !usage.canUseChat) {
+    if (usage && !usage.can_use_chat) {
       return "利用制限により現在ご利用いただけません。";
     }
 

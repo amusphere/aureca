@@ -9,13 +9,13 @@
  */
 export interface AIChatUsage {
   /** Number of remaining chat uses for today */
-  remainingCount: number;
+  remaining_count: number;
   /** Daily limit for the user's subscription plan */
-  dailyLimit: number;
+  daily_limit: number;
   /** ISO 8601 timestamp when the usage count resets (next day 00:00) */
-  resetTime: string;
+  reset_time: string;
   /** Whether the user can currently use AI chat */
-  canUseChat: boolean;
+  can_use_chat: boolean;
 }
 
 /**
@@ -26,11 +26,11 @@ export interface AIChatUsageError {
   /** Human-readable error message in Japanese */
   error: string;
   /** Machine-readable error code for programmatic handling */
-  errorCode: string;
+  error_code: string;
   /** Current remaining count (typically 0 when limit exceeded) */
-  remainingCount: number;
+  remaining_count: number;
   /** ISO 8601 timestamp when the usage count resets */
-  resetTime: string;
+  reset_time: string;
 }
 
 /**
@@ -104,12 +104,12 @@ export const AI_CHAT_USAGE_PLACEHOLDER_MESSAGES: Record<AIChatUsageErrorCode, st
 export class AIChatUsageUtils {
   /**
    * Format reset time for display in Japanese locale
-   * @param resetTime ISO 8601 timestamp string
+   * @param reset_time ISO 8601 timestamp string
    * @returns Formatted time string in Japanese
    */
-  static formatResetTime(resetTime: string): string {
+  static formatResetTime(reset_time: string): string {
     try {
-      const date = new Date(resetTime);
+      const date = new Date(reset_time);
       if (isNaN(date.getTime())) {
         return '明日の00:00';
       }
@@ -129,13 +129,13 @@ export class AIChatUsageUtils {
 
   /**
    * Get time until reset in human-readable format
-   * @param resetTime ISO 8601 timestamp string
+   * @param reset_time ISO 8601 timestamp string
    * @returns Human-readable time until reset
    */
-  static getTimeUntilReset(resetTime: string): string {
+  static getTimeUntilReset(reset_time: string): string {
     try {
       const now = new Date();
-      const reset = new Date(resetTime);
+      const reset = new Date(reset_time);
 
       if (isNaN(reset.getTime())) {
         return '明日の00:00';
@@ -213,29 +213,29 @@ export class AIChatUsageUtils {
 
   /**
    * Format usage display text
-   * @param remainingCount Remaining usage count
-   * @param dailyLimit Daily limit
+   * @param remaining_count Remaining usage count
+   * @param daily_limit Daily limit
    * @returns Formatted usage text
    */
-  static formatUsageDisplay(remainingCount: number, dailyLimit: number): string {
-    if (dailyLimit === -1) {
+  static formatUsageDisplay(remaining_count: number, daily_limit: number): string {
+    if (daily_limit === -1) {
       return '無制限';
     }
-    return `${remainingCount}/${dailyLimit}`;
+    return `${remaining_count}/${daily_limit}`;
   }
 
   /**
    * Get usage status color class
-   * @param remainingCount Remaining usage count
-   * @param dailyLimit Daily limit
+   * @param remaining_count Remaining usage count
+   * @param daily_limit Daily limit
    * @returns CSS color class
    */
-  static getUsageStatusColor(remainingCount: number, dailyLimit: number): string {
-    if (dailyLimit === -1) {
+  static getUsageStatusColor(remaining_count: number, daily_limit: number): string {
+    if (daily_limit === -1) {
       return 'text-green-600';
     }
 
-    const usageRatio = remainingCount / dailyLimit;
+    const usageRatio = remaining_count / daily_limit;
     if (usageRatio <= 0) {
       return 'text-red-600';
     } else if (usageRatio <= 0.2) {
