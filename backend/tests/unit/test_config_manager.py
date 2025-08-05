@@ -316,8 +316,6 @@ class TestConfigManager:
                     assert updated_config.description == "Updated plan"
                     assert updated_config.features == ["updated_feature"]
 
-
-
         finally:
             # Clean up temporary file
             os.unlink(temp_file)
