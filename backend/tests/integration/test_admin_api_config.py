@@ -147,18 +147,10 @@ class TestAdminAIChatPlansAPI:
         data = response.json()
 
         assert "message" in data
-        assert "Successfully updated" in data["message"]
+        assert "update ignored" in data["message"]
         assert data["plan_name"] == "basic"
-        assert data["daily_limit"] == "15"
-
-        # Verify the update by getting the plan
-        get_response = client.get("/api/admin/ai-chat/plans/basic")
-        assert get_response.status_code == 200
-        updated_plan = get_response.json()
-
-        assert updated_plan["daily_limit"] == 15
-        assert updated_plan["description"] == "Updated basic plan"
-        assert updated_plan["features"] == ["updated_feature1", "updated_feature2"]
+        assert "warning" in data
+        assert "database-based configuration" in data["warning"]
 
     def test_update_plan_with_invalid_limit(self):
         """Test updating a plan with invalid daily limit"""
@@ -190,19 +182,10 @@ class TestAdminAIChatPlansAPI:
         data = response.json()
 
         assert "message" in data
-        assert "Successfully created" in data["message"]
+        assert "creation ignored" in data["message"]
         assert data["plan_name"] == unique_plan_name
-        assert data["daily_limit"] == "25"
-
-        # Verify the creation by getting the plan
-        get_response = client.get(f"/api/admin/ai-chat/plans/{unique_plan_name}")
-        assert get_response.status_code == 200
-        created_plan = get_response.json()
-
-        assert created_plan["plan_name"] == unique_plan_name
-        assert created_plan["daily_limit"] == 25
-        assert created_plan["description"] == "Test plan created via API"
-        assert created_plan["features"] == ["test_feature1", "test_feature2"]
+        assert "warning" in data
+        assert "database-based configuration" in data["warning"]
 
     def test_create_duplicate_plan(self):
         """Test creating a plan that already exists"""
@@ -214,9 +197,10 @@ class TestAdminAIChatPlansAPI:
 
         response = client.post("/api/admin/ai-chat/plans", json=duplicate_plan_data)
 
-        assert response.status_code == 409
+        # Now returns 200 with warning instead of 409
+        assert response.status_code == 200
         data = response.json()
-        assert "already exists" in data["detail"]
+        assert "creation ignored" in data["message"]
 
     def test_create_plan_with_invalid_limit(self):
         """Test creating a plan with invalid daily limit"""
@@ -248,36 +232,24 @@ class TestAdminAPIIntegration:
     """Integration tests for admin API with configuration system"""
 
     def test_api_reflects_config_changes(self):
-        """Test that API endpoints reflect configuration changes"""
-        # First, get the current basic plan configuration
-        initial_response = client.get("/api/admin/ai-chat/plans/basic")
-        initial_data = initial_response.json()
-        initial_limit = initial_data["daily_limit"]
-
+        """Test that API endpoints return warning for configuration changes"""
         # Update the plan via API
-        new_limit = initial_limit + 5
         update_data = {
             "plan_name": "basic",
-            "daily_limit": new_limit,
+            "daily_limit": 15,
             "description": "API integration test plan",
         }
 
         update_response = client.put("/api/admin/ai-chat/plans/basic", json=update_data)
         assert update_response.status_code == 200
 
-        # Verify the change is reflected in the configuration manager
-        assert config_manager.get_ai_chat_plan_limit("basic") == new_limit
+        # Verify warning message is returned
+        update_data = update_response.json()
+        assert "update ignored" in update_data["message"]
+        assert "warning" in update_data
 
-        # Verify the change is reflected in subsequent API calls
-        updated_response = client.get("/api/admin/ai-chat/plans/basic")
-        updated_data = updated_response.json()
-        assert updated_data["daily_limit"] == new_limit
-        assert updated_data["description"] == "API integration test plan"
-
-        # Verify the change is reflected in the all plans endpoint
-        all_plans_response = client.get("/api/admin/ai-chat/plans")
-        all_plans_data = all_plans_response.json()
-        assert all_plans_data["plans"]["basic"]["daily_limit"] == new_limit
+        # Verify the configuration remains unchanged
+        assert config_manager.get_ai_chat_plan_limit("basic") == 10  # Original value
 
     def test_unlimited_plan_handling(self):
         """Test handling of unlimited plans (-1 limit)"""
@@ -291,18 +263,19 @@ class TestAdminAPIIntegration:
         }
 
         create_response = client.post("/api/admin/ai-chat/plans", json=unlimited_plan_data)
+
+        # Verify warning message is returned
+        assert create_response.status_code == 200
+        create_data = create_response.json()
+        assert "creation ignored" in create_data["message"]
         assert create_response.status_code == 200
 
-        # Verify the unlimited plan
-        get_response = client.get(f"/api/admin/ai-chat/plans/{unique_plan_name}")
+        # Since creation is now disabled, the plan won't actually exist
+        # Verify that the original plans are still available
+        get_response = client.get("/api/admin/ai-chat/plans/enterprise")
         assert get_response.status_code == 200
         plan_data = get_response.json()
-
-        assert plan_data["daily_limit"] == -1
-        assert plan_data["description"] == "Unlimited test plan"
-
-        # Verify it's reflected in the configuration manager
-        assert config_manager.get_ai_chat_plan_limit(unique_plan_name) == -1
+        assert plan_data["daily_limit"] == -1  # Original enterprise plan
 
     def test_zero_limit_plan_handling(self):
         """Test handling of zero-limit plans (no access)"""
@@ -318,17 +291,10 @@ class TestAdminAPIIntegration:
         create_response = client.post("/api/admin/ai-chat/plans", json=zero_plan_data)
         assert create_response.status_code == 200
 
-        # Verify the zero-limit plan
-        get_response = client.get(f"/api/admin/ai-chat/plans/{unique_plan_name}")
-        assert get_response.status_code == 200
-        plan_data = get_response.json()
-
-        assert plan_data["daily_limit"] == 0
-        assert plan_data["description"] == "No access test plan"
-        assert plan_data["features"] == []
-
-        # Verify it's reflected in the configuration manager
-        assert config_manager.get_ai_chat_plan_limit(unique_plan_name) == 0
+        # Verify warning message is returned
+        create_data = create_response.json()
+        assert "creation ignored" in create_data["message"]
+        assert "warning" in create_data
 
 
 class TestAdminAPIErrorHandling:
@@ -354,22 +320,19 @@ class TestAdminAPIErrorHandling:
         )
         assert response.status_code == 422
 
-    @patch("app.routers.api.admin.update_ai_chat_plan_limit")
-    def test_config_update_failure(self, mock_update):
-        """Test handling of configuration update failures"""
-        # Mock the update to fail
-        mock_update.return_value = False
-
+    def test_config_update_disabled(self):
+        """Test that configuration updates are disabled"""
         update_data = {
             "plan_name": "basic",
             "daily_limit": 20,
-            "description": "Should fail",
+            "description": "Should be ignored",
         }
 
         response = client.put("/api/admin/ai-chat/plans/basic", json=update_data)
-        assert response.status_code == 500
+        assert response.status_code == 200
         data = response.json()
-        assert "Failed to update" in data["detail"]
+        assert "update ignored" in data["message"]
+        assert "warning" in data
 
     @patch("app.config.config_manager._check_file_updates")
     def test_config_reload_failure(self, mock_reload):

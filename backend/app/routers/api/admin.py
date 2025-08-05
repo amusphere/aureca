@@ -108,48 +108,29 @@ async def update_ai_chat_plan_endpoint(
     """
     Update AI chat plan configuration
 
+    NOTE: This endpoint is deprecated. Configuration file updates are disabled
+    to prevent file pollution. Use database-based configuration instead.
+
     Args:
         plan_name: Name of the plan to update
         request: Plan update request data
 
     Returns:
-        Dict with success message
+        Dict with warning message
     """
-    try:
-        # Validate daily limit
-        if request.daily_limit < -1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Daily limit must be -1 (unlimited) or a non-negative integer",
-            )
-
-        # Update the plan configuration
-        success = update_ai_chat_plan_limit(
-            plan_name=request.plan_name or plan_name,
-            daily_limit=request.daily_limit,
-            description=request.description,
-            features=request.features,
+    # Validate daily limit even though we won't update
+    if request.daily_limit < -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Daily limit must be -1 (unlimited) or a non-negative integer",
         )
 
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to update plan configuration for '{plan_name}'",
-            )
-
-        return {
-            "message": f"Successfully updated plan '{plan_name}' with daily limit: {request.daily_limit}",
-            "plan_name": plan_name,
-            "daily_limit": str(request.daily_limit),
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update plan configuration: {str(e)}",
-        ) from e
+    # Return warning instead of attempting to update
+    return {
+        "message": f"Configuration updates are disabled. Plan '{plan_name}' update ignored.",
+        "plan_name": plan_name,
+        "warning": "Use database-based configuration for dynamic plan management",
+    }
 
 
 @router.post("/ai-chat/plans")
@@ -159,55 +140,28 @@ async def create_ai_chat_plan_endpoint(
     """
     Create new AI chat plan configuration
 
+    NOTE: This endpoint is deprecated. Configuration file updates are disabled
+    to prevent file pollution. Use database-based configuration instead.
+
     Args:
         request: Plan creation request data
 
     Returns:
-        Dict with success message
+        Dict with warning message
     """
-    try:
-        # Validate daily limit
-        if request.daily_limit < -1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Daily limit must be -1 (unlimited) or a non-negative integer",
-            )
-
-        # Check if plan already exists
-        existing_plans = get_all_ai_chat_plans()
-        if request.plan_name in existing_plans:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Plan '{request.plan_name}' already exists. Use PUT to update.",
-            )
-
-        # Create the new plan configuration
-        success = update_ai_chat_plan_limit(
-            plan_name=request.plan_name,
-            daily_limit=request.daily_limit,
-            description=request.description or f"{request.plan_name} plan",
-            features=request.features or [],
+    # Validate daily limit even though we won't create
+    if request.daily_limit < -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Daily limit must be -1 (unlimited) or a non-negative integer",
         )
 
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to create plan configuration for '{request.plan_name}'",
-            )
-
-        return {
-            "message": f"Successfully created plan '{request.plan_name}' with daily limit: {request.daily_limit}",
-            "plan_name": request.plan_name,
-            "daily_limit": str(request.daily_limit),
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create plan configuration: {str(e)}",
-        ) from e
+    # Return warning instead of attempting to create
+    return {
+        "message": f"Configuration creation is disabled. Plan '{request.plan_name}' creation ignored.",
+        "plan_name": request.plan_name,
+        "warning": "Use database-based configuration for dynamic plan management",
+    }
 
 
 @router.get("/ai-chat/config/reload")

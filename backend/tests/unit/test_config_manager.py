@@ -187,25 +187,30 @@ class TestConfigManager:
         assert unknown_config is None
 
     def test_update_ai_chat_plan_limit(self, isolated_config_manager):
-        """Test updating plan limits"""
+        """Test that plan limit updates are disabled"""
         config_manager = isolated_config_manager
 
-        # Update existing plan
+        # Get original configuration
+        original_config = config_manager.get_ai_chat_plan_config("basic")
+        original_limit = original_config.daily_limit
+
+        # Attempt to update existing plan (should be ignored)
         success = config_manager.update_ai_chat_plan_limit("basic", 15, "Updated basic plan", ["new_feature"])
-        assert success is True
+        assert success is False  # Updates are disabled
 
+        # Verify configuration remains unchanged
         updated_config = config_manager.get_ai_chat_plan_config("basic")
-        assert updated_config.daily_limit == 15
-        assert updated_config.description == "Updated basic plan"
-        assert updated_config.features == ["new_feature"]
+        assert updated_config.daily_limit == original_limit
+        assert updated_config.description == original_config.description
+        assert updated_config.features == original_config.features
 
-        # Create new plan
+        # Attempt to create new plan (should also be ignored)
         success = config_manager.update_ai_chat_plan_limit("custom", 25, "Custom plan", ["custom_feature"])
-        assert success is True
+        assert success is False  # Updates are disabled
 
+        # Verify new plan was not created
         custom_config = config_manager.get_ai_chat_plan_config("custom")
-        assert custom_config is not None
-        assert custom_config.daily_limit == 25
+        assert custom_config is None
 
     def test_get_all_ai_chat_plans(self, isolated_config_manager):
         """Test getting all plan configurations"""

@@ -238,29 +238,13 @@ class ConfigManager:
         self, plan_name: str, new_limit: int, description: str = None, features: list[str] = None
     ) -> bool:
         """Update daily limit for a specific plan."""
-        config = self._load_config()
-
-        # Create plan if it doesn't exist
-        if "ai_chat_plans" not in config:
-            config["ai_chat_plans"] = {}
-
-        if plan_name not in config["ai_chat_plans"]:
-            config["ai_chat_plans"][plan_name] = {}
-
-        # Update the plan configuration
-        config["ai_chat_plans"][plan_name]["daily_limit"] = new_limit
-
-        if description is not None:
-            config["ai_chat_plans"][plan_name]["description"] = description
-
-        if features is not None:
-            config["ai_chat_plans"][plan_name]["features"] = features
-
-        self._save_config()
-        # Clear cached data to force reload
-        self._config_data = None
-        self._ai_chat_plans = None
-        return True
+        # NOTE: Configuration file updates are disabled to prevent file pollution
+        # Dynamic plan configuration should be handled through database or environment variables
+        # This method is kept for backward compatibility but does not modify the config file
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Configuration file updates are disabled. Plan '{plan_name}' update ignored.")
+        return False
 
 
 # Global config manager instance
