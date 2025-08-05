@@ -276,36 +276,47 @@ class TestConfigManager:
             temp_file = f.name
 
         try:
-            # Mock the config file path
-            with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
-                config_manager = ConfigManager()
+            # Mock environment variables to prevent interference
+            env_vars_to_clear = {}
+            for plan in ["free", "basic", "premium", "enterprise", "dynamic_plan"]:
+                env_key = f"AI_CHAT_LIMIT_{plan.upper()}"
+                if env_key in os.environ:
+                    env_vars_to_clear[env_key] = os.environ[env_key]
 
-                # Check initial configuration
-                initial_config = config_manager.get_ai_chat_plan_config("dynamic_plan")
-                assert initial_config.daily_limit == 30
+            # Clear environment variables for this test
+            with patch.dict(os.environ, env_vars_to_clear, clear=True):
+                # Mock the config file path
+                with patch.object(ConfigManager, "_get_config_file_path", return_value=Path(temp_file)):
+                    config_manager = ConfigManager()
 
-                # Update the file
-                updated_config_data = {
-                    "ai_chat_plans": {
-                        "dynamic_plan": {
-                            "daily_limit": 40,
-                            "description": "Updated plan",
-                            "features": ["updated_feature"],
+                    # Check initial configuration
+                    initial_config = config_manager.get_ai_chat_plan_config("dynamic_plan")
+                    assert initial_config.daily_limit == 30
+
+                    # Update the file
+                    updated_config_data = {
+                        "ai_chat_plans": {
+                            "dynamic_plan": {
+                                "daily_limit": 40,
+                                "description": "Updated plan",
+                                "features": ["updated_feature"],
+                            }
                         }
                     }
-                }
 
-                with open(temp_file, "w") as f:
-                    json.dump(updated_config_data, f)
+                    with open(temp_file, "w") as f:
+                        json.dump(updated_config_data, f)
 
-                # Force check for updates
-                config_manager._check_file_updates()
+                    # Force check for updates
+                    config_manager._check_file_updates()
 
-                # Check updated configuration
-                updated_config = config_manager.get_ai_chat_plan_config("dynamic_plan")
-                assert updated_config.daily_limit == 40
-                assert updated_config.description == "Updated plan"
-                assert updated_config.features == ["updated_feature"]
+                    # Check updated configuration
+                    updated_config = config_manager.get_ai_chat_plan_config("dynamic_plan")
+                    assert updated_config.daily_limit == 40
+                    assert updated_config.description == "Updated plan"
+                    assert updated_config.features == ["updated_feature"]
+
+
 
         finally:
             # Clean up temporary file

@@ -97,7 +97,7 @@ class ConfigManager:
             env_key = f"AI_CHAT_LIMIT_{plan_name.upper()}"
             env_limit = os.getenv(env_key)
 
-            if env_limit is not None:
+            if env_limit is not None and env_limit.strip():  # Check for non-empty value
                 try:
                     daily_limit = int(env_limit)
                     # Preserve existing configuration if available, otherwise use default
@@ -151,7 +151,20 @@ class ConfigManager:
             current_mtime = self._config_file_path.stat().st_mtime
             if self._last_modified is None or current_mtime > self._last_modified:
                 logger.info("Configuration file updated, reloading...")
+                # Store current plans that have environment variable overrides
+                env_overridden_plans = {}
+                for plan_name in self._ai_chat_plans.keys():
+                    env_key = f"AI_CHAT_LIMIT_{plan_name.upper()}"
+                    if os.getenv(env_key) is not None:
+                        env_overridden_plans[plan_name] = self._ai_chat_plans[plan_name]
+
+                # Reload from file
                 self._load_from_file(self._config_file_path)
+
+                # Restore environment variable overrides
+                for plan_name, config in env_overridden_plans.items():
+                    self._ai_chat_plans[plan_name] = config
+
         except Exception as e:
             logger.error(f"Failed to check configuration file updates: {e}")
 
