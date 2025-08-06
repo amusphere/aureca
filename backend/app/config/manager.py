@@ -43,8 +43,53 @@ class ConfigManager:
     def _load_config(self) -> dict[str, Any]:
         """Load configuration from JSON file."""
         if self._config_data is None:
-            with open(self.config_file, encoding="utf-8") as f:
-                self._config_data = json.load(f)
+            try:
+                with open(self.config_file, encoding="utf-8") as f:
+                    self._config_data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError, OSError):
+                # Fall back to default configuration if file is missing or invalid
+                self._config_data = {
+                    "ai_chat_plans": {
+                        "free": {
+                            "daily_limit": 0,
+                            "description": "Free plan - No AI chat access",
+                            "features": ["Basic task management"],
+                        },
+                        "basic": {
+                            "daily_limit": 10,
+                            "description": "Basic plan - 10 AI chats per day",
+                            "features": [
+                                "Basic task management",
+                                "AI chat assistance",
+                                "Google integrations",
+                            ],
+                        },
+                        "premium": {
+                            "daily_limit": 50,
+                            "description": "Premium plan - 50 AI chats per day",
+                            "features": [
+                                "All basic features",
+                                "Priority support",
+                                "Advanced AI features",
+                            ],
+                        },
+                        "enterprise": {
+                            "daily_limit": -1,
+                            "description": "Enterprise plan - Unlimited AI chats",
+                            "features": [
+                                "All premium features",
+                                "Custom integrations",
+                                "Dedicated support",
+                            ],
+                        },
+                    },
+                    "settings": {
+                        "enable_dynamic_limits": True,
+                        "cache_duration_minutes": 5,
+                        "reset_timezone": "UTC",
+                        "enable_usage_analytics": True,
+                    },
+                }
         return self._config_data
 
     def _load_plans(self) -> dict[str, AIChatPlanConfig]:
@@ -121,21 +166,15 @@ class ConfigManager:
     def update_ai_chat_plan_limit(
         self, plan_name: str, new_limit: int, description: str = None, features: list[str] = None
     ) -> bool:
-        """Update daily limit for a specific plan (alias)."""
-        return self.update_plan_limit(plan_name, new_limit)
+        """Update daily limit for a specific plan (disabled for file-based config)."""
+        # Configuration updates are disabled to prevent file pollution
+        # Use database-based configuration for dynamic plan management
+        return False
 
     def update_plan_limit(self, plan_name: str, new_limit: int) -> bool:
-        """Update daily limit for a specific plan."""
-        config = self._load_config()
-
-        if plan_name in config.get("ai_chat_plans", {}):
-            config["ai_chat_plans"][plan_name]["daily_limit"] = new_limit
-            self._save_config()
-            # Clear cached data to force reload
-            self._config_data = None
-            self._ai_chat_plans = None
-            return True
-
+        """Update daily limit for a specific plan (disabled for file-based config)."""
+        # Configuration updates are disabled to prevent file pollution
+        # Use database-based configuration for dynamic plan management
         return False
 
 

@@ -173,16 +173,17 @@ async def reload_ai_chat_config_endpoint() -> dict[str, str]:
         Dict with success message
     """
     try:
-        # Force reload by checking file updates
-        config_manager._check_file_updates()
+        # Force reload by clearing cached data
+        config_manager._config_data = None
+        config_manager._ai_chat_plans = None
+
+        # Test that the config can be loaded successfully
+        config_manager._load_config()
 
         return {
-            "message": "Configuration reloaded successfully",
-            "timestamp": (
-                str(config_manager._last_modified) if config_manager._last_modified else "No file configured"
-            ),
+            "message": "Configuration cache cleared and reloaded successfully",
+            "timestamp": "Cache cleared",
         }
-
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

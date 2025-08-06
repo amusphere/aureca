@@ -1,6 +1,7 @@
 import { AI_CHAT_USAGE_ERROR_CODES } from '@/types/AIChatUsage'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AIChatModal from '../../../components/components/chat/AIChatModal'
 
@@ -33,33 +34,47 @@ vi.mock('../../../components/hooks/useMessages', () => ({
 }))
 
 // Mock the child components
-vi.mock('../../../components/components/chat/ChatInput', () => ({
-  default: ({ onSendMessage, isLoading, disabled, usage, usageError }: {
+vi.mock('../../../components/components/chat/ChatInput', () => {
+  const MockChatInput = ({ onSendMessage, isLoading, disabled, usage, usageError }: {
     onSendMessage: (message: string) => void;
     isLoading: boolean;
     disabled: boolean;
     usage?: { remaining_count: number; daily_limit: number } | null;
     usageError?: { error: string } | null;
-  }) => (
-    <div data-testid="chat-input">
-      <input
-        data-testid="message-input"
-        disabled={disabled || isLoading}
-        placeholder={disabled ? 'Disabled' : 'Type a message...'}
-        onChange={() => { }}
-      />
-      <button
-        data-testid="send-button"
-        disabled={disabled || isLoading}
-        onClick={() => onSendMessage('test message')}
-      >
-        Send
-      </button>
-      {usage && <div data-testid="usage-info">{usage.remaining_count}/{usage.daily_limit}</div>}
-      {usageError && <div data-testid="usage-error">{usageError.error}</div>}
-    </div>
-  ),
-}))
+  }) => {
+    const [message, setMessage] = useState('')
+
+    return (
+      <div data-testid="chat-input">
+        <input
+          data-testid="message-input"
+          disabled={disabled || isLoading}
+          placeholder={disabled ? 'Disabled' : 'Type a message...'}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <button
+          data-testid="send-button"
+          disabled={disabled || isLoading || !message.trim()}
+          onClick={() => {
+            if (message.trim()) {
+              onSendMessage(message)
+              setMessage('')
+            }
+          }}
+        >
+          Send
+        </button>
+        {usage && <div data-testid="usage-info">{usage.remaining_count}/{usage.daily_limit}</div>}
+        {usageError && <div data-testid="usage-error">{usageError.error}</div>}
+      </div>
+    )
+  }
+
+  return {
+    default: MockChatInput,
+  }
+})
 
 vi.mock('../../../components/components/chat/ChatMessage', () => ({
   default: ({ message }: { message: { content: string } }) => (
@@ -378,7 +393,13 @@ describe('AIChatModal', () => {
 
       Object.assign(mockUseMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
-        can_use_chat: true,
+        usage: {
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
+        },
+        canUseChat: true,
         incrementUsage,
       })
 
@@ -460,7 +481,13 @@ describe('AIChatModal', () => {
   describe('UI制御', () => {
     it('利用可能な場合、緑色のステータスインジケーターが表示される', () => {
       Object.assign(mockUseAIChatUsage, {
-        can_use_chat: true,
+        usage: {
+          remaining_count: 5,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: true,
+        },
+        canUseChat: true,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -471,7 +498,13 @@ describe('AIChatModal', () => {
 
     it('利用不可の場合、赤色のステータスインジケーターが表示される', () => {
       Object.assign(mockUseAIChatUsage, {
-        can_use_chat: false,
+        usage: {
+          remaining_count: 0,
+          daily_limit: 10,
+          reset_time: '2024-01-02T00:00:00Z',
+          can_use_chat: false,
+        },
+        canUseChat: false,
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -549,7 +582,7 @@ describe('AIChatModal', () => {
         error: '本日の利用回数上限に達しました',
         error_code: AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED,
         remaining_count: 0,
-        resetTime,
+        reset_time: resetTime,
       }
 
       Object.assign(mockUseAIChatUsage, {
