@@ -27,25 +27,25 @@ const MockAIChatModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
       {error && (
         <div data-testid="error-display">
           <div data-testid="error-message">{error.error}</div>
-          <div data-testid="error-code">{error.errorCode}</div>
-          <div data-testid="remaining-count">{error.remainingCount}</div>
-          <div data-testid="reset-time">{error.resetTime}</div>
+          <div data-testid="error-code">{error.error_code}</div>
+          <div data-testid="remaining-count">{error.remaining_count}</div>
+          <div data-testid="reset-time">{error.reset_time}</div>
         </div>
       )}
 
       {usage && !error && (
         <div data-testid="usage-display">
-          <div data-testid="remaining-count">{usage.remainingCount}</div>
-          <div data-testid="daily-limit">{usage.dailyLimit}</div>
-          <div data-testid="can-use-chat">{usage.canUseChat.toString()}</div>
+          <div data-testid="remaining-count">{usage.remaining_count}</div>
+          <div data-testid="daily-limit">{usage.daily_limit}</div>
+          <div data-testid="can-use-chat">{usage.can_use_chat?.toString()}</div>
           <input
             data-testid="chat-input"
-            disabled={!usage.canUseChat}
-            placeholder={usage.canUseChat ? "メッセージを入力..." : "利用制限に達しています"}
+            disabled={!usage.can_use_chat}
+            placeholder={usage.can_use_chat ? "メッセージを入力..." : "利用制限に達しています"}
           />
           <button
             data-testid="send-button"
-            disabled={!usage.canUseChat}
+            disabled={!usage.can_use_chat}
             onClick={() => {/* simulate send */}}
           >
             送信

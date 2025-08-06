@@ -193,7 +193,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Verify successful usage state
       expect(hookResult.usage).toBeDefined()
       expect(hookResult.usage?.remaining_count).toBe(7)
-      expect(hookResult.usage?.dailyLimit).toBe(10)
+      expect(hookResult.usage?.daily_limit).toBe(10)
       expect(hookResult.usage?.can_use_chat).toBe(true)
       expect(hookResult.error).toBeNull()
       expect(hookResult.loading).toBe(false)

@@ -62,7 +62,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(false)
       expect(response.status).toBe(429)
       expect(data).toEqual(mockErrorData)
-      expect(data.errorCode).toBe('USAGE_LIMIT_EXCEEDED')
+      expect(data.error_code).toBe('USAGE_LIMIT_EXCEEDED')
     })
 
     it('should handle plan restriction error (403)', async () => {
@@ -85,7 +85,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(false)
       expect(response.status).toBe(403)
       expect(data).toEqual(mockErrorData)
-      expect(data.errorCode).toBe('PLAN_RESTRICTION')
+      expect(data.error_code).toBe('PLAN_RESTRICTION')
     })
 
     it('should handle system error (500)', async () => {
@@ -108,7 +108,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(false)
       expect(response.status).toBe(500)
       expect(data).toEqual(mockErrorData)
-      expect(data.errorCode).toBe('SYSTEM_ERROR')
+      expect(data.error_code).toBe('SYSTEM_ERROR')
     })
 
     it('should handle network errors gracefully', async () => {
@@ -145,7 +145,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(true)
       expect(response.status).toBe(200)
       expect(data).toEqual(mockUpdatedUsage)
-      expect(data.remainingCount).toBe(6)
+      expect(data.remaining_count).toBe(6)
       expect(mockFetch).toHaveBeenCalledWith('/api/ai/usage/increment', {
         method: 'POST',
         headers: {
@@ -179,7 +179,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(false)
       expect(response.status).toBe(429)
       expect(data).toEqual(mockErrorData)
-      expect(data.errorCode).toBe('USAGE_LIMIT_EXCEEDED')
+      expect(data.error_code).toBe('USAGE_LIMIT_EXCEEDED')
     })
 
     it('should handle plan restriction on increment (403)', async () => {
@@ -207,7 +207,7 @@ describe('AI Chat Usage API Communication Integration', () => {
       expect(response.ok).toBe(false)
       expect(response.status).toBe(403)
       expect(data).toEqual(mockErrorData)
-      expect(data.errorCode).toBe('PLAN_RESTRICTION')
+      expect(data.error_code).toBe('PLAN_RESTRICTION')
     })
   })
 
@@ -230,21 +230,21 @@ describe('AI Chat Usage API Communication Integration', () => {
       const data = await response.json()
 
       // Validate all required fields are present
-      expect(data).toHaveProperty('remainingCount')
-      expect(data).toHaveProperty('dailyLimit')
-      expect(data).toHaveProperty('resetTime')
-      expect(data).toHaveProperty('canUseChat')
+      expect(data).toHaveProperty('remaining_count')
+      expect(data).toHaveProperty('daily_limit')
+      expect(data).toHaveProperty('reset_time')
+      expect(data).toHaveProperty('can_use_chat')
 
       // Validate field types
-      expect(typeof data.remainingCount).toBe('number')
-      expect(typeof data.dailyLimit).toBe('number')
-      expect(typeof data.resetTime).toBe('string')
-      expect(typeof data.canUseChat).toBe('boolean')
+      expect(typeof data.remaining_count).toBe('number')
+      expect(typeof data.daily_limit).toBe('number')
+      expect(typeof data.reset_time).toBe('string')
+      expect(typeof data.can_use_chat).toBe('boolean')
 
       // Validate field values
-      expect(data.remainingCount).toBeGreaterThanOrEqual(0)
-      expect(data.dailyLimit).toBeGreaterThan(0)
-      expect(new Date(data.resetTime)).toBeInstanceOf(Date)
+      expect(data.remaining_count).toBeGreaterThanOrEqual(0)
+      expect(data.daily_limit).toBeGreaterThan(0)
+      expect(new Date(data.reset_time)).toBeInstanceOf(Date)
     })
 
     it('should validate error response format', async () => {
@@ -266,20 +266,20 @@ describe('AI Chat Usage API Communication Integration', () => {
 
       // Validate all required error fields are present
       expect(data).toHaveProperty('error')
-      expect(data).toHaveProperty('errorCode')
-      expect(data).toHaveProperty('remainingCount')
-      expect(data).toHaveProperty('resetTime')
+      expect(data).toHaveProperty('error_code')
+      expect(data).toHaveProperty('remaining_count')
+      expect(data).toHaveProperty('reset_time')
 
       // Validate field types
       expect(typeof data.error).toBe('string')
-      expect(typeof data.errorCode).toBe('string')
-      expect(typeof data.remainingCount).toBe('number')
-      expect(typeof data.resetTime).toBe('string')
+      expect(typeof data.error_code).toBe('string')
+      expect(typeof data.remaining_count).toBe('number')
+      expect(typeof data.reset_time).toBe('string')
 
       // Validate field values
       expect(data.error.length).toBeGreaterThan(0)
-      expect(['USAGE_LIMIT_EXCEEDED', 'PLAN_RESTRICTION', 'SYSTEM_ERROR']).toContain(data.errorCode)
-      expect(data.remainingCount).toBeGreaterThanOrEqual(0)
+      expect(['USAGE_LIMIT_EXCEEDED', 'PLAN_RESTRICTION', 'SYSTEM_ERROR']).toContain(data.error_code)
+      expect(data.remaining_count).toBeGreaterThanOrEqual(0)
       expect(new Date(data.resetTime)).toBeInstanceOf(Date)
     })
   })
