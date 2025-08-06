@@ -544,7 +544,7 @@ describe('useAIChatUsage', () => {
 
       // Usage error should take precedence over system error
       expect(result.current.error).toEqual(usageError)
-      expect(result.current.error?.errorCode).toBe(AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED)
+      expect(result.current.error?.error_code).toBe(AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED)
     })
 
     it('不正なJSONレスポンスを適切に処理する', async () => {

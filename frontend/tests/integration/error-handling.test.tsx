@@ -77,9 +77,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should display usage limit exceeded error correctly', async () => {
       const mockError: AIChatUsageError = {
         error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -105,10 +105,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
     it('should disable chat input when usage limit is exceeded', async () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 0,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: false
+        remaining_count: 0,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: false
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -135,9 +135,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should display plan restriction error correctly', async () => {
       const mockError: AIChatUsageError = {
         error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
-        errorCode: 'PLAN_RESTRICTION',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'PLAN_RESTRICTION',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -160,9 +160,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should display system error correctly', async () => {
       const mockError: AIChatUsageError = {
         error: '一時的なエラーが発生しました。しばらく後にお試しください。',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -184,9 +184,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const mockRefreshUsage = vi.fn()
       const mockError: AIChatUsageError = {
         error: '一時的なエラーが発生しました。しばらく後にお試しください。',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -233,10 +233,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
   describe('Successful Usage Display', () => {
     it('should display usage information correctly when available', async () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 7,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 7,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -272,9 +272,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Start with error state
       const mockError: AIChatUsageError = {
         error: 'システムエラー',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       // Initially show error
@@ -291,10 +291,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Simulate successful recovery
       const mockUsage: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -318,9 +318,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const mockRefreshUsage = vi.fn()
       const mockError: AIChatUsageError = {
         error: 'テストエラー',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -345,10 +345,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
     it('should prevent form submission when chat is disabled', async () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 0,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: false
+        remaining_count: 0,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: false
       }
 
       mockUseAIChatUsage.mockReturnValue({

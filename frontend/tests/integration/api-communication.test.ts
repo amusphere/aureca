@@ -21,10 +21,10 @@ describe('AI Chat Usage API Communication Integration', () => {
   describe('GET /api/ai/usage endpoint', () => {
     it('should successfully fetch usage data', async () => {
       const mockUsageData: AIChatUsage = {
-        remainingCount: 7,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 7,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -45,9 +45,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle usage limit exceeded error (429)', async () => {
       const mockErrorData: AIChatUsageError = {
         error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -68,9 +68,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle plan restriction error (403)', async () => {
       const mockErrorData: AIChatUsageError = {
         error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
-        errorCode: 'PLAN_RESTRICTION',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'PLAN_RESTRICTION',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -91,9 +91,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle system error (500)', async () => {
       const mockErrorData: AIChatUsageError = {
         error: '一時的なエラーが発生しました。しばらく後にお試しください。',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -122,10 +122,10 @@ describe('AI Chat Usage API Communication Integration', () => {
   describe('POST /api/ai/usage/increment endpoint', () => {
     it('should successfully increment usage', async () => {
       const mockUpdatedUsage: AIChatUsage = {
-        remainingCount: 6,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 6,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -157,9 +157,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle increment when at limit (429)', async () => {
       const mockErrorData: AIChatUsageError = {
         error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -185,9 +185,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle plan restriction on increment (403)', async () => {
       const mockErrorData: AIChatUsageError = {
         error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
-        errorCode: 'PLAN_RESTRICTION',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'PLAN_RESTRICTION',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -214,10 +214,10 @@ describe('AI Chat Usage API Communication Integration', () => {
   describe('Response format validation', () => {
     it('should validate successful response format', async () => {
       const mockUsageData: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -250,9 +250,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should validate error response format', async () => {
       const mockErrorData: AIChatUsageError = {
         error: 'Test error message',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -321,9 +321,9 @@ describe('AI Chat Usage API Communication Integration', () => {
     it('should handle unexpected status codes', async () => {
       const mockErrorData: AIChatUsageError = {
         error: 'Unexpected error',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -344,10 +344,10 @@ describe('AI Chat Usage API Communication Integration', () => {
   describe('Request/Response timing', () => {
     it('should handle slow responses', async () => {
       const mockUsageData: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       // Simulate slow response
@@ -386,10 +386,10 @@ describe('AI Chat Usage API Communication Integration', () => {
   describe('Concurrent requests handling', () => {
     it('should handle multiple concurrent GET requests', async () => {
       const mockUsageData: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockFetch.mockResolvedValue({
@@ -413,10 +413,10 @@ describe('AI Chat Usage API Communication Integration', () => {
 
     it('should handle concurrent increment requests', async () => {
       const mockUpdatedUsage: AIChatUsage = {
-        remainingCount: 4,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 4,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockFetch.mockResolvedValue({

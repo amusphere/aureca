@@ -24,9 +24,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should process usage limit exceeded error correctly', () => {
       const mockError: AIChatUsageError = {
         error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -41,18 +41,18 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Verify error state
       expect(hookResult.error).toBeDefined()
-      expect(hookResult.error.errorCode).toBe('USAGE_LIMIT_EXCEEDED')
-      expect(hookResult.error.remainingCount).toBe(0)
+      expect(hookResult.error.error_code).toBe('USAGE_LIMIT_EXCEEDED')
+      expect(hookResult.error.remaining_count).toBe(0)
       expect(hookResult.error.error).toContain('本日の利用回数上限に達しました')
       expect(hookResult.usage).toBeNull()
     })
 
     it('should indicate chat should be disabled when usage limit is exceeded', () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 0,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: false
+        remaining_count: 0,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: false
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -66,8 +66,8 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const hookResult = mockUseAIChatUsage()
 
       // Verify chat is disabled
-      expect(hookResult.usage?.canUseChat).toBe(false)
-      expect(hookResult.usage?.remainingCount).toBe(0)
+      expect(hookResult.usage?.can_use_chat).toBe(false)
+      expect(hookResult.usage?.remaining_count).toBe(0)
       expect(hookResult.error).toBeNull()
     })
   })
@@ -76,9 +76,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should process plan restriction error correctly', () => {
       const mockError: AIChatUsageError = {
         error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
-        errorCode: 'PLAN_RESTRICTION',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'PLAN_RESTRICTION',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -93,7 +93,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Verify plan restriction error
       expect(hookResult.error).toBeDefined()
-      expect(hookResult.error.errorCode).toBe('PLAN_RESTRICTION')
+      expect(hookResult.error.error_code).toBe('PLAN_RESTRICTION')
       expect(hookResult.error.error).toContain('現在のプランではAIChatをご利用いただけません')
       expect(hookResult.usage).toBeNull()
     })
@@ -103,9 +103,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should process system error correctly', () => {
       const mockError: AIChatUsageError = {
         error: '一時的なエラーが発生しました。しばらく後にお試しください。',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -120,7 +120,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Verify system error
       expect(hookResult.error).toBeDefined()
-      expect(hookResult.error.errorCode).toBe('SYSTEM_ERROR')
+      expect(hookResult.error.error_code).toBe('SYSTEM_ERROR')
       expect(hookResult.error.error).toContain('一時的なエラーが発生しました')
       expect(hookResult.usage).toBeNull()
     })
@@ -129,9 +129,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const mockRefreshUsage = vi.fn()
       const mockError: AIChatUsageError = {
         error: '一時的なエラーが発生しました。しばらく後にお試しください。',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -174,10 +174,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
   describe('Successful Usage Display', () => {
     it('should process successful usage information correctly', () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 7,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 7,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -192,9 +192,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Verify successful usage state
       expect(hookResult.usage).toBeDefined()
-      expect(hookResult.usage?.remainingCount).toBe(7)
+      expect(hookResult.usage?.remaining_count).toBe(7)
       expect(hookResult.usage?.dailyLimit).toBe(10)
-      expect(hookResult.usage?.canUseChat).toBe(true)
+      expect(hookResult.usage?.can_use_chat).toBe(true)
       expect(hookResult.error).toBeNull()
       expect(hookResult.loading).toBe(false)
     })
@@ -207,9 +207,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Start with error state
       const mockError: AIChatUsageError = {
         error: 'システムエラー',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -226,10 +226,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Simulate successful recovery
       const mockUsage: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -245,7 +245,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Verify transition to success state
       expect(hookResult.error).toBeNull()
       expect(hookResult.usage).toBeDefined()
-      expect(hookResult.usage?.canUseChat).toBe(true)
+      expect(hookResult.usage?.can_use_chat).toBe(true)
     })
 
     it('should handle transition from loading to error state', () => {
@@ -265,9 +265,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Transition to error state
       const mockError: AIChatUsageError = {
         error: 'ネットワークエラー',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -283,7 +283,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Verify transition to error state
       expect(hookResult.loading).toBe(false)
       expect(hookResult.error).toBeDefined()
-      expect(hookResult.error?.errorCode).toBe('SYSTEM_ERROR')
+      expect(hookResult.error?.error_code).toBe('SYSTEM_ERROR')
     })
   })
 
@@ -292,9 +292,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const mockRefreshUsage = vi.fn()
       const mockError: AIChatUsageError = {
         error: 'テストエラー',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -318,10 +318,10 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
     it('should prevent actions when chat is disabled', () => {
       const mockUsage: AIChatUsage = {
-        remainingCount: 0,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: false
+        remaining_count: 0,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: false
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -335,13 +335,13 @@ describe('AI Chat Usage Error Handling Integration', () => {
       const hookResult = mockUseAIChatUsage()
 
       // Verify chat is disabled
-      expect(hookResult.usage?.canUseChat).toBe(false)
-      expect(hookResult.usage?.remainingCount).toBe(0)
+      expect(hookResult.usage?.can_use_chat).toBe(false)
+      expect(hookResult.usage?.remaining_count).toBe(0)
 
       // In a real implementation, UI components would check canUseChat
       // to disable input fields and buttons
-      const shouldDisableInput = !hookResult.usage?.canUseChat
-      const shouldDisableButton = !hookResult.usage?.canUseChat
+      const shouldDisableInput = !hookResult.usage?.can_use_chat
+      const shouldDisableButton = !hookResult.usage?.can_use_chat
 
       expect(shouldDisableInput).toBe(true)
       expect(shouldDisableButton).toBe(true)
@@ -360,17 +360,17 @@ describe('AI Chat Usage Error Handling Integration', () => {
             state: 'error',
             showInput: false,
             showError: true,
-            errorType: error.errorCode,
-            allowRetry: error.errorCode === 'SYSTEM_ERROR'
+            errorType: error.error_code,
+            allowRetry: error.error_code === 'SYSTEM_ERROR'
           }
         }
 
         if (usage) {
           return {
             state: 'success',
-            showInput: usage.canUseChat,
+            showInput: usage.can_use_chat,
             showError: false,
-            remainingCount: usage.remainingCount
+            remaining_count: usage.remaining_count
           }
         }
 
@@ -385,9 +385,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Test error state
       const mockError: AIChatUsageError = {
         error: 'Test error',
-        errorCode: 'SYSTEM_ERROR',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'SYSTEM_ERROR',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
       result = processErrorState(mockError, null, false)
       expect(result.state).toBe('error')
@@ -396,15 +396,15 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Test success state
       const mockUsage: AIChatUsage = {
-        remainingCount: 5,
-        dailyLimit: 10,
-        resetTime: '2023-01-02T00:00:00.000Z',
-        canUseChat: true
+        remaining_count: 5,
+        daily_limit: 10,
+        reset_time: '2023-01-02T00:00:00.000Z',
+        can_use_chat: true
       }
       result = processErrorState(null, mockUsage, false)
       expect(result.state).toBe('success')
       expect(result.showInput).toBe(true)
-      expect(result.remainingCount).toBe(5)
+      expect(result.remaining_count).toBe(5)
     })
   })
 
@@ -412,9 +412,9 @@ describe('AI Chat Usage Error Handling Integration', () => {
     it('should provide accessible error information', () => {
       const mockError: AIChatUsageError = {
         error: '利用制限エラー',
-        errorCode: 'USAGE_LIMIT_EXCEEDED',
-        remainingCount: 0,
-        resetTime: '2023-01-02T00:00:00.000Z'
+        error_code: 'USAGE_LIMIT_EXCEEDED',
+        remaining_count: 0,
+        reset_time: '2023-01-02T00:00:00.000Z'
       }
 
       mockUseAIChatUsage.mockReturnValue({
@@ -429,11 +429,11 @@ describe('AI Chat Usage Error Handling Integration', () => {
 
       // Error information should be accessible
       expect(hookResult.error?.error).toBe('利用制限エラー')
-      expect(hookResult.error?.errorCode).toBe('USAGE_LIMIT_EXCEEDED')
+      expect(hookResult.error?.error_code).toBe('USAGE_LIMIT_EXCEEDED')
 
       // In a real implementation, these would be used for ARIA attributes
       const ariaLabel = `エラー: ${hookResult.error?.error}`
-      const ariaLive = hookResult.error?.errorCode === 'SYSTEM_ERROR' ? 'polite' : 'assertive'
+      const ariaLive = hookResult.error?.error_code === 'SYSTEM_ERROR' ? 'polite' : 'assertive'
 
       expect(ariaLabel).toContain('利用制限エラー')
       expect(ariaLive).toBe('assertive')
