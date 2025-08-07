@@ -4,6 +4,8 @@
  * Updated for 2-plan system (free and standard) with Clerk API integration
  */
 
+import type { ErrorCode } from '@/constants/error_messages';
+
 /**
  * Supported subscription plans
  */
@@ -44,7 +46,7 @@ export interface AIChatUsageError {
   /** Human-readable error message in Japanese */
   error: string;
   /** Machine-readable error code for programmatic handling */
-  error_code: string;
+  error_code: ErrorCode;
   /** Current remaining count (typically 0 when limit exceeded) */
   remaining_count: number;
   /** ISO 8601 timestamp when the usage count resets */
@@ -667,7 +669,7 @@ export class AIChatUsageUtils {
   static getAriaLivePoliteness(errorCode: AIChatUsageErrorCode): 'polite' | 'assertive' {
     // System errors and Clerk API errors are more urgent
     if (errorCode === AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR ||
-        errorCode === AI_CHAT_USAGE_ERROR_CODES.CLERK_API_ERROR) {
+      errorCode === AI_CHAT_USAGE_ERROR_CODES.CLERK_API_ERROR) {
       return 'assertive';
     }
     return 'polite';
