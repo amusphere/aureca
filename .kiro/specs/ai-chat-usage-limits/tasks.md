@@ -22,7 +22,7 @@
   - Alembicマイグレーションファイルを生成
   - _要件: 3.1, 3.2, 3.3_
 
-- [ ] 4. AIChatUsage SQLModelの更新
+- [x] 4. AIChatUsage SQLModelの更新
   - `backend/app/schema.py`の既存モデルを更新
   - テーブル名を`ai_chat_usage`に変更
   - シンプル化されたフィールド構成に更新
