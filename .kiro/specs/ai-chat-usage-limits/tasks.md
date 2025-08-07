@@ -31,7 +31,7 @@
 
 ## Phase 2: Clerk API統合の実装
 
-- [ ] 5. ClerkServiceクラスの実装
+- [x] 5. ClerkServiceクラスの実装
   - `backend/app/services/clerk_service.py`ファイルを作成
   - Clerk APIクライアントの初期化処理を実装
   - ユーザープラン取得メソッドを実装
