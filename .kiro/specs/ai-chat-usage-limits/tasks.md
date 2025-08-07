@@ -8,7 +8,7 @@
   - 既存のConfigManagerクラスと関連する設定読み込み処理を削除
   - _要件: 1.1, 6.1_
 
-- [ ] 2. PlanLimits定数クラスの実装
+- [x] 2. PlanLimits定数クラスの実装
   - `backend/app/constants/plan_limits.py`ファイルを作成
   - freeプラン（0回）とstandardプラン（10回）の定数を定義
   - プラン名から制限値を取得するメソッドを実装
