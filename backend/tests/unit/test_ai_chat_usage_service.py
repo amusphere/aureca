@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
-from app.schema import User
+from app.schema import AIChatUsage, User
 from app.services.ai_chat_usage_service import AIChatUsageService
 
 
