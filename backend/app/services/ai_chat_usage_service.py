@@ -4,11 +4,6 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
-from app.config.manager import (
-    get_ai_chat_plan_config,
-    get_ai_chat_plan_limit,
-    get_all_ai_chat_plans,
-)
 from app.repositories import ai_chat_usage
 from app.schema import AIChatUsageLog, User
 
@@ -241,14 +236,14 @@ class AIChatUsageService:
 
     def update_plan_limits(self, new_limits: dict[str, int]) -> None:
         """
-        Update plan limits configuration (for backward compatibility)
+        Update plan limits configuration (DEPRECATED - config system removed)
 
-        This method is deprecated. Use the configuration management system instead.
+        This method is no longer functional as the configuration system has been removed.
 
         Args:
             new_limits: Dictionary of plan names to daily limits
         """
-        from app.config.manager import update_ai_chat_plan_limit
+        from app.config import update_ai_chat_plan_limit
 
         for plan_name, daily_limit in new_limits.items():
             update_ai_chat_plan_limit(plan_name, daily_limit)

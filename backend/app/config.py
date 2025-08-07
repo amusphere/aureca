@@ -62,11 +62,9 @@ class ConfigManager:
         if config_path:
             return Path(config_path)
 
-        # Default to config file in app directory
-        app_dir = Path(__file__).parent
-        default_config = app_dir / "config" / "ai_chat_limits.json"
-
-        return default_config if default_config.exists() else None
+        # JSON config file has been removed as part of system simplification
+        # Configuration is now managed through environment variables and defaults
+        return None
 
     def _load_ai_chat_plans(self) -> None:
         """Load AI chat plan configurations from environment variables or defaults"""

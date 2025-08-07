@@ -2,7 +2,7 @@
 
 ## Phase 1: 既存システムの削除とコア機能のリファクタリング
 
-- [ ] 1. 既存の複雑な設定システムの削除
+- [x] 1. 既存の複雑な設定システムの削除
   - `backend/app/config/ai_chat_limits.json`ファイルを削除
   - `backend/app/config/manager.py`の複雑な設定管理コードを削除
   - 既存のConfigManagerクラスと関連する設定読み込み処理を削除
