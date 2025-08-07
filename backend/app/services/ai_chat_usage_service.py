@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.constants.plan_limits import PlanLimits
+from app.repositories.ai_chat_usage import AIChatUsageRepository
 from app.schema import AIChatUsage, User
 from app.services.clerk_service import get_clerk_service
 

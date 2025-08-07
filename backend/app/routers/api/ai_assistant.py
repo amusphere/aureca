@@ -39,8 +39,11 @@ async def process_ai_request_endpoint(
     usage_service = AIChatUsageService(session=session)
 
     try:
-        # Check usage limits before processing
-        await usage_service.check_usage_limit(user)
+        # 高速な利用可否チェック
+        can_use = await usage_service.can_use_chat(user)
+        if not can_use:
+            # 詳細な制限チェックでエラー情報を取得
+            await usage_service.check_usage_limit(user)
 
         # Process AI request
         hub = AIHub(user.id, session)
@@ -54,7 +57,9 @@ async def process_ai_request_endpoint(
     except HTTPException:
         # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
         raise
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error processing AI request for user {user.id}: {e}", exc_info=True)
+
         # Handle unexpected errors during AI processing
         raise HTTPException(
             status_code=500,
@@ -64,7 +69,7 @@ async def process_ai_request_endpoint(
                 "remaining_count": 0,
                 "reset_time": _safe_get_reset_time(usage_service),
             },
-        ) from None
+        ) from e
 
 
 @router.post("/generate-from-all", response_model=GeneratedTasksBySourceModel)
@@ -84,27 +89,52 @@ async def get_ai_chat_usage_endpoint(
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
-    """AI Chat利用状況を取得"""
-    # Create service with the session that's already injected
+    """AI Chat利用状況を取得 - 軽量化された高速レスポンス"""
     usage_service = AIChatUsageService(session=session)
 
     try:
-        usage_stats = await usage_service.check_usage_limit(user)
-        # Return the usage stats directly as they already match the response model
-        return AIChatUsageResponse(**usage_stats)
-    except HTTPException:
-        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
-        raise
+        # 軽量化: 利用統計のみを取得（制限チェックは行わない）
+        stats = await usage_service.get_usage_stats(user)
+
+        # レスポンスモデルに必要なフィールドを含める
+        return AIChatUsageResponse(
+            remaining_count=stats["remaining_count"],
+            daily_limit=stats["daily_limit"],
+            current_usage=stats["current_usage"],
+            plan_name=stats["plan_name"],
+            reset_time=stats["reset_time"],
+            can_use_chat=stats["can_use_chat"],
+        )
+
     except Exception as e:
-        # Handle unexpected errors
-        logger.error(f"Unexpected error in get_ai_chat_usage_endpoint: {e}", exc_info=True)
+        logger.error(f"Error getting AI chat usage for user {user.id}: {e}", exc_info=True)
+
+        # Clerk API エラーの場合は専用のエラーハンドリング
+        if "clerk" in str(e).lower():
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                    "error_code": "CLERK_API_ERROR",
+                    "remaining_count": 0,
+                    "daily_limit": 0,
+                    "plan_name": "free",
+                    "reset_time": usage_service._get_reset_time(),
+                    "can_use_chat": False,
+                },
+            ) from e
+
+        # その他のシステムエラー
         raise HTTPException(
             status_code=500,
             detail={
                 "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
                 "error_code": "SYSTEM_ERROR",
                 "remaining_count": 0,
-                "reset_time": _safe_get_reset_time(usage_service),
+                "daily_limit": 0,
+                "plan_name": "free",
+                "reset_time": usage_service._get_reset_time(),
+                "can_use_chat": False,
             },
         ) from e
 
@@ -114,25 +144,88 @@ async def increment_ai_chat_usage_endpoint(
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
-    """AI Chat利用回数を記録（内部API）"""
+    """AI Chat利用回数を記録（内部API） - 高速処理最適化"""
     usage_service = AIChatUsageService(session=session)
 
     try:
+        # 利用制限チェックと利用数インクリメントを実行
         updated_stats = await usage_service.increment_usage(user)
-        # Return the updated stats directly as they already match the response model
-        return AIChatUsageResponse(**updated_stats)
+
+        # レスポンスモデルに必要なフィールドを含める
+        return AIChatUsageResponse(
+            remaining_count=updated_stats["remaining_count"],
+            daily_limit=updated_stats["daily_limit"],
+            current_usage=updated_stats["current_usage"],
+            plan_name=updated_stats["plan_name"],
+            reset_time=updated_stats["reset_time"],
+            can_use_chat=updated_stats["can_use_chat"],
+        )
+
     except HTTPException:
-        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
+        # HTTPExceptionはそのまま再発生（403, 429など）
         raise
+
     except Exception as e:
-        # Handle unexpected errors
-        logger.error(f"Unexpected error in increment_ai_chat_usage_endpoint: {e}", exc_info=True)
+        logger.error(f"Error incrementing AI chat usage for user {user.id}: {e}", exc_info=True)
+
+        # Clerk API エラーの場合
+        if "clerk" in str(e).lower():
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                    "error_code": "CLERK_API_ERROR",
+                    "remaining_count": 0,
+                    "daily_limit": 0,
+                    "plan_name": "free",
+                    "reset_time": usage_service._get_reset_time(),
+                    "can_use_chat": False,
+                },
+            ) from e
+
+        # データベースエラーやその他のシステムエラー
         raise HTTPException(
             status_code=500,
             detail={
                 "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
                 "error_code": "SYSTEM_ERROR",
                 "remaining_count": 0,
-                "reset_time": _safe_get_reset_time(usage_service),
+                "daily_limit": 0,
+                "plan_name": "free",
+                "reset_time": usage_service._get_reset_time(),
+                "can_use_chat": False,
             },
         ) from e
+
+
+@router.get("/usage/can-use", response_model=dict)
+async def can_use_ai_chat_endpoint(
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """AI Chat利用可否の高速チェック - 軽量エンドポイント"""
+    usage_service = AIChatUsageService(session=session)
+
+    try:
+        # 高速な利用可否チェック
+        can_use = await usage_service.can_use_chat(user)
+        user_plan = await usage_service.get_user_plan(user)
+        daily_limit = usage_service.get_daily_limit(user_plan)
+
+        return {
+            "can_use_chat": can_use,
+            "plan_name": user_plan,
+            "daily_limit": daily_limit,
+            "reset_time": usage_service._get_reset_time(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking AI chat availability for user {user.id}: {e}", exc_info=True)
+
+        # エラー時はfreeプランとして安全にフォールバック
+        return {
+            "can_use_chat": False,
+            "plan_name": "free",
+            "daily_limit": 0,
+            "reset_time": usage_service._get_reset_time(),
+        }
