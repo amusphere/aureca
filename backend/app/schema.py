@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
+from sqlalchemy import Index, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -109,7 +110,11 @@ class TaskSource(SQLModel, table=True):
 
 class AIChatUsage(SQLModel, table=True):
     __tablename__ = "ai_chat_usage"
-    __table_args__ = ({"extend_existing": True},)
+    __table_args__ = (
+        UniqueConstraint("user_id", "usage_date", name="uq_user_date"),
+        Index("idx_user_date_fast", "user_id", "usage_date"),
+        {"extend_existing": True},
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)

@@ -5,7 +5,6 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.constants.plan_limits import PlanLimits
-from app.repositories import ai_chat_usage
 from app.schema import AIChatUsage, User
 from app.services.clerk_service import get_clerk_service
 
@@ -78,7 +77,7 @@ class AIChatUsageService:
         user_plan = await self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
-        current_usage = ai_chat_usage.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = AIChatUsageRepository.get_current_usage_count(self.session, user.id, current_date)
 
         remaining_count = max(0, daily_limit - current_usage)
         can_use_chat = daily_limit > 0 and current_usage < daily_limit
@@ -111,7 +110,7 @@ class AIChatUsageService:
 
         # Check current usage against limit
         current_date = self._get_current_date()
-        current_usage = ai_chat_usage.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = AIChatUsageRepository.get_current_usage_count(self.session, user.id, current_date)
 
         return current_usage < daily_limit
 
@@ -192,7 +191,7 @@ class AIChatUsageService:
         # Increment usage count
         current_date = self._get_current_date()
         try:
-            ai_chat_usage.increment_daily_usage(self.session, user.id, current_date)
+            AIChatUsageRepository.increment_usage_count(self.session, user.id, current_date)
 
             # Return updated statistics
             return await self.get_usage_stats(user)
@@ -224,7 +223,7 @@ class AIChatUsageService:
         Returns:
             List of AIChatUsage records
         """
-        return ai_chat_usage.get_usage_history(self.session, user.id, limit)
+        return AIChatUsageRepository.get_usage_history(self.session, user.id, limit)
 
     def get_plan_config(self, user_plan: str) -> dict:
         """
