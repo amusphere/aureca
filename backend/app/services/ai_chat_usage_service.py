@@ -4,8 +4,10 @@ from datetime import UTC, datetime
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
+from app.constants.plan_limits import PlanLimits
 from app.repositories import ai_chat_usage
-from app.schema import User
+from app.schema import AIChatUsage, User
+from app.services.clerk_service import get_clerk_service
 
 logger = logging.getLogger(__name__)
 
@@ -16,35 +18,36 @@ class AIChatUsageService:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_user_plan(self, user: User) -> str:
+    async def get_user_plan(self, user: User) -> str:
         """
-        Determine user's subscription plan
+        Determine user's subscription plan using Clerk API
 
         Args:
             user: User object
 
         Returns:
-            str: User's plan name
-
-        Note: Currently defaults to 'basic' for all authenticated users.
-        This should be extended when subscription system is implemented.
+            str: User's plan name ("free", "standard", etc.)
         """
-        # TODO: Implement actual subscription plan detection
-        # For now, all authenticated users get 'basic' plan
-        # Free users would not be authenticated or have a specific flag
-        return "basic"
+        if not user.clerk_sub:
+            logger.warning(f"User {user.id} has no clerk_sub, defaulting to free plan")
+            return "free"
+
+        clerk_service = get_clerk_service()
+        plan = await clerk_service.get_user_plan(user.clerk_sub)
+        logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
+        return plan
 
     def get_daily_limit(self, user_plan: str) -> int:
         """
-        Get daily usage limit for a specific user plan
+        Get daily usage limit for a specific user plan using PlanLimits constants
 
         Args:
-            user_plan: User's subscription plan (e.g., 'free', 'basic')
+            user_plan: User's subscription plan (e.g., 'free', 'standard')
 
         Returns:
-            int: Daily usage limit (-1 for unlimited, 0 for no access)
+            int: Daily usage limit (0 for no access, positive number for limited access)
         """
-        limit = get_ai_chat_plan_limit(user_plan)
+        limit = PlanLimits.get_limit(user_plan)
         logger.debug(f"Retrieved daily limit for plan '{user_plan}': {limit}")
         return limit
 
@@ -72,16 +75,13 @@ class AIChatUsageService:
         Returns:
             Dict containing usage statistics
         """
-        user_plan = self.get_user_plan(user)
+        user_plan = await self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
         current_usage = ai_chat_usage.get_current_usage_count(self.session, user.id, current_date)
 
-        remaining_count = max(0, daily_limit - current_usage) if daily_limit >= 0 else -1
-        can_use_chat = daily_limit == -1 or (daily_limit > 0 and current_usage < daily_limit)
-
-        # Get plan configuration for additional context
-        plan_config = self.get_plan_config(user_plan)
+        remaining_count = max(0, daily_limit - current_usage)
+        can_use_chat = daily_limit > 0 and current_usage < daily_limit
 
         return {
             "remaining_count": remaining_count,
@@ -90,9 +90,30 @@ class AIChatUsageService:
             "reset_time": self._get_reset_time(),
             "can_use_chat": can_use_chat,
             "plan_name": user_plan,
-            "plan_description": plan_config.get("description", ""),
-            "plan_features": plan_config.get("features", []),
         }
+
+    async def can_use_chat(self, user: User) -> bool:
+        """
+        Simple method to check if user can use AI chat
+
+        Args:
+            user: User object
+
+        Returns:
+            bool: True if user can use chat, False otherwise
+        """
+        user_plan = await self.get_user_plan(user)
+        daily_limit = self.get_daily_limit(user_plan)
+
+        # If plan doesn't allow chat (limit is 0), return False
+        if daily_limit == 0:
+            return False
+
+        # Check current usage against limit
+        current_date = self._get_current_date()
+        current_usage = ai_chat_usage.get_current_usage_count(self.session, user.id, current_date)
+
+        return current_usage < daily_limit
 
     async def check_usage_limit(self, user: User) -> dict:
         """
@@ -207,7 +228,7 @@ class AIChatUsageService:
 
     def get_plan_config(self, user_plan: str) -> dict:
         """
-        Get full plan configuration including features and description
+        Get plan configuration using PlanLimits constants
 
         Args:
             user_plan: User's subscription plan
@@ -215,64 +236,37 @@ class AIChatUsageService:
         Returns:
             Dict containing plan configuration
         """
-        plan_config = get_ai_chat_plan_config(user_plan)
-        if plan_config:
-            return {
-                "plan_name": user_plan,
-                "daily_limit": plan_config.daily_limit,
-                "description": plan_config.description,
-                "features": plan_config.features,
-            }
+        daily_limit = PlanLimits.get_limit(user_plan)
+        is_valid = PlanLimits.is_valid_plan(user_plan)
 
-        # Return default free plan config if plan not found
-        logger.warning(f"Plan '{user_plan}' not found, returning free plan config")
-        free_config = get_ai_chat_plan_config("free")
-        return {
-            "plan_name": "free",
-            "daily_limit": free_config.daily_limit if free_config else 0,
-            "description": free_config.description if free_config else "Free plan",
-            "features": free_config.features if free_config else [],
+        # Simple plan descriptions based on limits
+        descriptions = {
+            "free": "Free plan - AI Chat not available",
+            "standard": "Standard plan - 10 AI Chat messages per day",
         }
 
-    def update_plan_limits(self, new_limits: dict[str, int]) -> None:
-        """
-        Update plan limits configuration (DEPRECATED - config system removed)
+        features = {"free": [], "standard": ["AI Chat (10/day)", "Task Management", "Basic Support"]}
 
-        This method is no longer functional as the configuration system has been removed.
-
-        Args:
-            new_limits: Dictionary of plan names to daily limits
-        """
-        from app.config import update_ai_chat_plan_limit
-
-        for plan_name, daily_limit in new_limits.items():
-            update_ai_chat_plan_limit(plan_name, daily_limit)
-
-        logger.warning("update_plan_limits is deprecated. Use configuration management system instead.")
-
-    def get_all_plan_limits(self) -> dict[str, int]:
-        """
-        Get all configured plan limits
-
-        Returns:
-            Dictionary of all plan limits
-        """
-        all_plans = get_all_ai_chat_plans()
-        return {plan_name: plan_config.daily_limit for plan_name, plan_config in all_plans.items()}
+        return {
+            "plan_name": user_plan if is_valid else "free",
+            "daily_limit": daily_limit,
+            "description": descriptions.get(user_plan, descriptions["free"]),
+            "features": features.get(user_plan, features["free"]),
+        }
 
     def get_all_plan_configs(self) -> dict[str, dict]:
         """
-        Get all plan configurations with full details
+        Get all plan configurations using PlanLimits constants
 
         Returns:
             Dictionary of all plan configurations
         """
-        all_plans = get_all_ai_chat_plans()
-        return {
-            plan_name: {
-                "daily_limit": plan_config.daily_limit,
-                "description": plan_config.description,
-                "features": plan_config.features,
+        all_plans = {}
+        for plan_name in PlanLimits.get_available_plans():
+            config = self.get_plan_config(plan_name)
+            all_plans[plan_name] = {
+                "daily_limit": config["daily_limit"],
+                "description": config["description"],
+                "features": config["features"],
             }
-            for plan_name, plan_config in all_plans.items()
-        }
+        return all_plans

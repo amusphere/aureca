@@ -38,7 +38,7 @@
   - API エラー時のフォールバック処理（freeプラン）を実装
   - _要件: 2.1, 2.2, 2.3_
 
-- [ ] 6. AIChatUsageServiceのリファクタリング
+- [x] 6. AIChatUsageServiceのリファクタリング
   - 既存のサービスクラスから複雑な設定管理コードを削除
   - PlanLimits定数クラスを使用する制限チェック処理に変更
   - ClerkServiceを統合したプラン取得処理を実装
