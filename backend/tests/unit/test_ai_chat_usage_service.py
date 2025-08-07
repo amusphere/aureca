@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
-from app.schema import AIChatUsageLog, User
+from app.schema import User
 from app.services.ai_chat_usage_service import AIChatUsageService
 
 
@@ -423,8 +423,8 @@ class TestAIChatUsageService:
     async def test_get_usage_history(self, mock_repo, service: AIChatUsageService, mock_user: User):
         """Test get_usage_history returns repository results."""
         mock_logs = [
-            AIChatUsageLog(id=1, user_id=1, usage_date="2023-01-15", usage_count=5),
-            AIChatUsageLog(id=2, user_id=1, usage_date="2023-01-14", usage_count=3),
+            AIChatUsage(id=1, user_id=1, usage_date="2023-01-15", usage_count=5),
+            AIChatUsage(id=2, user_id=1, usage_date="2023-01-14", usage_count=3),
         ]
         mock_repo.get_usage_history.return_value = mock_logs
 

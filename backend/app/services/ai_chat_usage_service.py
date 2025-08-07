@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.repositories import ai_chat_usage
-from app.schema import AIChatUsageLog, User
+from app.schema import User
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ class AIChatUsageService:
                 },
             ) from e
 
-    async def get_usage_history(self, user: User, limit: int = 30) -> list[AIChatUsageLog]:
+    async def get_usage_history(self, user: User, limit: int = 30) -> list[AIChatUsage]:
         """
         Get usage history for a user
 
@@ -201,7 +201,7 @@ class AIChatUsageService:
             limit: Maximum number of records to return
 
         Returns:
-            List of AIChatUsageLog records
+            List of AIChatUsage records
         """
         return ai_chat_usage.get_usage_history(self.session, user.id, limit)
 

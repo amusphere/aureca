@@ -3,27 +3,25 @@ from datetime import datetime
 from sqlalchemy import and_
 from sqlmodel import Session, select
 
-from app.schema import AIChatUsageLog
+from app.schema import AIChatUsage
 
 
-def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsageLog | None:
+def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsage | None:
     """Get daily usage record for a specific user and date"""
-    stmt = select(AIChatUsageLog).where(
-        and_(AIChatUsageLog.user_id == user_id, AIChatUsageLog.usage_date == usage_date)
-    )
+    stmt = select(AIChatUsage).where(and_(AIChatUsage.user_id == user_id, AIChatUsage.usage_date == usage_date))
     return session.exec(stmt).first()
 
 
-def create_daily_usage(session: Session, user_id: int, usage_date: str, usage_count: int = 1) -> AIChatUsageLog:
+def create_daily_usage(session: Session, user_id: int, usage_date: str, usage_count: int = 1) -> AIChatUsage:
     """Create a new daily usage record"""
-    usage_log = AIChatUsageLog(user_id=user_id, usage_date=usage_date, usage_count=usage_count)
+    usage_log = AIChatUsage(user_id=user_id, usage_date=usage_date, usage_count=usage_count)
     session.add(usage_log)
     session.commit()
     session.refresh(usage_log)
     return usage_log
 
 
-def increment_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsageLog:
+def increment_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsage:
     """Increment usage count for a specific user and date, creating record if it doesn't exist"""
     existing_usage = get_daily_usage(session, user_id, usage_date)
 
@@ -45,7 +43,7 @@ def get_current_usage_count(session: Session, user_id: int, usage_date: str) -> 
     return usage_log.usage_count if usage_log else 0
 
 
-def update_usage_count(session: Session, user_id: int, usage_date: str, new_count: int) -> AIChatUsageLog:
+def update_usage_count(session: Session, user_id: int, usage_date: str, new_count: int) -> AIChatUsage:
     """Update usage count for a specific user and date"""
     existing_usage = get_daily_usage(session, user_id, usage_date)
 
@@ -59,12 +57,9 @@ def update_usage_count(session: Session, user_id: int, usage_date: str, new_coun
         return create_daily_usage(session, user_id, usage_date, usage_count=new_count)
 
 
-def get_usage_history(session: Session, user_id: int, limit: int = 30) -> list[AIChatUsageLog]:
+def get_usage_history(session: Session, user_id: int, limit: int = 30) -> list[AIChatUsage]:
     """Get usage history for a user, ordered by date descending"""
     stmt = (
-        select(AIChatUsageLog)
-        .where(AIChatUsageLog.user_id == user_id)
-        .order_by(AIChatUsageLog.usage_date.desc())
-        .limit(limit)
+        select(AIChatUsage).where(AIChatUsage.user_id == user_id).order_by(AIChatUsage.usage_date.desc()).limit(limit)
     )
     return session.exec(stmt).all()
