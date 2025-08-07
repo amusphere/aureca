@@ -21,11 +21,14 @@ router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 
 
 def _safe_get_reset_time(usage_service: AIChatUsageService) -> str:
-    """Safely get reset time, returning 'unknown' if there's an error."""
+    """Safely get reset time, returning next midnight UTC if there's an error."""
     try:
         return usage_service._get_reset_time()
     except Exception:
-        return "unknown"
+        # Fallback: calculate next midnight UTC
+        now = datetime.now(UTC)
+        next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        return next_midnight.isoformat()
 
 
 @router.post("/process", response_model=AIResponseModel)
@@ -34,42 +37,102 @@ async def process_ai_request_endpoint(
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
-    """AIアシスタントにリクエストを送信して処理結果を取得"""
-    # Initialize usage service with the injected session
+    """AIアシスタントにリクエストを送信して処理結果を取得 - 新サービス層統合版
+
+    パフォーマンス最適化:
+    - 高速な利用可否チェック
+    - 効率的なエラーハンドリング
+    - 詳細なパフォーマンス監視
+    """
+    start_time = time.time()
     usage_service = AIChatUsageService(session=session)
 
     try:
-        # 高速な利用可否チェック
+        # Phase 1: 高速な利用可否チェック - 新しいサービス層インターフェース使用
+        check_start = time.time()
         can_use = await usage_service.can_use_chat(user)
+        check_duration = time.time() - check_start
+
+        logger.debug(f"Usage check for user {user.id} completed in {check_duration:.3f}s: {can_use}")
+
         if not can_use:
-            # 詳細な制限チェックでエラー情報を取得
+            # 詳細な制限チェックでエラー情報を取得 - 改善されたエラーレスポンス
             await usage_service.check_usage_limit(user)
 
-        # Process AI request
+        # Phase 2: AI処理実行
+        ai_start = time.time()
         hub = AIHub(user.id, session)
         result = await hub.process_request(prompt=request.prompt, current_user=user)
+        ai_duration = time.time() - ai_start
 
-        # Increment usage count after successful processing
+        logger.debug(f"AI processing for user {user.id} completed in {ai_duration:.3f}s")
+
+        # Phase 3: 利用数インクリメント - パフォーマンス最適化
+        increment_start = time.time()
         await usage_service.increment_usage(user)
+        increment_duration = time.time() - increment_start
+
+        total_duration = time.time() - start_time
+        logger.info(
+            f"AI request completed for user {user.id} - "
+            f"Total: {total_duration:.3f}s "
+            f"(Check: {check_duration:.3f}s, AI: {ai_duration:.3f}s, Increment: {increment_duration:.3f}s)"
+        )
 
         return result
 
-    except HTTPException:
-        # Re-raise HTTP exceptions (403, 429) as they contain proper error responses
+    except HTTPException as http_exc:
+        # Re-raise HTTP exceptions (403, 429) with enhanced error details
+        total_duration = time.time() - start_time
+        logger.warning(f"AI process request blocked for user {user.id} after {total_duration:.3f}s: {http_exc.detail}")
         raise
     except Exception as e:
-        logger.error(f"Error processing AI request for user {user.id}: {e}", exc_info=True)
+        total_duration = time.time() - start_time
+        logger.error(f"Error processing AI request for user {user.id} after {total_duration:.3f}s: {e}", exc_info=True)
 
-        # Handle unexpected errors during AI processing
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
-                "error_code": "SYSTEM_ERROR",
-                "remaining_count": 0,
-                "reset_time": _safe_get_reset_time(usage_service),
-            },
-        ) from e
+        # Get user stats for better error context - with fallback handling
+        try:
+            stats_start = time.time()
+            stats = await usage_service.get_usage_stats(user)
+            stats_duration = time.time() - stats_start
+
+            remaining_count = stats.get("remaining_count", 0)
+            reset_time = stats.get("reset_time", _safe_get_reset_time(usage_service))
+            plan_name = stats.get("plan_name", "free")
+            daily_limit = stats.get("daily_limit", 0)
+
+            logger.debug(f"Stats retrieval for error context took {stats_duration:.3f}s")
+        except Exception as stats_error:
+            # Fallback values if stats retrieval fails
+            logger.warning(f"Failed to get stats for error context: {stats_error}")
+            remaining_count = 0
+            reset_time = _safe_get_reset_time(usage_service)
+            plan_name = "free"
+            daily_limit = 0
+
+        # Enhanced error response with more context
+        error_detail = {
+            "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+            "error_code": "SYSTEM_ERROR",
+            "remaining_count": remaining_count,
+            "daily_limit": daily_limit,
+            "plan_name": plan_name,
+            "reset_time": reset_time,
+            "can_use_chat": False,
+        }
+
+        # Check if it's a Clerk API related error
+        if "clerk" in str(e).lower():
+            error_detail.update(
+                {
+                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                    "error_code": "CLERK_API_ERROR",
+                }
+            )
+            raise HTTPException(status_code=503, detail=error_detail) from e
+
+        # General system error
+        raise HTTPException(status_code=500, detail=error_detail) from e
 
 
 @router.post("/generate-from-all", response_model=GeneratedTasksBySourceModel)
