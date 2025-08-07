@@ -1,6 +1,7 @@
 "use client";
 
-import { AIChatUsage, AIChatUsageError, AIChatUsageErrorCode, AIChatUsageUtils } from "@/types/AIChatUsage";
+import { getErrorMessage } from "@/constants/error_messages";
+import { AIChatUsage, AIChatUsageError } from "@/types/AIChatUsage";
 import { Send } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -37,7 +38,7 @@ export default function AIChatInput({
   // Generate appropriate placeholder text based on usage status
   const getPlaceholderText = (): string => {
     if (usageError) {
-      return AIChatUsageUtils.getErrorMessage(usageError.error_code as AIChatUsageErrorCode, 'placeholder');
+      return getErrorMessage(usageError.error_code, false);
     }
 
     if (usage && !usage.can_use_chat) {
