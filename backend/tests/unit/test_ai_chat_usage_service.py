@@ -479,11 +479,6 @@ class TestAIChatUsageService:
         limit = service.get_daily_limit("free")
         assert limit == 0
 
-    def test_edge_case_zero_daily_limit(self, service: AIChatUsageService):
-        """Test edge case with zero daily limit (no access)."""
-        limit = service.get_daily_limit("free")
-        assert limit == 0
-
     @patch("app.services.ai_chat_usage_service.datetime")
     def test_edge_case_date_boundary_midnight(self, mock_datetime, service: AIChatUsageService):
         """Test edge case at exactly midnight."""

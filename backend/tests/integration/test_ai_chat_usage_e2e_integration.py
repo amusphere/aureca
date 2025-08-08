@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from app.database import get_session
-from app.repositories import ai_chat_usage
+from app.repositories.ai_chat_usage import AIChatUsageRepository
 from app.schema import User
 from app.services.auth import auth_user
 from main import app
@@ -17,21 +17,21 @@ class TestAIChatUsageE2EIntegration:
     """Test complete end-to-end scenarios for AI Chat usage limits."""
 
     @pytest.fixture(autouse=True)
-    def mock_config_values(self):
-        """Mock config values to ensure consistent test behavior."""
-        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+    def mock_dependencies(self):
+        """Mock dependencies to ensure consistent test behavior."""
+        # Mock ClerkService
+        with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
+            from unittest.mock import AsyncMock
 
-            def get_limit_side_effect(plan_name):
-                limits = {
-                    "free": 0,
-                    "basic": 10,
-                    "premium": 50,
-                    "enterprise": -1,
-                }
-                return limits.get(plan_name, 0)
+            mock_clerk_service = AsyncMock()
+            mock_get_clerk_service.return_value = mock_clerk_service
 
-            mock_get_limit.side_effect = get_limit_side_effect
-            yield
+            # Default to standard plan for most tests
+            mock_clerk_service.get_user_plan.return_value = "standard"
+
+            yield {
+                "mock_clerk_service": mock_clerk_service,
+            }
 
     def _setup_auth(self, test_user: User):
         """Helper to setup authentication override."""
@@ -71,6 +71,8 @@ class TestAIChatUsageE2EIntegration:
                 initial_data = response.json()
                 assert initial_data["remaining_count"] == 10
                 assert initial_data["daily_limit"] == 10
+                assert initial_data["current_usage"] == 0
+                assert initial_data["plan_name"] == "standard"
                 assert initial_data["can_use_chat"] is True
 
                 # Step 2: User uses AI chat (mock successful processing)
@@ -94,10 +96,11 @@ class TestAIChatUsageE2EIntegration:
                 updated_data = response.json()
                 assert updated_data["remaining_count"] == 9  # Decremented by 1
                 assert updated_data["daily_limit"] == 10
+                assert updated_data["current_usage"] == 1
                 assert updated_data["can_use_chat"] is True
 
                 # Verify database state
-                current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+                current_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
                 assert current_usage == 1
         finally:
             self._cleanup_auth()
@@ -107,7 +110,7 @@ class TestAIChatUsageE2EIntegration:
         current_date = "2023-01-01"
 
         # Set user close to limit
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 9)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 9)
 
         self._setup_auth(test_user)
 
@@ -140,21 +143,19 @@ class TestAIChatUsageE2EIntegration:
 
                 # Step 3: Check usage after reaching limit
                 response = client.get("/api/ai/usage")
-                assert response.status_code == 429
+                assert response.status_code == 200
 
-                error_data = response.json()
-                assert "detail" in error_data
-                detail = error_data["detail"]
-                assert detail["error_code"] == "USAGE_LIMIT_EXCEEDED"
-                assert detail["remaining_count"] == 0
-                assert "本日の利用回数上限に達しました" in detail["error"]
+                limit_data = response.json()
+                assert limit_data["remaining_count"] == 0
+                assert limit_data["can_use_chat"] is False
+                assert limit_data["current_usage"] == 10
 
                 # Step 4: Attempt to use AI chat when at limit
                 ai_response = client.post("/api/ai/process", json={"prompt": "Should fail"})
                 assert ai_response.status_code == 429
 
                 # Verify database state
-                final_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+                final_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
                 assert final_usage == 10  # At limit
         finally:
             self._cleanup_auth()
@@ -165,7 +166,7 @@ class TestAIChatUsageE2EIntegration:
         day2_date = "2023-01-02"
 
         # Day 1: Use up all quota
-        ai_chat_usage.create_daily_usage(session, test_user.id, day1_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, day1_date, 10)
 
         self._setup_auth(test_user)
 
@@ -176,12 +177,11 @@ class TestAIChatUsageE2EIntegration:
                 return_value=day1_date,
             ):
                 response = client.get("/api/ai/usage")
-                assert response.status_code == 429
+                assert response.status_code == 200
 
-                error_data = response.json()
-                assert "detail" in error_data
-                detail = error_data["detail"]
-                assert detail["remaining_count"] == 0
+                limit_data = response.json()
+                assert limit_data["remaining_count"] == 0
+                assert limit_data["can_use_chat"] is False
 
             # Day 2 - should reset
             with patch(
@@ -211,32 +211,31 @@ class TestAIChatUsageE2EIntegration:
         finally:
             self._cleanup_auth()
 
-    def test_free_plan_user_complete_journey(self, client: TestClient, test_user: User):
+    def test_free_plan_user_complete_journey(self, client: TestClient, test_user: User, mock_dependencies):
         """Test complete journey for free plan user (should be blocked)."""
         self._setup_auth(test_user)
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService.get_user_plan",
-                return_value="free",
-            ):
-                # Step 1: Check usage - should be blocked
-                response = client.get("/api/ai/usage")
-                assert response.status_code == 403
+            # Mock ClerkService to return free plan
+            mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
 
-                error_data = response.json()
-                assert "detail" in error_data
-                detail = error_data["detail"]
-                assert detail["error_code"] == "PLAN_RESTRICTION"
-                assert "現在のプランではAIChatをご利用いただけません" in detail["error"]
+            # Step 1: Check usage - should show free plan limits
+            response = client.get("/api/ai/usage")
+            assert response.status_code == 200
 
-                # Step 2: Attempt AI chat - should be blocked
-                ai_response = client.post("/api/ai/process", json={"prompt": "Should be blocked"})
-                assert ai_response.status_code == 403
+            data = response.json()
+            assert data["daily_limit"] == 0
+            assert data["remaining_count"] == 0
+            assert data["plan_name"] == "free"
+            assert data["can_use_chat"] is False
 
-                # Step 3: Attempt increment - should be blocked
-                increment_response = client.post("/api/ai/usage/increment")
-                assert increment_response.status_code == 403
+            # Step 2: Attempt AI chat - should be blocked
+            ai_response = client.post("/api/ai/process", json={"prompt": "Should be blocked"})
+            assert ai_response.status_code == 403
+
+            # Step 3: Attempt increment - should be blocked
+            increment_response = client.post("/api/ai/usage/increment")
+            assert increment_response.status_code == 403
         finally:
             self._cleanup_auth()
 
@@ -266,7 +265,7 @@ class TestAIChatUsageE2EIntegration:
         current_date = "2023-01-01"
 
         # User1 uses up their quota
-        ai_chat_usage.create_daily_usage(session, user1.id, current_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, user1.id, current_date, 10)
 
         try:
             with patch(
@@ -276,7 +275,8 @@ class TestAIChatUsageE2EIntegration:
                 # User1 should be at limit
                 self._setup_auth(user1)
                 response = client.get("/api/ai/usage")
-                assert response.status_code == 429
+                assert response.status_code == 200
+                assert response.json()["can_use_chat"] is False
 
                 # User2 should have full quota
                 self._setup_auth(user2)
@@ -346,7 +346,7 @@ class TestAIChatUsageE2EIntegration:
         current_date = "2023-01-01"
 
         # Create some usage
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 3)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 3)
 
         self._setup_auth(test_user)
 
@@ -451,7 +451,7 @@ class TestAIChatUsageE2EIntegration:
                 assert increment_response.json()["remaining_count"] == 9
 
                 # Verify database consistency
-                db_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+                db_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
                 assert db_usage == 1
 
                 # Another increment
@@ -465,7 +465,7 @@ class TestAIChatUsageE2EIntegration:
                 assert final_response.json()["remaining_count"] == 8
 
                 # Database should match
-                final_db_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+                final_db_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
                 assert final_db_usage == 2
         finally:
             self._cleanup_auth()

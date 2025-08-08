@@ -1,5 +1,6 @@
 import logging
-from datetime import UTC, datetime, time, timedelta
+import time
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
