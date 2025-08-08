@@ -17,21 +17,34 @@ class TestAIChatUsageIntegrationSimple:
     """Test AI Chat usage integration with simplified approach."""
 
     @pytest.fixture(autouse=True)
-    def mock_config_values(self):
-        """Mock config values to ensure consistent test behavior."""
-        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+    def mock_dependencies(self):
+        """Mock dependencies to ensure consistent test behavior."""
+        # Mock PlanLimits.get_limit
+        with patch("app.services.ai_chat_usage_service.PlanLimits.get_limit") as mock_get_limit:
 
             def get_limit_side_effect(plan_name):
                 limits = {
                     "free": 0,
-                    "basic": 10,
-                    "premium": 50,
-                    "enterprise": -1,
+                    "standard": 10,
                 }
                 return limits.get(plan_name, 0)
 
             mock_get_limit.side_effect = get_limit_side_effect
-            yield
+
+            # Mock ClerkService
+            with patch("app.services.ai_chat_usage_service.ClerkService") as mock_clerk_service_class:
+                from unittest.mock import AsyncMock
+
+                mock_clerk_service = AsyncMock()
+                mock_clerk_service_class.return_value = mock_clerk_service
+
+                # Default to standard plan for most tests
+                mock_clerk_service.get_user_plan.return_value = "standard"
+
+                yield {
+                    "mock_get_limit": mock_get_limit,
+                    "mock_clerk_service": mock_clerk_service,
+                }
 
     def _setup_auth(self, test_user: User):
         """Helper to setup authentication override."""
@@ -144,16 +157,15 @@ class TestAIChatUsageIntegrationSimple:
         finally:
             self._cleanup_auth()
 
-    def test_free_plan_restriction_flow(self, client: TestClient, test_user: User):
+    def test_free_plan_restriction_flow(self, client: TestClient, test_user: User, mock_dependencies):
         """Test free plan restriction flow."""
         self._setup_auth(test_user)
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService.get_user_plan",
-                return_value="free",
-            ):
-                response = client.get("/api/ai/usage")
+            # Mock ClerkService to return free plan
+            mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
+
+            response = client.get("/api/ai/usage")
 
             assert response.status_code == 403
             data = response.json()

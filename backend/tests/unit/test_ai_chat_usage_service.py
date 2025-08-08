@@ -1,7 +1,7 @@
 """Unit tests for AI chat usage service functionality."""
 
 from datetime import UTC, datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import HTTPException, status
@@ -15,71 +15,33 @@ class TestAIChatUsageService:
     """Unit tests for AI chat usage service functionality."""
 
     @pytest.fixture(autouse=True)
-    def mock_config_values(self):
-        """Mock config values to ensure consistent test behavior."""
-        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+    def mock_dependencies(self):
+        """Mock dependencies to ensure consistent test behavior."""
+        # Mock PlanLimits.get_limit
+        with patch("app.services.ai_chat_usage_service.PlanLimits.get_limit") as mock_get_limit:
 
             def get_limit_side_effect(plan_name):
                 limits = {
                     "free": 0,
-                    "basic": 10,
-                    "premium": 50,
-                    "enterprise": -1,
+                    "standard": 10,
                 }
                 return limits.get(plan_name, 0)
 
             mock_get_limit.side_effect = get_limit_side_effect
 
-            with patch("app.services.ai_chat_usage_service.get_all_ai_chat_plans") as mock_get_all:
-                from app.config.manager import AIChatPlanConfig
+            # Mock ClerkService
+            with patch("app.services.ai_chat_usage_service.ClerkService") as mock_clerk_service_class:
+                mock_clerk_service = AsyncMock()
+                mock_clerk_service_class.return_value = mock_clerk_service
 
-                mock_plans = {
-                    "free": AIChatPlanConfig(
-                        plan_name="free",
-                        daily_limit=0,
-                        description="Free plan - No AI chat access",
-                        features=["Basic task management", "Manual task creation", "Google Calendar integration"],
-                    ),
-                    "basic": AIChatPlanConfig(
-                        plan_name="basic",
-                        daily_limit=10,
-                        description="Basic plan - 10 AI chats per day",
-                        features=[
-                            "Basic task management",
-                            "AI chat assistance",
-                            "Google integrations",
-                            "Email task generation",
-                            "Calendar task sync",
-                        ],
-                    ),
-                    "premium": AIChatPlanConfig(
-                        plan_name="premium",
-                        daily_limit=50,
-                        description="Premium plan - 50 AI chats per day",
-                        features=[
-                            "All basic features",
-                            "Priority support",
-                            "Advanced AI features",
-                            "Bulk task operations",
-                            "Custom integrations",
-                        ],
-                    ),
-                    "enterprise": AIChatPlanConfig(
-                        plan_name="enterprise",
-                        daily_limit=-1,
-                        description="Enterprise plan - Unlimited AI chats",
-                        features=[
-                            "All premium features",
-                            "Custom integrations",
-                            "Dedicated support",
-                            "Advanced analytics",
-                            "Team collaboration",
-                            "Custom workflows",
-                        ],
-                    ),
+                # Default to standard plan for most tests
+                mock_clerk_service.get_user_plan.return_value = "standard"
+
+                yield {
+                    "mock_get_limit": mock_get_limit,
+                    "mock_clerk_service": mock_clerk_service,
+                    "mock_clerk_service_class": mock_clerk_service_class,
                 }
-                mock_get_all.return_value = mock_plans
-                yield
 
     @pytest.fixture
     def service(self, session: Session):
@@ -96,30 +58,31 @@ class TestAIChatUsageService:
             created_at=1672531200.0,
         )
 
-    def test_get_user_plan_default(self, service: AIChatUsageService, mock_user: User):
-        """Test get_user_plan returns 'basic' by default."""
-        plan = service.get_user_plan(mock_user)
-        assert plan == "basic"
+    async def test_get_user_plan_standard(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+        """Test get_user_plan returns standard plan from Clerk."""
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
+
+        plan = await service.get_user_plan(mock_user)
+        assert plan == "standard"
+        mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
+
+    async def test_get_user_plan_free(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+        """Test get_user_plan returns free plan from Clerk."""
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
+
+        plan = await service.get_user_plan(mock_user)
+        assert plan == "free"
+        mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
 
     def test_get_daily_limit_free_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for free plan."""
         limit = service.get_daily_limit("free")
         assert limit == 0
 
-    def test_get_daily_limit_basic_plan(self, service: AIChatUsageService):
-        """Test get_daily_limit for basic plan."""
-        limit = service.get_daily_limit("basic")
+    def test_get_daily_limit_standard_plan(self, service: AIChatUsageService):
+        """Test get_daily_limit for standard plan."""
+        limit = service.get_daily_limit("standard")
         assert limit == 10
-
-    def test_get_daily_limit_premium_plan(self, service: AIChatUsageService):
-        """Test get_daily_limit for premium plan."""
-        limit = service.get_daily_limit("premium")
-        assert limit == 50
-
-    def test_get_daily_limit_enterprise_plan(self, service: AIChatUsageService):
-        """Test get_daily_limit for enterprise plan."""
-        limit = service.get_daily_limit("enterprise")
-        assert limit == -1
 
     def test_get_daily_limit_unknown_plan(self, service: AIChatUsageService):
         """Test get_daily_limit for unknown plan defaults to free."""
@@ -152,18 +115,20 @@ class TestAIChatUsageService:
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
-    async def test_get_usage_stats_basic_plan_no_usage(
+    async def test_get_usage_stats_standard_plan_no_usage(
         self,
         mock_reset_time,
         mock_current_date,
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
-        """Test get_usage_stats for basic plan user with no usage."""
+        """Test get_usage_stats for standard plan user with no usage."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 0
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -176,18 +141,20 @@ class TestAIChatUsageService:
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
-    async def test_get_usage_stats_basic_plan_partial_usage(
+    async def test_get_usage_stats_standard_plan_partial_usage(
         self,
         mock_reset_time,
         mock_current_date,
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
-        """Test get_usage_stats for basic plan user with partial usage."""
+        """Test get_usage_stats for standard plan user with partial usage."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 7
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -199,18 +166,20 @@ class TestAIChatUsageService:
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
-    async def test_get_usage_stats_basic_plan_limit_reached(
+    async def test_get_usage_stats_standard_plan_limit_reached(
         self,
         mock_reset_time,
         mock_current_date,
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
-        """Test get_usage_stats for basic plan user who reached limit."""
+        """Test get_usage_stats for standard plan user who reached limit."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 10
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -222,18 +191,20 @@ class TestAIChatUsageService:
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
-    async def test_get_usage_stats_basic_plan_over_limit(
+    async def test_get_usage_stats_standard_plan_over_limit(
         self,
         mock_reset_time,
         mock_current_date,
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
-        """Test get_usage_stats for basic plan user who exceeded limit."""
+        """Test get_usage_stats for standard plan user who exceeded limit."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 15
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -242,43 +213,41 @@ class TestAIChatUsageService:
         assert stats["current_usage"] == 15
         assert stats["can_use_chat"] is False
 
-    @patch.object(AIChatUsageService, "get_user_plan")
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
-    async def test_get_usage_stats_enterprise_plan_unlimited(
+    async def test_get_usage_stats_free_plan_no_access(
         self,
         mock_reset_time,
         mock_current_date,
         mock_repo,
-        mock_get_plan,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
-        """Test get_usage_stats for enterprise plan user (unlimited)."""
-        mock_get_plan.return_value = "enterprise"
+        """Test get_usage_stats for free plan user (no access)."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
-        mock_repo.get_current_usage_count.return_value = 100
+        mock_repo.get_current_usage_count.return_value = 0
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
 
         stats = await service.get_usage_stats(mock_user)
 
-        assert stats["remaining_count"] == -1  # Unlimited plan
-        assert stats["daily_limit"] == -1
-        assert stats["current_usage"] == 100
-        assert stats["can_use_chat"] is True
+        assert stats["remaining_count"] == 0
+        assert stats["daily_limit"] == 0
+        assert stats["current_usage"] == 0
+        assert stats["can_use_chat"] is False
 
-    @patch.object(AIChatUsageService, "get_user_plan")
     @patch.object(AIChatUsageService, "get_usage_stats")
     async def test_check_usage_limit_free_plan_restriction(
         self,
         mock_get_stats,
-        mock_get_plan,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
         """Test check_usage_limit raises exception for free plan."""
-        mock_get_plan.return_value = "free"
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
         mock_get_stats.return_value = {
             "remaining_count": 0,
             "daily_limit": 0,
@@ -294,10 +263,10 @@ class TestAIChatUsageService:
         assert "PLAN_RESTRICTION" in str(exc_info.value.detail)
 
     @patch.object(AIChatUsageService, "get_usage_stats")
-    async def test_check_usage_limit_basic_plan_within_limit(
+    async def test_check_usage_limit_standard_plan_within_limit(
         self, mock_get_stats, service: AIChatUsageService, mock_user: User
     ):
-        """Test check_usage_limit passes for basic plan within limit."""
+        """Test check_usage_limit passes for standard plan within limit."""
         mock_get_stats.return_value = {
             "remaining_count": 5,
             "daily_limit": 10,
@@ -313,7 +282,7 @@ class TestAIChatUsageService:
         assert result["can_use_chat"] is True
 
     @patch.object(AIChatUsageService, "get_usage_stats")
-    async def test_check_usage_limit_basic_plan_limit_exceeded(
+    async def test_check_usage_limit_standard_plan_limit_exceeded(
         self, mock_get_stats, service: AIChatUsageService, mock_user: User
     ):
         """Test check_usage_limit raises exception when limit exceeded."""
@@ -330,25 +299,6 @@ class TestAIChatUsageService:
 
         assert exc_info.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         assert "USAGE_LIMIT_EXCEEDED" in str(exc_info.value.detail)
-
-    @patch.object(AIChatUsageService, "get_usage_stats")
-    async def test_check_usage_limit_enterprise_plan_unlimited(
-        self, mock_get_stats, service: AIChatUsageService, mock_user: User
-    ):
-        """Test check_usage_limit passes for enterprise plan (unlimited)."""
-        mock_get_stats.return_value = {
-            "remaining_count": -1,
-            "daily_limit": -1,
-            "current_usage": 100,
-            "reset_time": "2023-01-16T00:00:00+00:00",
-            "can_use_chat": True,
-        }
-
-        result = await service.check_usage_limit(mock_user)
-
-        assert result["remaining_count"] == -1
-        assert result["daily_limit"] == -1
-        assert result["can_use_chat"] is True
 
     @patch.object(AIChatUsageService, "check_usage_limit")
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
@@ -433,38 +383,25 @@ class TestAIChatUsageService:
         mock_repo.get_usage_history.assert_called_once_with(service.session, mock_user.id, 10)
         assert result == mock_logs
 
-    def test_update_plan_limits(self, session: Session):
-        """Test update_plan_limits updates configuration."""
-        # Create a fresh service instance to avoid affecting other tests
-        service = AIChatUsageService(session=session)
+    async def test_clerk_service_integration(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+        """Test integration with ClerkService for plan retrieval."""
+        # Test that the service properly calls ClerkService
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
-        new_limits = {"premium": 100, "enterprise": 500}
+        plan = await service.get_user_plan(mock_user)
 
-        service.update_plan_limits(new_limits)
+        assert plan == "standard"
+        mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
 
-        # Verify the limits were updated in the configuration system
-        # Note: This test verifies the deprecated update_plan_limits method
-        # The actual configuration update is handled by the configuration management system
-        # For testing purposes, we verify that the method completes without error
-        # The actual configuration values are mocked in this test environment
+    async def test_clerk_service_error_handling(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+        """Test error handling when ClerkService fails."""
+        # Mock ClerkService to raise an exception
+        mock_dependencies["mock_clerk_service"].get_user_plan.side_effect = Exception("Clerk API error")
 
-    def test_get_all_plan_limits(self, session: Session):
-        """Test get_all_plan_limits returns copy of limits."""
-        # Create a fresh service instance to avoid test interference
-        service = AIChatUsageService(session=session)
+        # Should fallback to free plan
+        plan = await service.get_user_plan(mock_user)
 
-        limits = service.get_all_plan_limits()
-
-        assert limits["free"] == 0
-        assert limits["basic"] == 10
-        assert limits["premium"] == 50
-        assert limits["enterprise"] == -1
-
-        # Verify it's a copy (modifying shouldn't affect original)
-        limits["free"] = 999
-        # Get fresh limits to verify original wasn't modified
-        fresh_limits = service.get_all_plan_limits()
-        assert fresh_limits["free"] == 0
+        assert plan == "free"
 
     # Boundary value tests
     @patch("app.services.ai_chat_usage_service.ai_chat_usage")
@@ -477,11 +414,13 @@ class TestAIChatUsageService:
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
         """Test boundary condition when usage is exactly at limit."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 10  # Exactly at limit
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -498,11 +437,13 @@ class TestAIChatUsageService:
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
         """Test boundary condition when usage is one below limit."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 9  # One below limit
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -519,11 +460,13 @@ class TestAIChatUsageService:
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
         """Test boundary condition when usage is one above limit."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.return_value = 11  # One above limit
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         stats = await service.get_usage_stats(mock_user)
 
@@ -531,13 +474,10 @@ class TestAIChatUsageService:
         assert stats["can_use_chat"] is False
 
     # Edge case tests
-    def test_edge_case_negative_usage_count(self, session: Session):
-        """Test edge case with negative daily limit (unlimited)."""
-        # Create a fresh service instance to avoid test interference
-        service = AIChatUsageService(session=session)
-
-        limit = service.get_daily_limit("enterprise")
-        assert limit == -1  # Unlimited plan
+    def test_edge_case_zero_daily_limit(self, service: AIChatUsageService):
+        """Test edge case with zero daily limit (free plan)."""
+        limit = service.get_daily_limit("free")
+        assert limit == 0
 
     def test_edge_case_zero_daily_limit(self, service: AIChatUsageService):
         """Test edge case with zero daily limit (no access)."""
@@ -603,11 +543,13 @@ class TestAIChatUsageService:
         mock_repo,
         service: AIChatUsageService,
         mock_user: User,
+        mock_dependencies,
     ):
         """Test error handling when repository raises exception."""
         mock_current_date.return_value = "2023-01-15"
         mock_reset_time.return_value = "2023-01-16T00:00:00+00:00"
         mock_repo.get_current_usage_count.side_effect = Exception("Database connection failed")
+        mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
         with pytest.raises(Exception, match="Database connection failed"):
             await service.get_usage_stats(mock_user)
