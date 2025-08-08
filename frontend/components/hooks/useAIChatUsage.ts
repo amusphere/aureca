@@ -82,13 +82,15 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
   // Auto-refresh control
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Mounted flag to prevent state updates after unmount (avoids jsdom teardown issues)
+  const mountedRef = useRef(true);
 
   // General error handling for system errors
   const { error: systemError, withErrorHandling, clearError: clearSystemError } = useErrorHandling();
 
   // Clear all errors
   const clearError = useCallback(() => {
-    setUsageError(null);
+  if (mountedRef.current) setUsageError(null);
     clearSystemError();
   }, [clearSystemError]);
 
@@ -107,8 +109,10 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
         if (response.status === 403 || response.status === 429) {
           // Usage limit or plan restriction errors
           const errorData: AIChatUsageError = await response.json();
-          setUsageError(errorData);
-          setUsage(null);
+          if (mountedRef.current) {
+            setUsageError(errorData);
+            setUsage(null);
+          }
           return;
         }
 
@@ -118,21 +122,24 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
       // Success response
       const data: AIChatUsage = await response.json();
-      setUsage(data);
-      setUsageError(null);
+      if (mountedRef.current) {
+        setUsage(data);
+        setUsageError(null);
+      }
 
     } catch (err) {
       // System/network errors with new error constants
       const errorMessage = err instanceof Error ? err.message : 'システムエラーが発生しました';
 
-      setUsageError({
-        error: getErrorMessage(ErrorCodes.SYSTEM_ERROR, true),
-        error_code: ErrorCodes.SYSTEM_ERROR,
-        remaining_count: 0,
-        reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      });
-
-      setUsage(null);
+      if (mountedRef.current) {
+        setUsageError({
+          error: getErrorMessage(ErrorCodes.SYSTEM_ERROR, true),
+          error_code: ErrorCodes.SYSTEM_ERROR,
+          remaining_count: 0,
+          reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        });
+        setUsage(null);
+      }
 
       // Log system error for debugging
       if (process.env.NODE_ENV === 'development') {
@@ -143,7 +150,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
   // Check usage with error handling wrapper
   const checkUsage = useCallback(async (): Promise<void> => {
-    setLoading(true);
+  if (mountedRef.current) setLoading(true);
     clearError();
 
     await withErrorHandling(
@@ -157,7 +164,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
       }
     );
 
-    setLoading(false);
+  if (mountedRef.current) setLoading(false);
   }, [withErrorHandling, fetchUsageData, clearError]);
 
   // Refresh usage data (alias for checkUsage for clarity)
@@ -179,8 +186,10 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
         // Handle HTTP error responses
         if (response.status === 403 || response.status === 429) {
           const errorData: AIChatUsageError = await response.json();
-          setUsageError(errorData);
-          setUsage(null);
+          if (mountedRef.current) {
+            setUsageError(errorData);
+            setUsage(null);
+          }
           return null;
         }
 
@@ -189,8 +198,10 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
       // Success response - update local state
       const updatedUsage: AIChatUsage = await response.json();
-      setUsage(updatedUsage);
-      setUsageError(null);
+      if (mountedRef.current) {
+        setUsage(updatedUsage);
+        setUsageError(null);
+      }
 
       return updatedUsage;
 
@@ -205,8 +216,10 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
         reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
-      setUsageError(systemError);
-      setUsage(null);
+      if (mountedRef.current) {
+        setUsageError(systemError);
+        setUsage(null);
+      }
 
       if (process.env.NODE_ENV === 'development') {
         console.error('AI Chat Usage Increment Error:', errorMessage);
@@ -231,18 +244,38 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
   // Auto-refresh usage data periodically (optimized)
   useEffect(() => {
-    if (!isAutoRefreshPaused && !loading) {
+    // Avoid starting timers when not in a browser-like env
+    if (typeof window === 'undefined') return;
+    if (!isAutoRefreshPaused && !loading && mountedRef.current) {
       autoRefreshIntervalRef.current = setInterval(() => {
-        fetchUsageData();
+        if (mountedRef.current) {
+          fetchUsageData();
+        } else if (autoRefreshIntervalRef.current) {
+          clearInterval(autoRefreshIntervalRef.current);
+          autoRefreshIntervalRef.current = null;
+        }
       }, 5 * 60 * 1000); // 5 minutes
     }
 
     return () => {
       if (autoRefreshIntervalRef.current) {
         clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
       }
     };
   }, [fetchUsageData, loading, isAutoRefreshPaused]);
+
+  // Track mount/unmount to prevent setState after teardown
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Initial data fetch
   useEffect(() => {
