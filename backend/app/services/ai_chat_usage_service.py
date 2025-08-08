@@ -379,15 +379,3 @@ class AIChatUsageService:
                 "features": config["features"],
             }
         return all_plans
-
-
-# Backward-compatible helper expected by some integration tests
-def get_ai_chat_plan_limit(plan_name: str) -> int:
-    """Return daily limit for a given plan using PlanLimits constants.
-
-    This function exists for compatibility with tests that patch it directly.
-    """
-    try:
-        return PlanLimits.get_limit(plan_name)
-    except Exception:
-        return 0
