@@ -3,7 +3,6 @@
 import sys
 from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,18 +14,9 @@ backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
 # Now import app modules after adding to path
-from app.config.manager import config_manager  # noqa: E402
 from app.database import get_session  # noqa: E402
 from app.schema import TaskPriority, Tasks, User  # noqa: E402
 from main import app  # noqa: E402
-
-
-# Protect config file from being modified during tests
-@pytest.fixture(autouse=True, scope="session")
-def protect_config_file():
-    """Prevent tests from modifying the actual config file"""
-    with patch.object(config_manager, "_save_to_file", return_value=None):
-        yield
 
 
 # Test database configuration
@@ -66,6 +56,7 @@ def test_user_fixture(session: Session) -> User:
     user = User(
         id=1,
         clerk_user_id="test_user_123",
+        clerk_sub="test_user_123",  # Add clerk_sub for plan determination
         email="test@example.com",
         created_at=1672531200.0,  # 2023-01-01 00:00:00
         updated_at=1672531200.0,

@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
+from sqlalchemy import Index, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -41,7 +42,7 @@ class User(SQLModel, table=True):
 
     google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user", cascade_delete=True)
     tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
-    ai_chat_usage_logs: list["AIChatUsageLog"] = Relationship(cascade_delete=True)
+    ai_chat_usage: list["AIChatUsage"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class GoogleOAuthToken(SQLModel, table=True):
@@ -107,9 +108,13 @@ class TaskSource(SQLModel, table=True):
     extra_data: str | None = Field(nullable=True)  # JSON形式で追加情報を保存
 
 
-class AIChatUsageLog(SQLModel, table=True):
-    __tablename__ = "ai_chat_usage_logs"
-    __table_args__ = ({"extend_existing": True},)
+class AIChatUsage(SQLModel, table=True):
+    __tablename__ = "ai_chat_usage"
+    __table_args__ = (
+        UniqueConstraint("user_id", "usage_date", name="uq_user_date"),
+        Index("idx_user_date_fast", "user_id", "usage_date"),
+        {"extend_existing": True},
+    )
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", index=True)
@@ -119,7 +124,7 @@ class AIChatUsageLog(SQLModel, table=True):
     updated_at: float = Field(default_factory=lambda: datetime.now().timestamp())
 
     # Relationship to User
-    user: User = Relationship(back_populates="ai_chat_usage_logs")
+    user: User = Relationship(back_populates="ai_chat_usage")
 
 
 metadata = SQLModel.metadata

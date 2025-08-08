@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.repositories import ai_chat_usage
+from app.repositories.ai_chat_usage import AIChatUsageRepository
 from app.schema import User
 from app.services.auth import auth_user
 from main import app
@@ -16,28 +16,28 @@ class TestAIChatUsageAPIIntegration:
     """Test AI Chat usage API endpoints integration."""
 
     @pytest.fixture(autouse=True)
-    def mock_config_values(self):
-        """Mock config values to ensure consistent test behavior."""
-        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+    def mock_dependencies(self):
+        """Mock dependencies to ensure consistent test behavior."""
+        # Mock ClerkService
+        with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
+            from unittest.mock import AsyncMock
 
-            def get_limit_side_effect(plan_name):
-                limits = {
-                    "free": 0,
-                    "basic": 10,
-                    "premium": 50,
-                    "enterprise": -1,
-                }
-                return limits.get(plan_name, 0)
+            mock_clerk_service = AsyncMock()
+            mock_get_clerk_service.return_value = mock_clerk_service
 
-            mock_get_limit.side_effect = get_limit_side_effect
-            yield
+            # Default to standard plan for most tests
+            mock_clerk_service.get_user_plan.return_value = "standard"
+
+            yield {
+                "mock_clerk_service": mock_clerk_service,
+            }
 
     def test_get_usage_endpoint_success(self, client: TestClient, session: Session, test_user: User):
         """Test GET /api/ai/usage endpoint returns correct usage stats."""
         current_date = "2023-01-01"
 
         # Create some usage data
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 3)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 3)
 
         # Override the auth dependency to return our test user
         def get_test_user():
@@ -55,14 +55,18 @@ class TestAIChatUsageAPIIntegration:
             assert response.status_code == 200
             data = response.json()
 
-            # Verify response structure and values
+            # Verify response structure and values (updated for new API)
             assert "remaining_count" in data
             assert "daily_limit" in data
+            assert "current_usage" in data
+            assert "plan_name" in data
             assert "reset_time" in data
             assert "can_use_chat" in data
 
             assert data["remaining_count"] == 7  # 10 - 3
             assert data["daily_limit"] == 10
+            assert data["current_usage"] == 3
+            assert data["plan_name"] == "standard"
             assert data["can_use_chat"] is True
         finally:
             # Clean up dependency override
@@ -73,7 +77,7 @@ class TestAIChatUsageAPIIntegration:
         current_date = "2023-01-01"
 
         # Create usage data at the limit
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 10)
 
         def get_test_user():
             return test_user
@@ -87,24 +91,21 @@ class TestAIChatUsageAPIIntegration:
             ):
                 response = client.get("/api/ai/usage")
 
-            assert response.status_code == 429
+            # Usage endpoint now returns 200 with usage stats, not 429
+            assert response.status_code == 200
             data = response.json()
 
-            # Verify error response structure
-            assert "detail" in data
-            detail = data["detail"]
-            assert "error" in detail
-            assert "error_code" in detail
-            assert "remaining_count" in detail
-            assert "reset_time" in detail
-
-            assert detail["error_code"] == "USAGE_LIMIT_EXCEEDED"
-            assert detail["remaining_count"] == 0
-            assert "本日の利用回数上限に達しました" in detail["error"]
+            # Verify response shows limit exceeded state
+            assert data["remaining_count"] == 0
+            assert data["daily_limit"] == 10
+            assert data["current_usage"] == 10
+            assert data["can_use_chat"] is False
         finally:
             app.dependency_overrides.clear()
 
-    def test_get_usage_endpoint_free_plan_restriction(self, client: TestClient, session: Session, test_user: User):
+    def test_get_usage_endpoint_free_plan_restriction(
+        self, client: TestClient, session: Session, test_user: User, mock_dependencies
+    ):
         """Test GET /api/ai/usage endpoint for free plan users."""
 
         def get_test_user():
@@ -113,22 +114,20 @@ class TestAIChatUsageAPIIntegration:
         app.dependency_overrides[auth_user] = get_test_user
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService.get_user_plan",
-                return_value="free",
-            ):
-                response = client.get("/api/ai/usage")
+            # Mock ClerkService to return free plan
+            mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
 
-            assert response.status_code == 403
+            response = client.get("/api/ai/usage")
+
+            # Usage endpoint now returns 200 with free plan stats
+            assert response.status_code == 200
             data = response.json()
 
-            # Verify error response structure
-            assert "detail" in data
-            detail = data["detail"]
-            assert "error" in detail
-            assert "error_code" in detail
-            assert detail["error_code"] == "PLAN_RESTRICTION"
-            assert "現在のプランではAIChatをご利用いただけません" in detail["error"]
+            # Verify free plan response
+            assert data["remaining_count"] == 0
+            assert data["daily_limit"] == 0
+            assert data["plan_name"] == "free"
+            assert data["can_use_chat"] is False
         finally:
             app.dependency_overrides.clear()
 
@@ -137,7 +136,7 @@ class TestAIChatUsageAPIIntegration:
         current_date = "2023-01-01"
 
         # Start with some existing usage
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 5)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 5)
 
         def get_test_user():
             return test_user
@@ -154,13 +153,15 @@ class TestAIChatUsageAPIIntegration:
             assert response.status_code == 200
             data = response.json()
 
-            # Verify response shows incremented usage
+            # Verify response shows incremented usage (updated for new API)
             assert data["remaining_count"] == 4  # 10 - 6 (5 + 1)
             assert data["daily_limit"] == 10
+            assert data["current_usage"] == 6
+            assert data["plan_name"] == "standard"
             assert data["can_use_chat"] is True
 
             # Verify database was updated
-            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+            current_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 6
         finally:
             app.dependency_overrides.clear()
@@ -170,7 +171,7 @@ class TestAIChatUsageAPIIntegration:
         current_date = "2023-01-01"
 
         # Set usage at the limit
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 10)
 
         def get_test_user():
             return test_user
@@ -194,7 +195,7 @@ class TestAIChatUsageAPIIntegration:
             assert detail["remaining_count"] == 0
 
             # Verify database was not incremented beyond limit
-            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+            current_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 10  # Should not exceed limit
         finally:
             app.dependency_overrides.clear()
@@ -232,7 +233,7 @@ class TestAIChatUsageAPIIntegration:
             assert response.status_code == 200
 
             # Verify usage was incremented
-            current_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+            current_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
             assert current_usage == 1
         finally:
             app.dependency_overrides.clear()
@@ -242,7 +243,7 @@ class TestAIChatUsageAPIIntegration:
         current_date = "2023-01-01"
 
         # Set usage at the limit
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 10)
 
         def get_test_user():
             return test_user
@@ -274,7 +275,7 @@ class TestAIChatUsageAPIIntegration:
         previous_date = "2023-01-01"
         current_date = "2023-01-02"
 
-        ai_chat_usage.create_daily_usage(session, test_user.id, previous_date, 10)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, previous_date, 10)
 
         def get_test_user():
             return test_user
@@ -302,7 +303,7 @@ class TestAIChatUsageAPIIntegration:
         current_date = "2023-01-01"
 
         # Start with some usage
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 8)
+        AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 8)
 
         def get_test_user():
             return test_user
@@ -328,7 +329,7 @@ class TestAIChatUsageAPIIntegration:
             assert len(success_responses) >= 1
 
             # Verify final usage count doesn't exceed limit
-            final_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
+            final_usage = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
             assert final_usage <= 10
         finally:
             app.dependency_overrides.clear()
@@ -403,22 +404,15 @@ class TestAIChatUsageAPIIntegration:
                     assert field in data
                     assert data[field] is not None
 
-                # Test error response format
-                ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
+                # Test at-limit response format
+                AIChatUsageRepository.create_daily_usage(session, test_user.id, current_date, 10)
                 response = client.get("/api/ai/usage")
-                assert response.status_code == 429
+                assert response.status_code == 200
 
-                error_data = response.json()
-                assert "detail" in error_data
-                detail = error_data["detail"]
-                required_error_fields = [
-                    "error",
-                    "error_code",
-                    "remaining_count",
-                    "reset_time",
-                ]
-                for field in required_error_fields:
-                    assert field in detail
-                    assert detail[field] is not None
+                limit_data = response.json()
+                # At limit, should still return usage stats but with can_use_chat=False
+                assert limit_data["remaining_count"] == 0
+                assert limit_data["can_use_chat"] is False
+                assert limit_data["daily_limit"] == 10
         finally:
             app.dependency_overrides.clear()

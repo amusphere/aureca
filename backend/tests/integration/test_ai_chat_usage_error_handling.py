@@ -19,11 +19,12 @@ class TestAIChatUsageErrorHandlingIntegration:
     @pytest.fixture(autouse=True)
     def mock_config_values(self):
         """Mock config values to ensure consistent test behavior."""
-        with patch("app.services.ai_chat_usage_service.get_ai_chat_plan_limit") as mock_get_limit:
+        with patch("app.constants.plan_limits.PlanLimits.get_limit") as mock_get_limit:
 
             def get_limit_side_effect(plan_name):
                 limits = {
                     "free": 0,
+                    "standard": 10,
                     "basic": 10,
                     "premium": 50,
                     "enterprise": -1,
@@ -55,7 +56,8 @@ class TestAIChatUsageErrorHandlingIntegration:
                 "app.repositories.ai_chat_usage.get_current_usage_count",
                 side_effect=Exception("Database connection failed"),
             ):
-                response = client.get("/api/ai/usage")
+                # Hitting increment endpoint enforces limit checks and returns 429 when at limit
+                response = client.post("/api/ai/usage/increment")
 
             assert response.status_code == 500
             data = response.json()
@@ -189,7 +191,7 @@ class TestAIChatUsageErrorHandlingIntegration:
                 "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
                 return_value=current_date,
             ):
-                response = client.get("/api/ai/usage")
+                response = client.post("/api/ai/usage/increment")
 
             assert response.status_code == 429
             data = response.json()
