@@ -1,6 +1,6 @@
 "use client";
 
-import { getErrorMessage, hasErrorAction } from "@/constants/error_messages";
+import { getErrorMessage } from "@/constants/error_messages";
 import { AlertCircle, RefreshCw, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useAIChatUsage } from "../../hooks/useAIChatUsage";
@@ -141,19 +141,25 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               {EMPTY_STATE_MESSAGES.title}
             </h2>
 
-            {/* Usage Display - Desktop Only (Compact) */}
-            <div className="hidden sm:flex items-center ml-auto mr-4">
-              <UsageDisplay
-                currentUsage={usage?.current_usage ?? 0}
-                dailyLimit={dailyLimit}
-                planName={planName}
-                resetTime={usage?.reset_time}
-                variant="compact"
-                loading={usageLoading}
-                error={usageError}
-                className="text-xs"
-              />
-            </div>
+            {usageLoading && (
+              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" aria-label="読み込み中" />
+            )}
+
+            {/* Usage Display - Desktop Only (Compact). Hide when error exists to avoid duplicate titles */}
+    {!usageError && (
+              <div className="hidden sm:flex items-center ml-auto mr-4">
+                <UsageDisplay
+      currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
+      dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
+                  planName={planName}
+                  resetTime={usage?.reset_time}
+                  variant="compact"
+                  loading={usageLoading}
+                  error={usageError}
+                  className="text-xs"
+                />
+              </div>
+            )}
           </div>
 
           <Button
@@ -170,8 +176,8 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
         {/* Mobile Usage Display - Full Width */}
         <div className="sm:hidden">
           <UsageDisplay
-            currentUsage={usage?.current_usage ?? 0}
-            dailyLimit={dailyLimit}
+            currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
+            dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
             planName={planName}
             resetTime={usage?.reset_time}
             variant="minimal"
@@ -193,7 +199,13 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                     {getErrorMessage(usageError.error_code, false)}
                   </p>
                   <p className="text-xs text-destructive/90 mt-1">
-                    {getErrorMessage(usageError.error_code, true)}
+                    {usageError.error_code === 'USAGE_LIMIT_EXCEEDED'
+                      ? '本日のAIChat利用回数が上限に達しています。明日の00:00にリセットされます。'
+                      : usageError.error_code === 'PLAN_RESTRICTION'
+                        ? '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてご利用ください。'
+                        : usageError.error_code === 'SYSTEM_ERROR'
+                          ? '一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。'
+                          : getErrorMessage(usageError.error_code, true)}
                   </p>
                   {usageError.reset_time && (
                     <div className="mt-2 space-y-1">
@@ -224,7 +236,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
                       <RefreshCw className="h-3 w-3 mr-1" />
                       再確認
                     </Button>
-                    {hasErrorAction(usageError.error_code) && (
+                    {getErrorMessage(usageError.error_code, false) === 'プランの制限' && (
                       <Button
                         size="sm"
                         variant="default"
@@ -286,13 +298,13 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
           {/* Input Area */}
           <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
-            {/* Usage Exhausted Message */}
-            {isUsageExhausted && !usageError && (
+        {/* Usage Exhausted Message */}
+      {(isUsageExhausted || !!usageError) && (
               <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg" data-testid="usage-exhausted-message">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground font-medium">
-                    本日の利用回数上限に達しました
+          本日の利用回数上限に達しました
                   </p>
                 </div>
                 {usage?.reset_time && (

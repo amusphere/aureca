@@ -22,10 +22,10 @@ export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
  * Provides clear, actionable feedback to users
  */
 export const ErrorMessages: Record<ErrorCode, string> = {
-  [ErrorCodes.USAGE_LIMIT_EXCEEDED]: '本日の利用回数上限（10回）に達しました',
-  [ErrorCodes.PLAN_RESTRICTION]: 'freeプランではAIChatをご利用いただけません',
+  [ErrorCodes.USAGE_LIMIT_EXCEEDED]: '利用回数上限に達しました',
+  [ErrorCodes.PLAN_RESTRICTION]: 'プランの制限',
   [ErrorCodes.CLERK_API_ERROR]: 'プラン情報の取得に失敗しました',
-  [ErrorCodes.SYSTEM_ERROR]: '一時的なエラーが発生しました',
+  [ErrorCodes.SYSTEM_ERROR]: 'システムエラー',
 } as const;
 
 /**
@@ -48,7 +48,7 @@ export const DetailedErrorMessages: Record<ErrorCode, string> = {
  * Provides contextual call-to-action buttons
  */
 export const ErrorActionButtons: Record<ErrorCode, string | null> = {
-  [ErrorCodes.USAGE_LIMIT_EXCEEDED]: null, // No action available, must wait for reset
+  [ErrorCodes.USAGE_LIMIT_EXCEEDED]: 'プランをアップグレード',
   [ErrorCodes.PLAN_RESTRICTION]: 'プランをアップグレード',
   [ErrorCodes.CLERK_API_ERROR]: '再試行',
   [ErrorCodes.SYSTEM_ERROR]: '再試行',

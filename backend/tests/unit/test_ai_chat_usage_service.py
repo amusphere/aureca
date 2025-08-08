@@ -29,10 +29,10 @@ class TestAIChatUsageService:
 
             mock_get_limit.side_effect = get_limit_side_effect
 
-            # Mock ClerkService
-            with patch("app.services.ai_chat_usage_service.ClerkService") as mock_clerk_service_class:
+            # Mock get_clerk_service function
+            with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
                 mock_clerk_service = AsyncMock()
-                mock_clerk_service_class.return_value = mock_clerk_service
+                mock_get_clerk_service.return_value = mock_clerk_service
 
                 # Default to standard plan for most tests
                 mock_clerk_service.get_user_plan.return_value = "standard"
@@ -40,7 +40,7 @@ class TestAIChatUsageService:
                 yield {
                     "mock_get_limit": mock_get_limit,
                     "mock_clerk_service": mock_clerk_service,
-                    "mock_clerk_service_class": mock_clerk_service_class,
+                    "mock_get_clerk_service": mock_get_clerk_service,
                 }
 
     @pytest.fixture
@@ -112,7 +112,7 @@ class TestAIChatUsageService:
         expected_reset = datetime(2023, 1, 16, 0, 0, 0, tzinfo=UTC)
         assert reset_time == expected_reset.isoformat()
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_get_usage_stats_standard_plan_no_usage(
@@ -138,7 +138,7 @@ class TestAIChatUsageService:
         assert stats["reset_time"] == "2023-01-16T00:00:00+00:00"
         assert stats["can_use_chat"] is True
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_get_usage_stats_standard_plan_partial_usage(
@@ -163,7 +163,7 @@ class TestAIChatUsageService:
         assert stats["current_usage"] == 7
         assert stats["can_use_chat"] is True
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_get_usage_stats_standard_plan_limit_reached(
@@ -188,7 +188,7 @@ class TestAIChatUsageService:
         assert stats["current_usage"] == 10
         assert stats["can_use_chat"] is False
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_get_usage_stats_standard_plan_over_limit(
@@ -213,7 +213,7 @@ class TestAIChatUsageService:
         assert stats["current_usage"] == 15
         assert stats["can_use_chat"] is False
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_get_usage_stats_free_plan_no_access(
@@ -301,7 +301,7 @@ class TestAIChatUsageService:
         assert "USAGE_LIMIT_EXCEEDED" in str(exc_info.value.detail)
 
     @patch.object(AIChatUsageService, "check_usage_limit")
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "get_usage_stats")
     async def test_increment_usage_success(
@@ -345,7 +345,7 @@ class TestAIChatUsageService:
         assert exc_info.value.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
     @patch.object(AIChatUsageService, "check_usage_limit")
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_increment_usage_database_error(
@@ -369,7 +369,7 @@ class TestAIChatUsageService:
         assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert "SYSTEM_ERROR" in str(exc_info.value.detail)
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     async def test_get_usage_history(self, mock_repo, service: AIChatUsageService, mock_user: User):
         """Test get_usage_history returns repository results."""
         mock_logs = [
@@ -404,7 +404,7 @@ class TestAIChatUsageService:
         assert plan == "free"
 
     # Boundary value tests
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_boundary_value_exactly_at_limit(
@@ -427,7 +427,7 @@ class TestAIChatUsageService:
         assert stats["remaining_count"] == 0
         assert stats["can_use_chat"] is False
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_boundary_value_one_below_limit(
@@ -450,7 +450,7 @@ class TestAIChatUsageService:
         assert stats["remaining_count"] == 1
         assert stats["can_use_chat"] is True
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_boundary_value_one_above_limit(
@@ -528,7 +528,7 @@ class TestAIChatUsageService:
         limit = service.get_daily_limit(None)
         assert limit == 0
 
-    @patch("app.services.ai_chat_usage_service.ai_chat_usage")
+    @patch("app.services.ai_chat_usage_service.AIChatUsageRepository")
     @patch.object(AIChatUsageService, "_get_current_date")
     @patch.object(AIChatUsageService, "_get_reset_time")
     async def test_error_handling_repository_exception(

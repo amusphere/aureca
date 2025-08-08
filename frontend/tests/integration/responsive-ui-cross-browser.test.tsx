@@ -437,7 +437,8 @@ describe('Responsive UI Cross-Browser Tests', () => {
         remaining_count: 5,
         daily_limit: 10,
         current_usage: 5,
-        plan_name: 'very-long-plan-name-that-might-break-layout',
+  // Casting to bypass strict SubscriptionPlan union for this layout robustness test
+  plan_name: 'very-long-plan-name-that-might-break-layout' as unknown as AIChatUsage['plan_name'],
         reset_time: '2023-01-02T00:00:00.000Z',
         can_use_chat: true
       }

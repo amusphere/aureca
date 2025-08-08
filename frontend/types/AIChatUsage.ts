@@ -285,8 +285,8 @@ export const DEFAULT_USAGE_DISPLAY_CONFIG: UsageDisplayConfig = {
  * Updated for 2-plan system and Clerk API errors
  */
 export const AI_CHAT_USAGE_ERROR_MESSAGES: Record<AIChatUsageErrorCode, string> = {
-  [AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED]: '本日の利用回数上限（10回）に達しました',
-  [AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION]: 'freeプランではAIChatをご利用いただけません',
+  [AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED]: '本日の利用回数上限に達しました',
+  [AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION]: 'プランの制限',
   [AI_CHAT_USAGE_ERROR_CODES.CLERK_API_ERROR]: 'プラン情報の取得に失敗しました',
   [AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR]: '一時的なエラーが発生しました',
 } as const;
@@ -302,24 +302,24 @@ export const AI_CHAT_USAGE_DETAILED_ERROR_MESSAGES: Record<AIChatUsageErrorCode,
   actionText?: string;
 }> = {
   [AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED]: {
-    title: '利用回数上限に達しました',
-    description: '本日のAIChat利用回数が上限（10回）に達しています。明日の00:00にリセットされます。',
+  title: '利用回数上限に達しました',
+  description: '本日のAIChat利用回数が上限に達しています。明日の00:00にリセットされます。',
     actionText: 'プランをアップグレード',
   },
   [AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION]: {
-    title: 'プランの制限',
-    description: 'freeプランではAIChatをご利用いただけません。standardプランにアップグレードしてご利用ください。',
-    actionText: 'standardプランにアップグレード',
+  title: 'プランの制限',
+  description: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてご利用ください。',
+  actionText: 'プランをアップグレード',
   },
   [AI_CHAT_USAGE_ERROR_CODES.CLERK_API_ERROR]: {
     title: 'プラン情報取得エラー',
-    description: 'プラン情報の取得に失敗しました。しばらく後にお試しください。',
+  description: 'プラン情報の取得に失敗しました。しばらく後にお試しください。',
     actionText: '再試行',
   },
   [AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR]: {
-    title: 'システムエラー',
-    description: '一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。',
-    actionText: '再試行',
+  title: 'システムエラー',
+  description: '一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。',
+  actionText: '再試行',
   },
 } as const;
 
@@ -328,8 +328,8 @@ export const AI_CHAT_USAGE_DETAILED_ERROR_MESSAGES: Record<AIChatUsageErrorCode,
  * Updated for 2-plan system and Clerk API errors
  */
 export const AI_CHAT_USAGE_PLACEHOLDER_MESSAGES: Record<AIChatUsageErrorCode, string> = {
-  [AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED]: '本日の利用回数上限（10回）に達しました。明日の00:00にリセットされます。',
-  [AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION]: 'freeプランではAIChatをご利用いただけません。standardプランにアップグレードしてください。',
+  [AI_CHAT_USAGE_ERROR_CODES.USAGE_LIMIT_EXCEEDED]: '本日のAIChat利用回数が上限に達しています。明日の00:00にリセットされます。',
+  [AI_CHAT_USAGE_ERROR_CODES.PLAN_RESTRICTION]: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
   [AI_CHAT_USAGE_ERROR_CODES.CLERK_API_ERROR]: 'プラン情報の取得に失敗しました。しばらく後にお試しください。',
   [AI_CHAT_USAGE_ERROR_CODES.SYSTEM_ERROR]: '一時的なエラーが発生しました。しばらく後にお試しください。',
 } as const;
@@ -455,9 +455,8 @@ export class AIChatUsageUtils {
    * @returns Formatted usage text
    */
   static formatUsageDisplay(remaining_count: number, daily_limit: number, plan_name?: SubscriptionPlan): string {
-    if (plan_name === 'free' || daily_limit === 0) {
-      return '利用不可';
-    }
+  if (daily_limit < 0) return '無制限';
+  if (plan_name === 'free') return '利用不可';
     return `${remaining_count}/${daily_limit}`;
   }
 
@@ -500,9 +499,8 @@ export class AIChatUsageUtils {
    * @returns CSS color class
    */
   static getUsageStatusColor(remaining_count: number, daily_limit: number, plan_name?: SubscriptionPlan): string {
-    if (plan_name === 'free' || daily_limit === 0) {
-      return 'text-gray-500';
-    }
+  if (daily_limit < 0) return 'text-green-600';
+  if (plan_name === 'free') return 'text-gray-500';
 
     const usageRatio = remaining_count / daily_limit;
     if (usageRatio <= 0) {

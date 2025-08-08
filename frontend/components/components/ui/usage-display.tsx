@@ -94,6 +94,8 @@ export const UsageDisplay: React.FC<UsageDisplayProps> = ({
     case 'minimal':
       return (
         <MinimalUsageDisplay
+          currentUsage={currentUsage}
+          dailyLimit={dailyLimit}
           remainingCount={remainingCount}
           className={className}
           isLimitReached={isLimitReached}
@@ -133,6 +135,16 @@ export const UsageDisplay: React.FC<UsageDisplayProps> = ({
   }
 };
 
+// Safe accessor for plan messages with a typed fallback to avoid lint any
+const getPlanMessage = (plan: SubscriptionPlan) => {
+  const fallback: { title: string; description: string; upgradeMessage: string | null } = {
+    title: 'プラン不明',
+    description: '',
+    upgradeMessage: null,
+  };
+  return (PlanMessages as Record<string, typeof fallback>)[plan] ?? fallback;
+};
+
 /**
  * 詳細表示バリアント（デフォルト）
  * モバイル・タブレット・デスクトップ対応のレスポンシブレイアウト
@@ -160,7 +172,7 @@ const DetailedUsageDisplay: React.FC<{
   showResetTime,
   resetTime,
 }) => {
-    const planInfo = PlanMessages[planName];
+  const planInfo = getPlanMessage(planName);
 
     return (
       <Card className={cn("w-full", className)}>
@@ -203,7 +215,7 @@ const DetailedUsageDisplay: React.FC<{
                 </div>
 
                 {/* プログレスバー */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2" data-testid="usage-progress">
                   <div
                     className={`h-2 rounded-full transition-all duration-300 ${isLimitReached
                         ? 'bg-red-500'
@@ -268,7 +280,7 @@ const CompactUsageDisplay: React.FC<{
   isFreePlan,
 }) => {
     return (
-      <div className={cn("flex items-center gap-3 p-3 bg-gray-50 rounded-lg", className)}>
+  <div className={cn("flex items-center gap-3 p-3 bg-gray-50 rounded-lg", className)}>
         <div className="flex items-center gap-2 flex-1">
           {isFreePlan ? (
             <AlertCircle className="h-4 w-4 text-gray-400" />
@@ -292,7 +304,7 @@ const CompactUsageDisplay: React.FC<{
           variant={isFreePlan ? "secondary" : isLimitReached ? "destructive" : "default"}
           className="text-xs"
         >
-          {PlanMessages[planName].title}
+          {getPlanMessage(planName).title}
         </Badge>
       </div>
     );
@@ -303,25 +315,36 @@ const CompactUsageDisplay: React.FC<{
  * 最小限の情報のみ表示
  */
 const MinimalUsageDisplay: React.FC<{
+  currentUsage: number;
+  dailyLimit: number;
   remainingCount: number;
   className: string;
   isLimitReached: boolean;
   isFreePlan: boolean;
 }> = ({
+  currentUsage,
+  dailyLimit,
   remainingCount,
   className,
   isLimitReached,
   isFreePlan,
 }) => {
     return (
-      <div className={cn("flex items-center gap-2", className)}>
+      <div className={cn("flex items-center gap-2", className)} data-testid="mobile-usage-display">
         {isFreePlan ? (
           <span className="text-sm text-gray-500">利用不可</span>
         ) : (
-          <span className={`text-sm font-medium ${isLimitReached ? 'text-red-600' : 'text-green-600'
-            }`}>
-            {UsageMessages.remainingCount(remainingCount)}
-          </span>
+          <>
+            <span className={`text-sm font-medium ${isLimitReached ? 'text-red-600' : 'text-green-600'}`}>
+              残り利用回数:
+            </span>
+            <span className={`text-sm ${isLimitReached ? 'text-red-600' : 'text-green-600'}`}>
+              {`残り${Number.isFinite(remainingCount) ? remainingCount : 0}回`}
+            </span>
+            <span className="text-xs text-gray-500 ml-2">
+              {`${Math.max(0, currentUsage)}/${Number.isFinite(dailyLimit) ? dailyLimit : 0}`}
+            </span>
+          </>
         )}
       </div>
     );
@@ -343,7 +366,7 @@ const ErrorDisplay: React.FC<{
   if (variant === 'minimal') {
     return (
       <div className={cn("text-sm text-red-600", className)}>
-        {ErrorMessages[error.error_code] || UsageMessages.noUsageData}
+  {error.error || ErrorMessages[error.error_code] || UsageMessages.noUsageData}
       </div>
     );
   }

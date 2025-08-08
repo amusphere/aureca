@@ -51,6 +51,14 @@ class AIChatUsageRepository:
         return result
 
     @staticmethod
+    def increment_daily_usage(session: Session, user_id: int, usage_date: str) -> int:
+        """
+        Backward-compatible wrapper expected by some tests/mocks.
+        Delegates to increment_usage_count and returns the updated count.
+        """
+        return AIChatUsageRepository.increment_usage_count(session, user_id, usage_date)
+
+    @staticmethod
     def get_daily_usage_record(session: Session, user_id: int, usage_date: str) -> AIChatUsage | None:
         """
         日次利用記録の取得 - 複合インデックスを活用した高速検索
@@ -133,6 +141,38 @@ class AIChatUsageRepository:
         )
         return list(session.exec(stmt).all())
 
+    @staticmethod
+    def create_daily_usage(session: Session, user_id: int, usage_date: str, usage_count: int = 1) -> AIChatUsage:
+        """
+        日次利用記録の作成 - テスト用のヘルパーメソッド
+        """
+        from datetime import datetime
+
+        from sqlalchemy.dialects.postgresql import insert
+
+        current_timestamp = datetime.now().timestamp()
+
+        # Create new record with specified usage_count
+        stmt = insert(AIChatUsage).values(
+            user_id=user_id,
+            usage_date=usage_date,
+            usage_count=usage_count,
+            created_at=current_timestamp,
+            updated_at=current_timestamp,
+        )
+
+        # If record exists, update it with the new count
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["user_id", "usage_date"],
+            set_={"usage_count": usage_count, "updated_at": current_timestamp},
+        )
+
+        session.exec(stmt)
+        session.commit()
+
+        # Return the created/updated record
+        return AIChatUsageRepository.get_daily_usage_record(session, user_id, usage_date)
+
 
 # 後方互換性のための関数エイリアス（既存コードとの互換性維持）
 def get_current_usage_count(session: Session, user_id: int, usage_date: str) -> int:
@@ -154,3 +194,62 @@ def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUs
 def get_usage_history(session: Session, user_id: int, limit: int = 30) -> list[AIChatUsage]:
     """Backward compatibility wrapper"""
     return AIChatUsageRepository.get_usage_history(session, user_id, limit)
+
+
+def create_daily_usage(session: Session, user_id: int, usage_date: str, usage_count: int = 1) -> AIChatUsage:
+    """Backward compatibility wrapper for creating daily usage record"""
+    from datetime import datetime
+
+    from sqlalchemy.dialects.postgresql import insert
+
+    current_timestamp = datetime.now().timestamp()
+
+    # Create new record with specified usage_count
+    stmt = insert(AIChatUsage).values(
+        user_id=user_id,
+        usage_date=usage_date,
+        usage_count=usage_count,
+        created_at=current_timestamp,
+        updated_at=current_timestamp,
+    )
+
+    # If record exists, update it with the new count
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["user_id", "usage_date"],
+        set_={"usage_count": usage_count, "updated_at": current_timestamp},
+    )
+
+    session.exec(stmt)
+    session.commit()
+
+    # Return the created/updated record
+    return AIChatUsageRepository.get_daily_usage_record(session, user_id, usage_date)
+
+
+def update_usage_count(session: Session, user_id: int, usage_date: str, usage_count: int) -> AIChatUsage:
+    """Backward compatibility wrapper for updating usage count"""
+    from datetime import datetime
+
+    from sqlalchemy.dialects.postgresql import insert
+
+    current_timestamp = datetime.now().timestamp()
+
+    # Update existing record or create new one with specified count
+    stmt = insert(AIChatUsage).values(
+        user_id=user_id,
+        usage_date=usage_date,
+        usage_count=usage_count,
+        created_at=current_timestamp,
+        updated_at=current_timestamp,
+    )
+
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["user_id", "usage_date"],
+        set_={"usage_count": usage_count, "updated_at": current_timestamp},
+    )
+
+    session.exec(stmt)
+    session.commit()
+
+    # Return the updated record
+    return AIChatUsageRepository.get_daily_usage_record(session, user_id, usage_date)
