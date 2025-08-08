@@ -44,7 +44,7 @@ describe('AI Chat Usage API Communication Integration', () => {
 
     it('should handle usage limit exceeded error (429)', async () => {
       const mockErrorData: AIChatUsageError = {
-        error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
+        error: '本日の利用回数上限（10回）に達しました。明日の00:00にリセットされます。',
         error_code: 'USAGE_LIMIT_EXCEEDED',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'
@@ -67,7 +67,7 @@ describe('AI Chat Usage API Communication Integration', () => {
 
     it('should handle plan restriction error (403)', async () => {
       const mockErrorData: AIChatUsageError = {
-        error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
+        error: 'freeプランではAIChatをご利用いただけません。standardプランにアップグレードしてください。',
         error_code: 'PLAN_RESTRICTION',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'
@@ -156,7 +156,7 @@ describe('AI Chat Usage API Communication Integration', () => {
 
     it('should handle increment when at limit (429)', async () => {
       const mockErrorData: AIChatUsageError = {
-        error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
+        error: '本日の利用回数上限（10回）に達しました。明日の00:00にリセットされます。',
         error_code: 'USAGE_LIMIT_EXCEEDED',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'
@@ -184,7 +184,7 @@ describe('AI Chat Usage API Communication Integration', () => {
 
     it('should handle plan restriction on increment (403)', async () => {
       const mockErrorData: AIChatUsageError = {
-        error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
+        error: 'freeプランではAIChatをご利用いただけません。standardプランにアップグレードしてください。',
         error_code: 'PLAN_RESTRICTION',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'

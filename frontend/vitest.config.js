@@ -19,7 +19,7 @@ export default defineConfig({
     // テストファイルのパターンを指定
     include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     // 大きなテストファイルを除外（メモリ問題があるため）
-    exclude: ['**/node_modules/**', '**/dist/**', 'tests/hooks/useAIChatUsage.test.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**'],
     // カバレッジ設定
     coverage: {
       provider: 'v8',

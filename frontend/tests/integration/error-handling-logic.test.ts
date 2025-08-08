@@ -23,7 +23,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
   describe('Usage Limit Exceeded Error (429)', () => {
     it('should process usage limit exceeded error correctly', () => {
       const mockError: AIChatUsageError = {
-        error: '本日の利用回数上限に達しました。明日の00:00にリセットされます。',
+        error: '本日の利用回数上限（10回）に達しました。明日の00:00にリセットされます。',
         error_code: 'USAGE_LIMIT_EXCEEDED',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'
@@ -43,7 +43,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
       expect(hookResult.error).toBeDefined()
       expect(hookResult.error.error_code).toBe('USAGE_LIMIT_EXCEEDED')
       expect(hookResult.error.remaining_count).toBe(0)
-      expect(hookResult.error.error).toContain('本日の利用回数上限に達しました')
+      expect(hookResult.error.error).toContain('本日の利用回数上限（10回）に達しました')
       expect(hookResult.usage).toBeNull()
     })
 
@@ -75,7 +75,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
   describe('Plan Restriction Error (403)', () => {
     it('should process plan restriction error correctly', () => {
       const mockError: AIChatUsageError = {
-        error: '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてください。',
+        error: 'freeプランではAIChatをご利用いただけません。standardプランにアップグレードしてください。',
         error_code: 'PLAN_RESTRICTION',
         remaining_count: 0,
         reset_time: '2023-01-02T00:00:00.000Z'
@@ -94,7 +94,7 @@ describe('AI Chat Usage Error Handling Integration', () => {
       // Verify plan restriction error
       expect(hookResult.error).toBeDefined()
       expect(hookResult.error.error_code).toBe('PLAN_RESTRICTION')
-      expect(hookResult.error.error).toContain('現在のプランではAIChatをご利用いただけません')
+      expect(hookResult.error.error).toContain('freeプランではAIChatをご利用いただけません')
       expect(hookResult.usage).toBeNull()
     })
   })
