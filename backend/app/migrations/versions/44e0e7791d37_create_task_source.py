@@ -6,7 +6,7 @@ Create Date: 2025-07-14 00:29:15.764247
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel
@@ -14,9 +14,9 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "44e0e7791d37"
-down_revision: Union[str, None] = "176d584d7539"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "176d584d7539"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -61,18 +61,14 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_task_sources_source_id"), "task_sources", ["source_id"], unique=False
-    )
+    op.create_index(op.f("ix_task_sources_source_id"), "task_sources", ["source_id"], unique=False)
     op.create_index(
         op.f("ix_task_sources_source_type"),
         "task_sources",
         ["source_type"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_task_sources_uuid"), "task_sources", ["uuid"], unique=False
-    )
+    op.create_index(op.f("ix_task_sources_uuid"), "task_sources", ["uuid"], unique=False)
     # ### end Alembic commands ###
 
 

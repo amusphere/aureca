@@ -4,7 +4,7 @@ Logging system for AI assistant
 
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from ..core.models import NextAction
 
@@ -19,18 +19,14 @@ class AIAssistantLogger:
         # Console handler
         if not self.logger.handlers:
             console_handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             console_handler.setFormatter(formatter)
             self.logger.addHandler(console_handler)
 
     def log_action_execution(self, next_action: NextAction):
         """Log action execution"""
         log_message = (
-            f"Spoke: {next_action.spoke_name}, "
-            f"Type: {next_action.action_type}, "
-            f"Parameters: {next_action.parameters}, "
+            f"Spoke: {next_action.spoke_name}, Type: {next_action.action_type}, Parameters: {next_action.parameters}, "
         )
         self.logger.info(log_message)
 
@@ -46,7 +42,7 @@ class AIAssistantLogger:
         """General warning log"""
         self.logger.warning(message)
 
-    def log_error(self, error: Exception, context: Dict[str, Any] = None):
+    def log_error(self, error: Exception, context: dict[str, Any] = None):
         """Error log with context"""
         log_message = f"Error occurred: {type(error).__name__}: {str(error)}"
 

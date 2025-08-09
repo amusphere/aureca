@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from app.schema import SourceType, TaskPriority
 from pydantic import BaseModel
+
+from app.schema import SourceType, TaskPriority
 
 
 class TaskSourceModel(BaseModel):

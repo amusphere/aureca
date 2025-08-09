@@ -1,5 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
+
+from sqlmodel import Session
 
 from app.schema import User
 from app.services.ai.core.models import SpokeResponse
@@ -10,7 +12,6 @@ from app.services.google_calendar_service import (
     GoogleCalendarService,
     GoogleCalendarServiceError,
 )
-from sqlmodel import Session
 
 
 class GoogleCalendarSpoke(BaseSpoke):
@@ -18,8 +19,8 @@ class GoogleCalendarSpoke(BaseSpoke):
 
     def __init__(
         self,
-        session: Optional[Session] = None,
-        current_user: Optional[User] = None,
+        session: Session | None = None,
+        current_user: User | None = None,
     ):
         super().__init__(session=session, current_user=current_user)
 
@@ -33,9 +34,7 @@ class GoogleCalendarSpoke(BaseSpoke):
     # アクション関数群
     # =================
 
-    async def action_get_calendar_events(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_get_calendar_events(self, parameters: dict[str, Any]) -> SpokeResponse:
         """カレンダーイベント取得アクション"""
         try:
             # パラメータから日付を解析
@@ -71,19 +70,13 @@ class GoogleCalendarSpoke(BaseSpoke):
         except GoogleCalendarAuthenticationError as e:
             return SpokeResponse(success=False, error=f"Authentication error: {str(e)}")
         except GoogleCalendarAPIError as e:
-            return SpokeResponse(
-                success=False, error=f"Google Calendar API error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Google Calendar API error: {str(e)}")
         except GoogleCalendarServiceError as e:
-            return SpokeResponse(
-                success=False, error=f"Calendar service error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Calendar service error: {str(e)}")
         except Exception as e:
             return SpokeResponse(success=False, error=f"Unexpected error: {str(e)}")
 
-    async def action_create_calendar_event(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_create_calendar_event(self, parameters: dict[str, Any]) -> SpokeResponse:
         """カレンダーイベント作成アクション"""
         try:
             calendar_id = parameters.get("calendar_id", "primary")
@@ -118,19 +111,13 @@ class GoogleCalendarSpoke(BaseSpoke):
         except GoogleCalendarAuthenticationError as e:
             return SpokeResponse(success=False, error=f"Authentication error: {str(e)}")
         except GoogleCalendarAPIError as e:
-            return SpokeResponse(
-                success=False, error=f"Google Calendar API error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Google Calendar API error: {str(e)}")
         except GoogleCalendarServiceError as e:
-            return SpokeResponse(
-                success=False, error=f"Calendar service error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Calendar service error: {str(e)}")
         except Exception as e:
             return SpokeResponse(success=False, error=f"Unexpected error: {str(e)}")
 
-    async def action_update_calendar_event(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_update_calendar_event(self, parameters: dict[str, Any]) -> SpokeResponse:
         """カレンダーイベント更新アクション"""
         try:
             calendar_id = parameters.get("calendar_id", "primary")
@@ -167,19 +154,13 @@ class GoogleCalendarSpoke(BaseSpoke):
         except GoogleCalendarAuthenticationError as e:
             return SpokeResponse(success=False, error=f"Authentication error: {str(e)}")
         except GoogleCalendarAPIError as e:
-            return SpokeResponse(
-                success=False, error=f"Google Calendar API error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Google Calendar API error: {str(e)}")
         except GoogleCalendarServiceError as e:
-            return SpokeResponse(
-                success=False, error=f"Calendar service error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Calendar service error: {str(e)}")
         except Exception as e:
             return SpokeResponse(success=False, error=f"Unexpected error: {str(e)}")
 
-    async def action_delete_calendar_event(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_delete_calendar_event(self, parameters: dict[str, Any]) -> SpokeResponse:
         """カレンダーイベント削除アクション"""
         try:
             calendar_id = parameters.get("calendar_id", "primary")
@@ -213,17 +194,13 @@ class GoogleCalendarSpoke(BaseSpoke):
                     error="Event not found",
                     metadata={"status_code": 404},
                 )
-            return SpokeResponse(
-                success=False, error=f"Google Calendar API error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Google Calendar API error: {str(e)}")
         except GoogleCalendarServiceError as e:
-            return SpokeResponse(
-                success=False, error=f"Calendar service error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Calendar service error: {str(e)}")
         except Exception as e:
             return SpokeResponse(success=False, error=f"Unexpected error: {str(e)}")
 
-    async def action_list_calendars(self, _: Dict[str, Any]) -> SpokeResponse:
+    async def action_list_calendars(self, _: dict[str, Any]) -> SpokeResponse:
         """カレンダーリスト取得アクション"""
         try:
             # Google Calendar APIサービスを取得
@@ -245,12 +222,8 @@ class GoogleCalendarSpoke(BaseSpoke):
         except GoogleCalendarAuthenticationError as e:
             return SpokeResponse(success=False, error=f"Authentication error: {str(e)}")
         except GoogleCalendarAPIError as e:
-            return SpokeResponse(
-                success=False, error=f"Google Calendar API error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Google Calendar API error: {str(e)}")
         except GoogleCalendarServiceError as e:
-            return SpokeResponse(
-                success=False, error=f"Calendar service error: {str(e)}"
-            )
+            return SpokeResponse(success=False, error=f"Calendar service error: {str(e)}")
         except Exception as e:
             return SpokeResponse(success=False, error=f"Unexpected error: {str(e)}")

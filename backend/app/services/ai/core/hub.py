@@ -4,12 +4,13 @@ Main AI Hub - Consolidated orchestrator and operator functionality
 
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from zoneinfo import ZoneInfo
+
+from sqlmodel import Session
 
 from app.schema import User
 from app.utils.llm import llm_chat_completions, llm_chat_completions_perse
-from sqlmodel import Session
 
 from ..spokes.manager import SpokeManager
 from ..utils.exceptions import InvalidParameterError
@@ -28,7 +29,7 @@ class AIHub:
     def __init__(
         self,
         user_id: int,
-        session: Optional[Session] = None,
+        session: Session | None = None,
     ):
         self.user_id = user_id
         self.session = session
@@ -42,7 +43,7 @@ class AIHub:
         self,
         prompt: str,
         current_user: User,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process user request through the hub-and-spoke system
 
@@ -58,14 +59,10 @@ class AIHub:
             operator_response = await self._analyze_prompt(prompt)
 
             # Step 2: Execute action plan through spokes
-            execution_results = await self._execute_actions(
-                operator_response.actions, current_user
-            )
+            execution_results = await self._execute_actions(operator_response.actions, current_user)
 
             # Step 3: Create summary
-            summary = self._create_execution_summary(
-                prompt, operator_response, execution_results
-            )
+            summary = self._create_execution_summary(prompt, operator_response, execution_results)
 
             return {
                 "success": True,
@@ -105,9 +102,7 @@ class AIHub:
         """Analyze user prompt and generate action plan"""
         system_prompt = self._generate_system_prompt()
 
-        self.logger.info(
-            f"Analyzing prompt with system prompt length: {len(system_prompt)}"
-        )
+        self.logger.info(f"Analyzing prompt with system prompt length: {len(system_prompt)}")
 
         try:
             operator_response = llm_chat_completions_perse(
@@ -123,17 +118,10 @@ class AIHub:
             # Validate actions against supported actions
             supported_actions = self.spoke_manager.get_all_action_types()
             for action in operator_response.actions:
-                if (
-                    action.action_type not in supported_actions
-                    and action.action_type != "unknown"
-                ):
-                    raise InvalidParameterError(
-                        f"Unsupported action type: {action.action_type}"
-                    )
+                if action.action_type not in supported_actions and action.action_type != "unknown":
+                    raise InvalidParameterError(f"Unsupported action type: {action.action_type}")
 
-            self.logger.info(
-                f"Prompt analysis complete: {len(operator_response.actions)} actions planned"
-            )
+            self.logger.info(f"Prompt analysis complete: {len(operator_response.actions)} actions planned")
             return operator_response
 
         except Exception as e:
@@ -152,9 +140,9 @@ class AIHub:
 
     async def _execute_actions(
         self,
-        actions: List[NextAction],
+        actions: list[NextAction],
         current_user: User,
-    ) -> List[SpokeResponse]:
+    ) -> list[SpokeResponse]:
         """Execute actions through spoke system"""
         # Sort by priority (lower numbers = higher priority)
         sorted_actions = sorted(actions, key=lambda x: x.priority)
@@ -167,9 +155,7 @@ class AIHub:
 
                 # Stop execution on critical errors (priority 1 failures)
                 if not result.success and action.priority == 1:
-                    self.logger.warning(
-                        f"Critical action failed, stopping execution: {action.action_type}"
-                    )
+                    self.logger.warning(f"Critical action failed, stopping execution: {action.action_type}")
                     break
 
             except Exception as e:
@@ -180,9 +166,7 @@ class AIHub:
                         "spoke_name": action.spoke_name,
                     },
                 )
-                results.append(
-                    SpokeResponse(success=False, error=f"Execution error: {str(e)}")
-                )
+                results.append(SpokeResponse(success=False, error=f"Execution error: {str(e)}"))
 
         return results
 
@@ -236,8 +220,8 @@ class AIHub:
         self,
         prompt: str,
         operator_response: OperatorResponse,
-        execution_results: List[SpokeResponse],
-    ) -> Dict[str, Any]:
+        execution_results: list[SpokeResponse],
+    ) -> dict[str, Any]:
         """Create execution summary"""
         total_actions = len(execution_results)
         successful_actions = sum(1 for result in execution_results if result.success)
@@ -259,11 +243,7 @@ class AIHub:
         # Extract results data
         results_data = []
         for i, result in enumerate(execution_results):
-            action = (
-                operator_response.actions[i]
-                if i < len(operator_response.actions)
-                else None
-            )
+            action = operator_response.actions[i] if i < len(operator_response.actions) else None
             results_data.append(
                 {
                     "action_type": action.action_type if action else "unknown",
@@ -271,11 +251,7 @@ class AIHub:
                     "description": action.description if action else "Unknown action",
                     "data_available": result.data is not None,
                     "error": result.error,
-                    "data": (
-                        result.data
-                        if result.success and result.data is not None
-                        else None
-                    ),
+                    "data": (result.data if result.success and result.data is not None else None),
                 }
             )
 
@@ -309,10 +285,10 @@ class AIHub:
 オペレーターの分析: {operator_response.analysis}
 
 各アクションの詳細結果:
-{chr(10).join([f"- {item['action_type']}: {'成功' if item['success'] else '失敗'} - {item['description']}" + (f" (エラー: {item['error']})" if item['error'] else "") for item in results_data])}
+{chr(10).join([f"- {item['action_type']}: {'成功' if item['success'] else '失敗'} - {item['description']}" + (f" (エラー: {item['error']})" if item["error"] else "") for item in results_data])}
 
 実際に取得されたデータ:
-{chr(10).join([f"- {item['description']}: {item['data']}" for item in results_data if item['success'] and item['data'] is not None])}
+{chr(10).join([f"- {item['description']}: {item['data']}" for item in results_data if item["success"] and item["data"] is not None])}
 
 この情報を基に、ユーザーの質問「{prompt}」に対する適切で自然な返答を生成してください。ユーザーが求めている具体的な情報や回答を中心に、分かりやすく説明してください。""",
                 },

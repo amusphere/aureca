@@ -1,3 +1,5 @@
+from fastapi import Depends, HTTPException, status
+
 from app.database import get_session
 from app.schema import User
 from app.utils.auth.clerk import (
@@ -5,7 +7,6 @@ from app.utils.auth.clerk import (
     get_auth_sub,
     get_authed_user,
 )
-from fastapi import Depends, HTTPException, status
 
 
 async def user_sub(sub=Depends(get_auth_sub)) -> str | None:

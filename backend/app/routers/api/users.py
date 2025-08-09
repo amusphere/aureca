@@ -1,7 +1,8 @@
+from fastapi import APIRouter, Depends
+
 from app.models.user import UserModel
 from app.schema import User
 from app.services.auth import auth_user
-from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/users")
 

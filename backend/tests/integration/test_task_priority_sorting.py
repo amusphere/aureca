@@ -1,8 +1,11 @@
 """Integration tests for task priority sorting functionality."""
 
+from datetime import UTC
+
 from sqlmodel import Session
-from app.repositories.tasks import find_tasks, create_task
-from app.schema import Tasks, TaskPriority, User
+
+from app.repositories.tasks import create_task, find_tasks
+from app.schema import TaskPriority, Tasks, User
 
 
 class TestTaskPrioritySorting:
@@ -37,17 +40,17 @@ class TestTaskPrioritySorting:
             "High Priority Task 2",
             "Middle Priority Task 1",
             "Low Priority Task 1",
-            "No Priority Task 1"
+            "No Priority Task 1",
         }
         assert task_titles == expected_titles
 
     def test_priority_secondary_sorting_by_expires_at(self, session: Session, test_user: User):
         """Test secondary sorting by expires_at within same priority."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Create tasks with same priority but different expires_at
-        earlier_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
-        later_date = datetime(2024, 1, 20, tzinfo=timezone.utc)
+        earlier_date = datetime(2024, 1, 15, tzinfo=UTC)
+        later_date = datetime(2024, 1, 20, tzinfo=UTC)
 
         create_task(
             session=session,
@@ -55,7 +58,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=later_date
+            expires_at=later_date.timestamp(),
         )
 
         create_task(
@@ -64,7 +67,7 @@ class TestTaskPrioritySorting:
             description="Description",
             user_id=test_user.id,
             priority=TaskPriority.HIGH,
-            expires_at=earlier_date
+            expires_at=earlier_date.timestamp(),
         )
 
         tasks = find_tasks(session=session, user_id=test_user.id)
@@ -83,7 +86,7 @@ class TestTaskPrioritySorting:
 
         # When priority sorting is disabled, tasks should be sorted by expires_at only
         # The earliest expires_at should come first
-        earliest_expires_at = min(task.expires_at or float('inf') for task in sample_tasks)
+        earliest_expires_at = min(task.expires_at or float("inf") for task in sample_tasks)
 
         assert len(tasks) > 0
         assert tasks[0].expires_at == earliest_expires_at
@@ -179,11 +182,7 @@ class TestTaskPrioritySorting:
         )
 
         # Filter by expires_at
-        filtered_tasks = find_tasks(
-            session=session,
-            user_id=test_user.id,
-            expires_at=current_time
-        )
+        filtered_tasks = find_tasks(session=session, user_id=test_user.id, expires_at=current_time)
 
         # Should only include tasks with expires_at >= current_time
         assert len(filtered_tasks) == 1

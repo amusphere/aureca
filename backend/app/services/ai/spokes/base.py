@@ -4,11 +4,12 @@ Base spoke interface for all AI service spokes
 
 import json
 from abc import ABC
-from typing import Any, Dict
+from typing import Any
+
+from sqlmodel import Session
 
 from app.schema import User
 from app.utils.llm import llm_chat_completions
-from sqlmodel import Session
 
 from ..core.models import NextAction, SpokeResponse
 from ..utils.logger import AIAssistantLogger
@@ -35,9 +36,7 @@ class BaseSpoke(ABC):
         self.current_user = current_user
         self.logger = AIAssistantLogger(self.__class__.__name__)
 
-    async def execute_action(
-        self, action: NextAction, action_definition: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def execute_action(self, action: NextAction, action_definition: dict[str, Any]) -> SpokeResponse:
         """Execute an action"""
         try:
             # Convert action name to method name (e.g., get_calendar_events -> action_get_calendar_events)
@@ -69,9 +68,7 @@ class BaseSpoke(ABC):
                     f"Failed to enhance parameters for {action.spoke_name}.{action.action_type}: {str(e)}"
                 )
 
-            self.logger.info(
-                f"Executing {action.spoke_name}.{action.action_type} with parameters: {parameters}"
-            )
+            self.logger.info(f"Executing {action.spoke_name}.{action.action_type} with parameters: {parameters}")
 
             return await getattr(self, method_name)(parameters)
 
@@ -96,9 +93,9 @@ class BaseSpoke(ABC):
         self,
         spoke_name: str,
         action_type: str,
-        parameters: Dict[str, Any],
-        action_definition: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        parameters: dict[str, Any],
+        action_definition: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Use LLM to enhance/predict action parameters
         """

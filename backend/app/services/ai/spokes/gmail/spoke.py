@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from app.services.ai.core.models import SpokeResponse
 from app.services.ai.spokes.base import BaseSpoke
@@ -34,9 +34,7 @@ class GmailSpoke(BaseSpoke):
                 try:
                     return await func(*args, **kwargs)
                 except GmailAuthenticationError as e:
-                    self.logger.error(
-                        f"Gmail authentication error in {action_name}: {str(e)}"
-                    )
+                    self.logger.error(f"Gmail authentication error in {action_name}: {str(e)}")
                     return SpokeResponse(
                         success=False,
                         error=f"Gmail authentication error: {str(e)}",
@@ -61,9 +59,7 @@ class GmailSpoke(BaseSpoke):
 
         return decorator
 
-    def _create_success_response(
-        self, data: Dict[str, Any], message: str
-    ) -> SpokeResponse:
+    def _create_success_response(self, data: dict[str, Any], message: str) -> SpokeResponse:
         """Create a standardized success response"""
         return SpokeResponse(
             success=True,
@@ -79,7 +75,7 @@ class GmailSpoke(BaseSpoke):
             data={"error_type": "parameter_error"},
         )
 
-    def _validate_email_id(self, parameters: Dict[str, Any]) -> str:
+    def _validate_email_id(self, parameters: dict[str, Any]) -> str:
         """Validate email ID parameter"""
         email_id = parameters.get("email_id")
         if not email_id:
@@ -88,31 +84,23 @@ class GmailSpoke(BaseSpoke):
 
     async def _execute_email_action(
         self, email_id: str, action_method_name: str, success_message: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute an email action (mark as read/unread) and return result"""
-        async with get_authenticated_gmail_service(
-            self.current_user, self.session
-        ) as gmail_service:
+        async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
             method = getattr(gmail_service, action_method_name)
             result = await method(email_id)
 
         return {"result": result}
 
-    def _validate_email_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_email_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """Validate email parameters and return validated data"""
         to = parameters.get("to")
         subject = parameters.get("subject")
         body = parameters.get("body")
 
         if not all([to, subject, body]):
-            missing_params = [
-                param
-                for param, value in [("to", to), ("subject", subject), ("body", body)]
-                if not value
-            ]
-            raise ValueError(
-                f"Required parameters are missing: {', '.join(missing_params)}"
-            )
+            missing_params = [param for param, value in [("to", to), ("subject", subject), ("body", body)] if not value]
+            raise ValueError(f"Required parameters are missing: {', '.join(missing_params)}")
 
         return {
             "to": to,
@@ -122,16 +110,10 @@ class GmailSpoke(BaseSpoke):
             "bcc": parameters.get("bcc"),
         }
 
-    async def _execute_gmail_query(
-        self, query: str, max_results: int
-    ) -> Dict[str, Any]:
+    async def _execute_gmail_query(self, query: str, max_results: int) -> dict[str, Any]:
         """Execute Gmail query and return results with metadata"""
-        async with get_authenticated_gmail_service(
-            self.current_user, self.session
-        ) as gmail_service:
-            emails = await gmail_service.get_emails(
-                query=query, max_results=max_results
-            )
+        async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
+            emails = await gmail_service.get_emails(query=query, max_results=max_results)
 
         return {
             "emails": emails,
@@ -143,13 +125,11 @@ class GmailSpoke(BaseSpoke):
     # Action functions
     # =================
 
-    async def action_get_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_get_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get email list action"""
         # Extract and validate parameters
         query = parameters.get("query", "")
-        max_results = self._validate_max_results(
-            parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS)
-        )
+        max_results = self._validate_max_results(parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS))
 
         try:
             # Execute Gmail query
@@ -182,9 +162,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_get_email_content(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_get_email_content(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get specific email content action"""
         # Validate required parameters
         email_id = parameters.get("email_id")
@@ -193,9 +171,7 @@ class GmailSpoke(BaseSpoke):
 
         try:
             # Get Gmail service and retrieve email content
-            async with get_authenticated_gmail_service(
-                self.current_user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
                 email_content = await gmail_service.get_email_content(email_id)
 
             return self._create_success_response(
@@ -204,9 +180,7 @@ class GmailSpoke(BaseSpoke):
             )
 
         except GmailAuthenticationError as e:
-            self.logger.error(
-                f"Gmail authentication error in get_email_content: {str(e)}"
-            )
+            self.logger.error(f"Gmail authentication error in get_email_content: {str(e)}")
             return SpokeResponse(
                 success=False,
                 error=f"Gmail authentication error: {str(e)}",
@@ -227,7 +201,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_send_email(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_send_email(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Send email action"""
 
         try:
@@ -235,9 +209,7 @@ class GmailSpoke(BaseSpoke):
             email_params = self._validate_email_parameters(parameters)
 
             # Get Gmail service and send email
-            async with get_authenticated_gmail_service(
-                self.current_user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
                 result = await gmail_service.send_email(
                     to=email_params["to"],
                     subject=email_params["subject"],
@@ -246,9 +218,7 @@ class GmailSpoke(BaseSpoke):
                     bcc=email_params["bcc"],
                 )
 
-            return self._create_success_response(
-                data={"result": result}, message="Email sent successfully"
-            )
+            return self._create_success_response(data={"result": result}, message="Email sent successfully")
 
         except ValueError as e:
             return self._create_parameter_error_response(str(e))
@@ -274,7 +244,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_create_draft(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_create_draft(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Create email draft action"""
 
         try:
@@ -282,9 +252,7 @@ class GmailSpoke(BaseSpoke):
             email_params = self._validate_email_parameters(parameters)
 
             # Get Gmail service and create draft
-            async with get_authenticated_gmail_service(
-                self.current_user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
                 result = await gmail_service.create_draft(
                     to=email_params["to"],
                     subject=email_params["subject"],
@@ -293,9 +261,7 @@ class GmailSpoke(BaseSpoke):
                     bcc=email_params["bcc"],
                 )
 
-            return self._create_success_response(
-                data={"result": result}, message="Draft created successfully"
-            )
+            return self._create_success_response(data={"result": result}, message="Draft created successfully")
 
         except ValueError as e:
             return self._create_parameter_error_response(str(e))
@@ -321,7 +287,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_mark_as_read(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_mark_as_read(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Mark email as read action"""
 
         try:
@@ -333,9 +299,7 @@ class GmailSpoke(BaseSpoke):
                 email_id, "mark_as_read", "Email marked as read successfully"
             )
 
-            return self._create_success_response(
-                data=result_data, message="Email marked as read successfully"
-            )
+            return self._create_success_response(data=result_data, message="Email marked as read successfully")
 
         except ValueError as e:
             return self._create_parameter_error_response(str(e))
@@ -361,7 +325,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_mark_as_unread(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_mark_as_unread(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Mark email as unread action"""
 
         try:
@@ -373,9 +337,7 @@ class GmailSpoke(BaseSpoke):
                 email_id, "mark_as_unread", "Email marked as unread successfully"
             )
 
-            return self._create_success_response(
-                data=result_data, message="Email marked as unread successfully"
-            )
+            return self._create_success_response(data=result_data, message="Email marked as unread successfully")
 
         except ValueError as e:
             return self._create_parameter_error_response(str(e))
@@ -401,7 +363,7 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    def _build_search_query(self, parameters: Dict[str, Any]) -> str:
+    def _build_search_query(self, parameters: dict[str, Any]) -> str:
         """Build Gmail search query from parameters"""
         gmail_query_parts = []
 
@@ -439,13 +401,11 @@ class GmailSpoke(BaseSpoke):
 
         return " ".join(gmail_query_parts)
 
-    async def action_search_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_search_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Search emails with specific criteria action"""
 
         # Extract and validate parameters
-        max_results = self._validate_max_results(
-            parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS)
-        )
+        max_results = self._validate_max_results(parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS))
         gmail_query = self._build_search_query(parameters)
 
         try:
@@ -483,15 +443,11 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_get_unread_emails(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_get_unread_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get unread emails action"""
 
         # Extract and validate parameters
-        max_results = self._validate_max_results(
-            parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS)
-        )
+        max_results = self._validate_max_results(parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS))
         gmail_query = "is:unread"
 
         try:
@@ -504,9 +460,7 @@ class GmailSpoke(BaseSpoke):
             )
 
         except GmailAuthenticationError as e:
-            self.logger.error(
-                f"Gmail authentication error in get_unread_emails: {str(e)}"
-            )
+            self.logger.error(f"Gmail authentication error in get_unread_emails: {str(e)}")
             return SpokeResponse(
                 success=False,
                 error=f"Gmail authentication error: {str(e)}",
@@ -527,13 +481,11 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_get_new_emails(self, parameters: Dict[str, Any]) -> SpokeResponse:
+    async def action_get_new_emails(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Get new emails (unread and not archived) action"""
 
         # Extract and validate parameters
-        max_results = self._validate_max_results(
-            parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS)
-        )
+        max_results = self._validate_max_results(parameters.get("max_results", self.DEFAULT_EMAIL_RESULTS))
         gmail_query = "is:unread -is:archived"
 
         try:
@@ -567,26 +519,20 @@ class GmailSpoke(BaseSpoke):
                 data={"error_type": "general_error"},
             )
 
-    async def action_create_reply_draft(
-        self, parameters: Dict[str, Any]
-    ) -> SpokeResponse:
+    async def action_create_reply_draft(self, parameters: dict[str, Any]) -> SpokeResponse:
         """Create email reply draft action"""
 
         # Validate required parameters
         original_email_id = parameters.get("original_email_id")
         if not original_email_id:
-            return self._create_parameter_error_response(
-                "Original email ID is required"
-            )
+            return self._create_parameter_error_response("Original email ID is required")
 
         try:
             # Validate email parameters
             email_params = self._validate_email_parameters(parameters)
 
             # Get Gmail service and create reply draft
-            async with get_authenticated_gmail_service(
-                self.current_user, self.session
-            ) as gmail_service:
+            async with get_authenticated_gmail_service(self.current_user, self.session) as gmail_service:
                 result = await gmail_service.create_reply_draft(
                     original_email_id=original_email_id,
                     to=email_params["to"],
@@ -596,16 +542,12 @@ class GmailSpoke(BaseSpoke):
                     bcc=email_params["bcc"],
                 )
 
-            return self._create_success_response(
-                data={"result": result}, message="Reply draft created successfully"
-            )
+            return self._create_success_response(data={"result": result}, message="Reply draft created successfully")
 
         except ValueError as e:
             return self._create_parameter_error_response(str(e))
         except GmailAuthenticationError as e:
-            self.logger.error(
-                f"Gmail authentication error in create_reply_draft: {str(e)}"
-            )
+            self.logger.error(f"Gmail authentication error in create_reply_draft: {str(e)}")
             return SpokeResponse(
                 success=False,
                 error=f"Gmail authentication error: {str(e)}",

@@ -1,14 +1,22 @@
 """Test configuration and shared fixtures."""
 
-from typing import Generator
+import sys
+from collections.abc import Generator
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from app.database import get_session
-from app.schema import User, Tasks, TaskPriority
-from main import app
+# Add the backend directory to Python path so we can import app modules
+backend_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_dir))
+
+# Now import app modules after adding to path
+from app.database import get_session  # noqa: E402
+from app.schema import TaskPriority, Tasks, User  # noqa: E402
+from main import app  # noqa: E402
 
 
 # Test database configuration
@@ -30,6 +38,7 @@ def session_fixture() -> Generator[Session, None, None]:
 @pytest.fixture(name="client")
 def client_fixture(session: Session) -> Generator[TestClient, None, None]:
     """Create a test client with the test database session."""
+
     def get_session_override():
         return session
 
@@ -47,6 +56,7 @@ def test_user_fixture(session: Session) -> User:
     user = User(
         id=1,
         clerk_user_id="test_user_123",
+        clerk_sub="test_user_123",  # Add clerk_sub for plan determination
         email="test@example.com",
         created_at=1672531200.0,  # 2023-01-01 00:00:00
         updated_at=1672531200.0,

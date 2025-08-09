@@ -1,0 +1,114 @@
+name: Backend Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: sqlite:///./test_database.db
+      CLERK_PUBLISHABLE_KEY: pk_test_test
+      CLERK_SECRET_KEY: sk_test_test
+      CLERK_WEBHOOK_SECRET: whsec_test_test
+      OPENAI_API_KEY: sk-test-test
+      GOOGLE_CLIENT_ID: test_client_id
+      GOOGLE_CLIENT_SECRET: test_client_secret
+      GOOGLE_OAUTH_ENCRYPTION_KEY: test_encryption_key_32_characters_long
+      FRONTEND_URL: http://localhost:3000
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run tests
+        run: uv run pytest -xvs
+
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: sqlite:///./test_database.db
+      CLERK_PUBLISHABLE_KEY: pk_test_test
+      CLERK_SECRET_KEY: sk_test_test
+      CLERK_WEBHOOK_SECRET: whsec_test_test
+      OPENAI_API_KEY: sk-test-test
+      GOOGLE_CLIENT_ID: test_client_id
+      GOOGLE_CLIENT_SECRET: test_client_secret
+      GOOGLE_OAUTH_ENCRYPTION_KEY: test_encryption_key_32_characters_long
+      FRONTEND_URL: http://localhost:3000
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run ruff check
+        run: uv run ruff check .
+
+      - name: Run ruff format check
+        run: uv run ruff format --check .

@@ -1,14 +1,17 @@
 "use client";
 
-import { X } from "lucide-react";
+import { getErrorMessage } from "@/constants/error_messages";
+import { AlertCircle, RefreshCw, X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useAIChatUsage } from "../../hooks/useAIChatUsage";
 import { useMessages } from "../../hooks/useMessages";
 import { cn } from "../../lib/utils";
+import { EmptyState } from "../commons/EmptyState";
+import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
-import { ErrorDisplay } from "../commons/ErrorDisplay";
-import { EmptyState } from "../commons/EmptyState";
+import { UsageDisplay } from "../ui/usage-display";
 import AIChatInput from "./ChatInput";
 import ChatMessage from "./ChatMessage";
 
@@ -36,10 +39,41 @@ const EMPTY_STATE_MESSAGES = {
 
 export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
   const { messages, isLoading, error, sendMessage } = useMessages();
+  const {
+    usage,
+    loading: usageLoading,
+    error: usageError,
+    dailyLimit,
+    planName,
+    canUseChat,
+    isUsageExhausted,
+    refreshUsage,
+    incrementUsage,
+    clearError: clearUsageError
+  } = useAIChatUsage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Enhanced message sending with usage tracking
+  const handleSendMessage = async (message: string) => {
+    // Check if user can use chat before sending
+    if (!canUseChat) {
+      return;
+    }
+
+    try {
+      // Send the message
+      await sendMessage(message);
+
+      // Increment usage count after successful message
+      await incrementUsage();
+    } catch (error) {
+      // Error handling is managed by useMessages hook
+      console.error('Failed to send message:', error);
+    }
   };
 
   useEffect(() => {
@@ -95,29 +129,133 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       >
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-5 border-b border-border/30 bg-background/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className={cn(
+              "w-2 h-2 rounded-full transition-colors duration-300",
+              canUseChat ? "bg-green-500 animate-pulse" : "bg-red-500"
+            )} />
             <h2
               id="chat-title"
               className="text-xl font-semibold text-foreground tracking-tight"
             >
               {EMPTY_STATE_MESSAGES.title}
             </h2>
+
+            {usageLoading && (
+              <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" aria-label="読み込み中" />
+            )}
+
+            {/* Usage Display - Desktop Only (Compact). Hide when error exists to avoid duplicate titles */}
+    {!usageError && (
+              <div className="hidden sm:flex items-center ml-auto mr-4">
+                <UsageDisplay
+      currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
+      dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
+                  planName={planName}
+                  resetTime={usage?.reset_time}
+                  variant="compact"
+                  loading={usageLoading}
+                  error={usageError}
+                  className="text-xs"
+                />
+              </div>
+            )}
           </div>
+
           <Button
             onClick={onClose}
             variant="ghost"
             size="icon"
-            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200"
+            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
             aria-label="チャットを閉じる"
           >
             <X size={18} />
           </Button>
         </header>
 
+        {/* Mobile Usage Display - Full Width */}
+        <div className="sm:hidden">
+          <UsageDisplay
+            currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
+            dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
+            planName={planName}
+            resetTime={usage?.reset_time}
+            variant="minimal"
+            loading={usageLoading}
+            error={usageError}
+            className="px-6 py-3 bg-muted/30 border-b border-border/20"
+          />
+        </div>
+
         {/* Content */}
         <div className="flex flex-col flex-1 min-h-0">
-          {/* Error Display */}
+          {/* Usage Error Display - Only show when not handled by UsageDisplay */}
+          {usageError && (
+            <div className="p-4 bg-destructive/5 border-b border-destructive/20" data-testid="usage-error-display">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-destructive">
+                    {getErrorMessage(usageError.error_code, false)}
+                  </p>
+                  <p className="text-xs text-destructive/90 mt-1">
+                    {usageError.error_code === 'USAGE_LIMIT_EXCEEDED'
+                      ? '本日のAIChat利用回数が上限に達しています。明日の00:00にリセットされます。'
+                      : usageError.error_code === 'PLAN_RESTRICTION'
+                        ? '現在のプランではAIChatをご利用いただけません。プランをアップグレードしてご利用ください。'
+                        : usageError.error_code === 'SYSTEM_ERROR'
+                          ? '一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。'
+                          : getErrorMessage(usageError.error_code, true)}
+                  </p>
+                  {usageError.reset_time && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-destructive/80">
+                        リセット時刻: {new Date(usageError.reset_time).toLocaleString('ja-JP')}
+                      </p>
+                      <p className="text-xs text-destructive/70">
+                        ({Math.ceil((new Date(usageError.reset_time).getTime() - Date.now()) / (1000 * 60 * 60))}時間後にリセット)
+                      </p>
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={clearUsageError}
+                      className="h-7 text-xs"
+                    >
+                      閉じる
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={refreshUsage}
+                      className="h-7 text-xs"
+                      data-testid="modal-refresh-button"
+                    >
+                      <RefreshCw className="h-3 w-3 mr-1" />
+                      再確認
+                    </Button>
+                    {getErrorMessage(usageError.error_code, false) === 'プランの制限' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          // TODO: Implement plan upgrade navigation
+                          console.log('Navigate to plan upgrade');
+                        }}
+                      >
+                        プランをアップグレード
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* System Error Display */}
           {error && (
             <div className="p-4">
               <ErrorDisplay
@@ -160,7 +298,35 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
           {/* Input Area */}
           <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
-            <AIChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+        {/* Usage Exhausted Message */}
+      {(isUsageExhausted || !!usageError) && (
+              <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg" data-testid="usage-exhausted-message">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground font-medium">
+          本日の利用回数上限に達しました
+                  </p>
+                </div>
+                {usage?.reset_time && (
+                  <div className="mt-2 ml-6 space-y-1">
+                    <p className="text-xs text-muted-foreground/80">
+                      リセット時刻: {new Date(usage.reset_time).toLocaleString('ja-JP')}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      ({Math.ceil((new Date(usage.reset_time).getTime() - Date.now()) / (1000 * 60 * 60))}時間後にリセット)
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <AIChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading || usageLoading}
+              disabled={!canUseChat || isUsageExhausted}
+              usage={usage}
+              usageError={usageError}
+            />
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
+from sqlalchemy import Index, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -39,10 +40,9 @@ class User(SQLModel, table=True):
     name: str | None = Field(nullable=True)
     clerk_sub: str = Field(nullable=True, unique=True, index=True)
 
-    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(
-        back_populates="user", cascade_delete=True
-    )
+    google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user", cascade_delete=True)
     tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
+    ai_chat_usage: list["AIChatUsage"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class GoogleOAuthToken(SQLModel, table=True):
@@ -85,9 +85,7 @@ class Tasks(SQLModel, table=True):
     expires_at: float | None = Field(default=None, nullable=True)
     priority: TaskPriority | None = Field(default=None, nullable=True, index=True)
 
-    sources: list["TaskSource"] = Relationship(
-        back_populates="task", cascade_delete=True
-    )
+    sources: list["TaskSource"] = Relationship(back_populates="task", cascade_delete=True)
 
 
 class TaskSource(SQLModel, table=True):
@@ -108,6 +106,25 @@ class TaskSource(SQLModel, table=True):
     title: str | None = Field(nullable=True)
     content: str | None = Field(nullable=True)
     extra_data: str | None = Field(nullable=True)  # JSON形式で追加情報を保存
+
+
+class AIChatUsage(SQLModel, table=True):
+    __tablename__ = "ai_chat_usage"
+    __table_args__ = (
+        UniqueConstraint("user_id", "usage_date", name="uq_user_date"),
+        Index("idx_user_date_fast", "user_id", "usage_date"),
+        {"extend_existing": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    usage_date: str = Field(index=True)  # YYYY-MM-DD format
+    usage_count: int = Field(default=0)
+    created_at: float = Field(default_factory=lambda: datetime.now().timestamp())
+    updated_at: float = Field(default_factory=lambda: datetime.now().timestamp())
+
+    # Relationship to User
+    user: User = Relationship(back_populates="ai_chat_usage")
 
 
 metadata = SQLModel.metadata

@@ -6,7 +6,7 @@ Create Date: 2025-07-10 10:55:05.987746
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 import sqlmodel
@@ -14,9 +14,9 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "176d584d7539"
-down_revision: Union[str, None] = "738565e1bc75"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "738565e1bc75"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -74,9 +74,7 @@ def downgrade() -> None:
             autoincrement=False,
             nullable=True,
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], name=op.f("todo_lists_user_id_fkey")
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("todo_lists_user_id_fkey")),
         sa.PrimaryKeyConstraint("id", name=op.f("todo_lists_pkey")),
     )
     op.create_index(op.f("ix_todo_lists_uuid"), "todo_lists", ["uuid"], unique=False)

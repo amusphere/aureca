@@ -16,14 +16,15 @@ import email.mime.text
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from app.schema import User
-from app.services.google_oauth import GoogleOauthService
 from google.oauth2.credentials import Credentials as OAuth2Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from sqlmodel import Session
+
+from app.schema import User
+from app.services.google_oauth import GoogleOauthService
 
 # Configure module logger
 logger = logging.getLogger(__name__)
@@ -85,11 +86,11 @@ class GmailService:
     Can be used as a context manager for automatic connection management.
     """
 
-    def __init__(self, user: Optional[User] = None, session: Optional[Session] = None):
+    def __init__(self, user: User | None = None, session: Session | None = None):
         self.user = user
         self.db_session = session
         self.gmail_service = None
-        self._credentials: Optional[OAuth2Credentials] = None
+        self._credentials: OAuth2Credentials | None = None
         self._is_connected = False
 
     async def __aenter__(self):
@@ -121,23 +122,19 @@ class GmailService:
 
         except Exception as e:
             logger.error(f"Failed to connect to Gmail API: {e}")
-            raise GmailServiceError(f"Connection error: {e}")
+            raise GmailServiceError(f"Connection error: {e}") from e
 
     async def _setup_credentials(self) -> None:
         """Set up Google OAuth credentials"""
         if not self.user or not self.db_session:
-            raise GmailAuthenticationError(
-                "User information or session information is missing"
-            )
+            raise GmailAuthenticationError("User information or session information is missing")
 
         try:
             oauth_service = GoogleOauthService(self.db_session)
             credentials = oauth_service.get_credentials(self.user.id)
 
             if not credentials:
-                raise GmailAuthenticationError(
-                    "Google credentials not found. Re-authentication is required."
-                )
+                raise GmailAuthenticationError("Google credentials not found. Re-authentication is required.")
 
             # Build OAuth2Credentials object
             self._credentials = OAuth2Credentials(
@@ -151,7 +148,7 @@ class GmailService:
 
         except Exception as e:
             logger.error(f"Authentication setup error: {e}")
-            raise GmailAuthenticationError(f"Failed to set up authentication: {e}")
+            raise GmailAuthenticationError(f"Failed to set up authentication: {e}") from e
 
     async def disconnect(self) -> None:
         """Disconnect from Gmail API service"""
@@ -173,7 +170,7 @@ class GmailService:
             logger.error(f"Error during {operation}: {error}")
             raise GmailServiceError(f"Failed to {operation}: {error}")
 
-    def _extract_headers_to_dict(self, headers: List[Dict[str, str]]) -> Dict[str, str]:
+    def _extract_headers_to_dict(self, headers: list[dict[str, str]]) -> dict[str, str]:
         """Extract relevant headers into a dictionary"""
         result = {}
         for header in headers:
@@ -195,7 +192,7 @@ class GmailService:
 
     async def get_emails(
         self, query: str = "", max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Retrieve email list with Gmail search syntax
 
@@ -213,12 +210,7 @@ class GmailService:
             max_results = min(max_results, GmailConfig.MAX_RESULTS_LIMIT)
 
             # Get message list
-            result = (
-                self.gmail_service.users()
-                .messages()
-                .list(userId="me", q=query, maxResults=max_results)
-                .execute()
-            )
+            result = self.gmail_service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()
 
             messages = result.get("messages", [])
             if not messages:
@@ -236,7 +228,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("retrieve emails", e)
 
-    async def _get_message_metadata(self, message_id: str) -> Dict[str, Any]:
+    async def _get_message_metadata(self, message_id: str) -> dict[str, Any]:
         """Get email message metadata efficiently"""
         msg = (
             self.gmail_service.users()
@@ -262,7 +254,7 @@ class GmailService:
         email_data.update(self._extract_headers_to_dict(headers))
         return email_data
 
-    async def get_email_content(self, email_id: str) -> Dict[str, Any]:
+    async def get_email_content(self, email_id: str) -> dict[str, Any]:
         """
         Get specific email content including body
 
@@ -275,12 +267,7 @@ class GmailService:
         self._ensure_connected()
 
         try:
-            msg = (
-                self.gmail_service.users()
-                .messages()
-                .get(userId="me", id=email_id, format="full")
-                .execute()
-            )
+            msg = self.gmail_service.users().messages().get(userId="me", id=email_id, format="full").execute()
 
             # Extract message body
             body = self._extract_message_body(msg["payload"])
@@ -305,7 +292,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("get email content", e)
 
-    def _extract_message_body(self, payload: Dict[str, Any]) -> str:
+    def _extract_message_body(self, payload: dict[str, Any]) -> str:
         """
         Extract message body from email payload
 
@@ -354,9 +341,9 @@ class GmailService:
         to: str,
         subject: str,
         body: str,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        cc: str | None = None,
+        bcc: str | None = None,
+    ) -> dict[str, Any]:
         """
         Send an email message
 
@@ -377,12 +364,7 @@ class GmailService:
             raw_message = self._create_message(to, subject, body, cc, bcc)
 
             # Send email
-            result = (
-                self.gmail_service.users()
-                .messages()
-                .send(userId="me", body={"raw": raw_message})
-                .execute()
-            )
+            result = self.gmail_service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
 
             logger.info(f"Email sent successfully to {to}")
             return {
@@ -399,9 +381,9 @@ class GmailService:
         to: str,
         subject: str,
         body: str,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        cc: str | None = None,
+        bcc: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create an email draft
 
@@ -445,9 +427,9 @@ class GmailService:
         to: str,
         subject: str,
         body: str,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        cc: str | None = None,
+        bcc: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create a reply draft that is threaded to the original email
 
@@ -492,16 +474,9 @@ class GmailService:
             if thread_id:
                 draft_body["message"]["threadId"] = thread_id
 
-            result = (
-                self.gmail_service.users()
-                .drafts()
-                .create(userId="me", body=draft_body)
-                .execute()
-            )
+            result = self.gmail_service.users().drafts().create(userId="me", body=draft_body).execute()
 
-            logger.info(
-                f"Reply draft created successfully for {to} in thread {thread_id}"
-            )
+            logger.info(f"Reply draft created successfully for {to} in thread {thread_id}")
             return {
                 "id": result["id"],
                 "message": result["message"],
@@ -517,8 +492,8 @@ class GmailService:
         to: str,
         subject: str,
         body: str,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
+        cc: str | None = None,
+        bcc: str | None = None,
     ) -> str:
         """
         Create email message and encode it to Base64
@@ -550,10 +525,10 @@ class GmailService:
         to: str,
         subject: str,
         body: str,
-        original_message_id: Optional[str] = None,
-        thread_id: Optional[str] = None,
-        cc: Optional[str] = None,
-        bcc: Optional[str] = None,
+        original_message_id: str | None = None,
+        thread_id: str | None = None,
+        cc: str | None = None,
+        bcc: str | None = None,
     ) -> str:
         """
         Create reply email message with proper threading headers
@@ -589,7 +564,7 @@ class GmailService:
 
     # Label operation methods
 
-    async def mark_as_read(self, email_id: str) -> Dict[str, Any]:
+    async def mark_as_read(self, email_id: str) -> dict[str, Any]:
         """
         Mark email as read
 
@@ -601,7 +576,7 @@ class GmailService:
         """
         return await self._modify_labels(email_id, remove_labels=["UNREAD"])
 
-    async def mark_as_unread(self, email_id: str) -> Dict[str, Any]:
+    async def mark_as_unread(self, email_id: str) -> dict[str, Any]:
         """
         Mark email as unread
 
@@ -616,9 +591,9 @@ class GmailService:
     async def _modify_labels(
         self,
         email_id: str,
-        add_labels: Optional[List[str]] = None,
-        remove_labels: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        add_labels: list[str] | None = None,
+        remove_labels: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Modify email labels efficiently
 
@@ -642,12 +617,7 @@ class GmailService:
             if remove_labels:
                 body["removeLabelIds"] = remove_labels
 
-            result = (
-                self.gmail_service.users()
-                .messages()
-                .modify(userId="me", id=email_id, body=body)
-                .execute()
-            )
+            result = self.gmail_service.users().messages().modify(userId="me", id=email_id, body=body).execute()
 
             # Determine operation status
             status = "labels_modified"
@@ -661,9 +631,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("modify labels", e)
 
-    async def get_drafts(
-        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
-    ) -> List[Dict[str, Any]]:
+    async def get_drafts(self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS) -> list[dict[str, Any]]:
         """
         Get list of email drafts
 
@@ -680,12 +648,7 @@ class GmailService:
             max_results = min(max_results, GmailConfig.MAX_RESULTS_LIMIT)
 
             # Get drafts list
-            result = (
-                self.gmail_service.users()
-                .drafts()
-                .list(userId="me", maxResults=max_results)
-                .execute()
-            )
+            result = self.gmail_service.users().drafts().list(userId="me", maxResults=max_results).execute()
 
             drafts = result.get("drafts", [])
             drafts_data = []
@@ -702,7 +665,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("get drafts", e)
 
-    async def get_draft(self, draft_id: str) -> Dict[str, Any]:
+    async def get_draft(self, draft_id: str) -> dict[str, Any]:
         """
         Get specific draft details
 
@@ -716,12 +679,7 @@ class GmailService:
 
         try:
             # Get draft details
-            result = (
-                self.gmail_service.users()
-                .drafts()
-                .get(userId="me", id=draft_id)
-                .execute()
-            )
+            result = self.gmail_service.users().drafts().get(userId="me", id=draft_id).execute()
 
             message = result.get("message", {})
             payload = message.get("payload", {})
@@ -751,7 +709,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("get draft", e)
 
-    async def _get_draft_metadata(self, draft_id: str) -> Dict[str, Any]:
+    async def _get_draft_metadata(self, draft_id: str) -> dict[str, Any]:
         """
         Get draft metadata without full body content
 
@@ -762,12 +720,7 @@ class GmailService:
             Dictionary with draft metadata
         """
         try:
-            result = (
-                self.gmail_service.users()
-                .drafts()
-                .get(userId="me", id=draft_id, format="metadata")
-                .execute()
-            )
+            result = self.gmail_service.users().drafts().get(userId="me", id=draft_id, format="metadata").execute()
 
             message = result.get("message", {})
             payload = message.get("payload", {})
@@ -791,7 +744,7 @@ class GmailService:
             logger.error(f"Failed to get draft metadata for {draft_id}: {str(e)}")
             return {"id": draft_id, "error": str(e)}
 
-    async def get_drafts_by_thread_id(self, thread_id: str) -> List[Dict[str, Any]]:
+    async def get_drafts_by_thread_id(self, thread_id: str) -> list[dict[str, Any]]:
         """
         Get drafts for a specific thread
 
@@ -824,7 +777,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("get drafts by thread id", e)
 
-    async def delete_draft(self, draft_id: str) -> Dict[str, Any]:
+    async def delete_draft(self, draft_id: str) -> dict[str, Any]:
         """
         Delete a specific draft
 
@@ -838,9 +791,7 @@ class GmailService:
 
         try:
             # Delete the draft
-            self.gmail_service.users().drafts().delete(
-                userId="me", id=draft_id
-            ).execute()
+            self.gmail_service.users().drafts().delete(userId="me", id=draft_id).execute()
 
             logger.info(f"Draft {draft_id} deleted successfully")
             return {
@@ -852,7 +803,7 @@ class GmailService:
         except Exception as e:
             self._handle_gmail_api_error("delete draft", e)
 
-    async def delete_drafts_by_thread_id(self, thread_id: str) -> Dict[str, Any]:
+    async def delete_drafts_by_thread_id(self, thread_id: str) -> dict[str, Any]:
         """
         Delete all drafts for a specific thread
 
@@ -889,9 +840,7 @@ class GmailService:
                     logger.error(f"Failed to delete draft {draft['id']}: {str(e)}")
                     failed_deletions.append({"id": draft["id"], "error": str(e)})
 
-            logger.info(
-                f"Deleted {len(deleted_draft_ids)} drafts for thread {thread_id}"
-            )
+            logger.info(f"Deleted {len(deleted_draft_ids)} drafts for thread {thread_id}")
             return {
                 "thread_id": thread_id,
                 "deleted_count": len(deleted_draft_ids),
@@ -906,9 +855,7 @@ class GmailService:
 
     # Convenience methods for common email operations
 
-    async def get_unread_emails(
-        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
-    ) -> List[Dict[str, Any]]:
+    async def get_unread_emails(self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS) -> list[dict[str, Any]]:
         """
         Get unread emails
 
@@ -920,9 +867,7 @@ class GmailService:
         """
         return await self.get_emails(query="is:unread", max_results=max_results)
 
-    async def get_new_emails(
-        self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
-    ) -> List[Dict[str, Any]]:
+    async def get_new_emails(self, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS) -> list[dict[str, Any]]:
         """
         Get new emails (unread and not archived)
 
@@ -932,13 +877,11 @@ class GmailService:
         Returns:
             List of new email metadata
         """
-        return await self.get_emails(
-            query="is:unread -label:archived", max_results=max_results
-        )
+        return await self.get_emails(query="is:unread -label:archived", max_results=max_results)
 
     async def search_emails(
         self, query: str, max_results: int = GmailConfig.DEFAULT_MAX_RESULTS
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Search emails with Gmail query syntax
 
@@ -956,9 +899,7 @@ class GmailService:
 
 
 @asynccontextmanager
-async def get_gmail_service(
-    user: Optional[User] = None, session: Optional[Session] = None
-):
+async def get_gmail_service(user: User | None = None, session: Session | None = None):
     """
     Create and manage GmailService as a context manager
 

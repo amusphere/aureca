@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -7,12 +5,12 @@ class DraftModel(BaseModel):
     """Gmailドラフトモデル"""
 
     id: str
-    subject: Optional[str] = None
-    body: Optional[str] = None
-    to: Optional[str] = None
-    cc: Optional[str] = None
-    bcc: Optional[str] = None
-    thread_id: Optional[str] = None
-    snippet: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    subject: str | None = None
+    body: str | None = None
+    to: str | None = None
+    cc: str | None = None
+    bcc: str | None = None
+    thread_id: str | None = None
+    snippet: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None

@@ -1,0 +1,21 @@
+# Global owners
+* @amusphere
+
+# Backend code
+/backend/ @amusphere
+
+# Frontend code
+/frontend/ @amusphere
+
+# GitHub Actions workflows
+/.github/ @amusphere
+
+# Configuration files
+/backend/app/config/ @amusphere
+*.json @amusphere
+*.yml @amusphere
+*.yaml @amusphere
+
+# Documentation
+*.md @amusphere
+/docs/ @amusphere
