@@ -1,0 +1,265 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  # 高速テスト（並列実行）
+  fast-tests:
+    name: Fast Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [frontend, backend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Frontend setup
+      - name: Set up Node.js (Frontend)
+        if: matrix.component == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm ci --frozen-lockfile
+
+      - name: Run frontend unit tests
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_test
+          NEXT_PUBLIC_APP_NAME: Test App
+          API_BASE_URL: http://localhost:8000
+          FRONTEND_URL: http://localhost:3000
+        run: npm run test:unit
+
+      # Backend setup
+      - name: Set up Python (Backend)
+        if: matrix.component == 'backend'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv (Backend)
+        if: matrix.component == 'backend'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        if: matrix.component == 'backend'
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install backend dependencies
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: uv sync --dev
+
+      - name: Run backend unit tests
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///./test_database.db
+          CLERK_PUBLISHABLE_KEY: pk_test_test
+          CLERK_SECRET_KEY: sk_test_test
+          CLERK_WEBHOOK_SECRET: whsec_test_test
+          OPENAI_API_KEY: sk-test-test
+          GOOGLE_CLIENT_ID: test_client_id
+          GOOGLE_CLIENT_SECRET: test_client_secret
+          GOOGLE_OAUTH_ENCRYPTION_KEY: test_encryption_key_32_characters_long
+          FRONTEND_URL: http://localhost:3000
+        run: uv run pytest tests/unit/ -x --tb=short --disable-warnings -q
+
+  # 統合テスト（高速テスト成功後）
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: fast-tests
+    strategy:
+      matrix:
+        component: [frontend, backend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Frontend integration tests
+      - name: Set up Node.js (Frontend)
+        if: matrix.component == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm ci --frozen-lockfile
+
+      - name: Run frontend integration tests
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_test
+          NEXT_PUBLIC_APP_NAME: Test App
+          API_BASE_URL: http://localhost:8000
+          FRONTEND_URL: http://localhost:3000
+        run: npm run test:integration
+
+      # Backend integration tests
+      - name: Set up Python (Backend)
+        if: matrix.component == 'backend'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv (Backend)
+        if: matrix.component == 'backend'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        if: matrix.component == 'backend'
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install backend dependencies
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: uv sync --dev
+
+      - name: Run backend integration tests
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        env:
+          DATABASE_URL: sqlite:///./test_database.db
+          CLERK_PUBLISHABLE_KEY: pk_test_test
+          CLERK_SECRET_KEY: sk_test_test
+          CLERK_WEBHOOK_SECRET: whsec_test_test
+          OPENAI_API_KEY: sk-test-test
+          GOOGLE_CLIENT_ID: test_client_id
+          GOOGLE_CLIENT_SECRET: test_client_secret
+          GOOGLE_OAUTH_ENCRYPTION_KEY: test_encryption_key_32_characters_long
+          FRONTEND_URL: http://localhost:3000
+        run: uv run pytest tests/integration/ -x --tb=short --disable-warnings
+
+  # Linting（並列実行）
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [frontend, backend]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Frontend linting
+      - name: Set up Node.js (Frontend)
+        if: matrix.component == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm ci --frozen-lockfile
+
+      - name: Run ESLint
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run TypeScript type checking
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: npm run type-check
+
+      # Backend linting
+      - name: Set up Python (Backend)
+        if: matrix.component == 'backend'
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv (Backend)
+        if: matrix.component == 'backend'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        if: matrix.component == 'backend'
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install backend dependencies
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: uv sync --dev
+
+      - name: Run ruff check
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: uv run ruff check .
+
+      - name: Run ruff format check
+        if: matrix.component == 'backend'
+        working-directory: ./backend
+        run: uv run ruff format --check .
+
+  # テスト結果の集約
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [fast-tests, integration-tests, lint]
+    if: always()
+
+    steps:
+      - name: Test Results Summary
+        run: |
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Fast Tests | Integration Tests | Linting |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|------------|-------------------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.fast-tests.result }} | ${{ needs.integration-tests.result }} | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.fast-tests.result }} | ${{ needs.integration-tests.result }} | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.fast-tests.result }}" == "success" && "${{ needs.integration-tests.result }}" == "success" && "${{ needs.lint.result }}" == "success" ]]; then
+            echo "✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed. Please check the logs above." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

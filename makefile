@@ -76,11 +76,24 @@ test-watch:
 	@echo "👀 テストウォッチモード開始..."
 	cd frontend && npm run test:watch
 
-# CI用テスト（全て実行、失敗時も継続）
+# CI用テスト（GitHub Actions形式）
 test-ci:
 	@echo "🤖 CI用テスト実行中..."
-	@$(MAKE) test-backend || true
-	@$(MAKE) test-frontend || true
+	@$(MAKE) -j2 test-ci-backend test-ci-frontend
+
+test-ci-backend:
+	@echo "🐍 CI Backend テスト..."
+	cd backend && uv run pytest tests/unit/ -x --tb=short --disable-warnings -q
+	cd backend && uv run pytest tests/integration/ -x --tb=short --disable-warnings
+	cd backend && uv run ruff check .
+	cd backend && uv run ruff format --check .
+
+test-ci-frontend:
+	@echo "⚛️ CI Frontend テスト..."
+	cd frontend && npm run test:unit
+	cd frontend && npm run test:integration
+	cd frontend && npm run lint
+	cd frontend && npm run type-check
 
 # パフォーマンステスト
 test-perf:
@@ -89,12 +102,19 @@ test-perf:
 
 # ヘルプ
 help:
-	@echo "利用可能なテストコマンド:"
-	@echo "  test-fast          - 高速テスト（単体テストのみ、並列実行）"
+	@echo "🧪 利用可能なテストコマンド:"
+	@echo "  test-fast          - 高速テスト（単体テストのみ、並列実行）⚡"
 	@echo "  test-unit          - 単体テストのみ"
 	@echo "  test-integration   - 統合テストのみ"
 	@echo "  test-all           - 全テスト実行"
-	@echo "  test-coverage      - カバレッジ付きテスト"
-	@echo "  test-watch         - ウォッチモード"
-	@echo "  test-perf          - パフォーマンステスト"
-	@echo "  clean-test         - テストキャッシュクリア"
+	@echo "  test-ci            - CI用テスト（GitHub Actions形式）🤖"
+	@echo "  test-coverage      - カバレッジ付きテスト📊"
+	@echo "  test-watch         - ウォッチモード👀"
+	@echo "  test-perf          - パフォーマンステスト🏃‍♂️"
+	@echo "  clean-test         - テストキャッシュクリア🧹"
+	@echo ""
+	@echo "📈 パフォーマンス目安:"
+	@echo "  test-fast:    ~6秒"
+	@echo "  test-unit:    ~10秒"
+	@echo "  test-all:     ~30秒"
+	@echo "  test-ci:      ~60秒"
