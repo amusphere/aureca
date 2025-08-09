@@ -81,7 +81,7 @@ jobs:
           DATABASE_URL: sqlite:///./test_database.db
           CLERK_PUBLISHABLE_KEY: pk_test_test
           CLERK_SECRET_KEY: sk_test_test
-          CLERK_WEBHOOK_SECRET: whsec_test_test
+          CLERK_WEBHOOK_SECRET: sk_webhook_test_test
           OPENAI_API_KEY: sk-test-test
           GOOGLE_CLIENT_ID: test_client_id
           GOOGLE_CLIENT_SECRET: test_client_secret
@@ -160,7 +160,7 @@ jobs:
           DATABASE_URL: sqlite:///./test_database.db
           CLERK_PUBLISHABLE_KEY: pk_test_test
           CLERK_SECRET_KEY: sk_test_test
-          CLERK_WEBHOOK_SECRET: whsec_test_test
+          CLERK_WEBHOOK_SECRET: sk_webhook_test_test
           OPENAI_API_KEY: sk-test-test
           GOOGLE_CLIENT_ID: test_client_id
           GOOGLE_CLIENT_SECRET: test_client_secret
