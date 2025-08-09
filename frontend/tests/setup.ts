@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { vi, afterEach } from 'vitest'
 import React from 'react'
 
 // Make React available globally
@@ -41,3 +41,11 @@ global.console = {
   warn: vi.fn(),
   log: vi.fn(),
 }
+
+// Clean up after each test
+afterEach(() => {
+  vi.clearAllTimers()
+  vi.clearAllMocks()
+  // Restore real timers after each test
+  vi.useRealTimers()
+})

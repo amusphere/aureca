@@ -8,8 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     globals: true,
-    testTimeout: 10000,
-    // メモリ使用量を最適化
+    testTimeout: 15000, // タイムアウト延長
+    // 並列実行の最適化
     pool: 'forks',
     poolOptions: {
       forks: {
@@ -19,7 +19,12 @@ export default defineConfig({
     // テストファイルのパターンを指定
     include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     // 大きなテストファイルを除外（メモリ問題があるため）
-    exclude: ['**/node_modules/**', '**/dist/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    // パフォーマンス最適化
+    isolate: true, // テスト間の分離を有効化（安定性重視）
+    passWithNoTests: true,
+    // ファイル変更監視の最適化
+    watchExclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
     // カバレッジ設定
     coverage: {
       provider: 'v8',

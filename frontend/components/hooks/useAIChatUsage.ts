@@ -131,7 +131,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
       // System/network errors with new error constants
       const errorMessage = err instanceof Error ? err.message : 'システムエラーが発生しました';
 
-      if (mountedRef.current) {
+      if (typeof window !== "undefined" && mountedRef.current) {
         setUsageError({
           error: getErrorMessage(ErrorCodes.SYSTEM_ERROR, true),
           error_code: ErrorCodes.SYSTEM_ERROR,
@@ -216,7 +216,7 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
         reset_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
 
-      if (mountedRef.current) {
+      if (typeof window !== "undefined" && mountedRef.current) {
         setUsageError(systemError);
         setUsage(null);
       }
@@ -245,10 +245,11 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
   // Auto-refresh usage data periodically (optimized)
   useEffect(() => {
     // Avoid starting timers when not in a browser-like env
-    if (typeof window === 'undefined') return;
-    if (!isAutoRefreshPaused && !loading && mountedRef.current) {
+    if (typeof window === 'undefined' || !mountedRef.current) return;
+
+    if (!isAutoRefreshPaused && !loading) {
       autoRefreshIntervalRef.current = setInterval(() => {
-        if (mountedRef.current) {
+        if (mountedRef.current && typeof window !== 'undefined') {
           fetchUsageData();
         } else if (autoRefreshIntervalRef.current) {
           clearInterval(autoRefreshIntervalRef.current);

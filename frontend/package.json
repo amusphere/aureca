@@ -10,6 +10,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "test:fast": "vitest run --reporter=dot",
+    "test:unit": "vitest run tests/components tests/hooks --reporter=dot",
+    "test:integration": "vitest run tests/integration --reporter=dot",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage"

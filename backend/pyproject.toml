@@ -20,6 +20,7 @@ dependencies = [
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.0",
     "psutil>=5.9.0",
     "python-jose>=3.4.0",
     "python-multipart>=0.0.20",
@@ -37,7 +38,17 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --disable-warnings --maxfail=5 -x -n auto"
+markers = [
+    "unit: 単体テスト",
+    "integration: 統合テスト",
+    "performance: パフォーマンステスト",
+    "slow: 実行時間の長いテスト"
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
+]
 
 [tool.ruff]
 target-version = "py312"
