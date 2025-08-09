@@ -2,80 +2,81 @@
 inclusion: always
 ---
 
-# Product Overview & Development Guidelines
+# Product Domain & Business Rules
 
-This is a task management application with AI assistant capabilities that integrates with Google services and other productivity tools through a dynamic hub-and-spoke architecture.
+Task management application with AI assistant capabilities and Google services integration via hub-and-spoke architecture.
 
-## Core Domain Concepts
+## Core Domain Model
 
-- **Tasks**: Central entities with UUID, title, description, status, expiration dates, and source tracking
-- **Task Sources**: Link tasks to their origin (email, calendar event, manual creation) with metadata
-- **AI Hub**: Orchestrates multiple "spokes" (service integrations) for natural language task management
-- **Spokes**: Independent service plugins (Gmail, Google Calendar, Tasks) that auto-register
+### Tasks (Primary Entity)
+- **Required**: `uuid`, `title`, `status`, `expiration_date`, `source_type`
+- **Status flow**: `pending` → `in_progress` → `completed` | `expired`
+- **Source types**: `manual`, `email`, `calendar`, `ai_generated`
+- **Timestamps**: Unix float for `created_at`/`updated_at`
 
-## Product Rules & Conventions
+### AI Hub-and-Spoke System
+- **Hub**: Central orchestrator at `backend/app/services/ai/`
+- **Spokes**: Auto-discovered plugins at `backend/app/services/ai/spokes/[name]/`
+- **Requirements**: Each spoke needs `actions.json` + `spoke.py` inheriting `BaseSpoke`
+- **Discovery**: Creating folder triggers automatic registration
 
-### Task Management Rules
-- Tasks MUST have expiration dates for time-sensitive actions
-- Task status follows: `pending`, `in_progress`, `completed`, `expired`
-- All tasks track their source (manual, email, calendar, AI-generated)
-- Task UUIDs are used for external references, auto-incrementing IDs for internal operations
+## Mandatory Business Rules
+
+### Task Management
+- **NEVER** create tasks without expiration dates (use defaults)
+- **ALWAYS** track task source for data lineage
+- **VALIDATE** status transitions (no skipping: pending → in_progress → completed)
+- **BLOCK** expired tasks from moving to in_progress
 
 ### AI Assistant Behavior
-- Process natural language requests through the hub-and-spoke system
-- Always provide context about which services are being accessed
-- Maintain conversation history for context-aware responses
-- Generate tasks from unstructured input (emails, calendar events, chat)
+- Process ALL requests through hub-and-spoke system
+- Require user confirmation for destructive operations
+- Provide clear context about service access
+- Maintain conversation context for follow-ups
 
-### Authentication Patterns
-- Dual auth system: Clerk (default) or email/password (fallback)
-- Environment variable `NEXT_PUBLIC_AUTH_SYSTEM` determines active system
-- Google OAuth tokens stored separately for service integrations
-- All protected routes require authentication middleware
+### Authentication System
+- **Dual mode**: Clerk (production) or email/password (development)
+- **Control**: `NEXT_PUBLIC_AUTH_SYSTEM` environment variable
+- **OAuth**: Per-user tokens in separate table
+- **Protection**: Next.js middleware for all protected routes
 
-### Service Integration Guidelines
-- New spokes auto-discover by creating folder in `backend/app/services/ai/spokes/`
-- Each spoke requires `actions.json` (capabilities) and `spoke.py` (implementation)
-- Spokes inherit from `BaseSpoke` and implement required methods
-- Service connections are per-user and stored as OAuth tokens
+### Service Integration
+- **Per-user** OAuth connections (not global)
+- **Graceful degradation** on service failures
+- **Visible status** indicators for users
+- **Auto-refresh** OAuth tokens
 
-## User Experience Principles
+## Implementation Patterns
 
 ### Task Creation Flow
-1. **Manual**: Direct form input with validation
-2. **AI-Assisted**: Natural language processing with confirmation
-3. **Auto-Generated**: From emails/calendar with user review
-4. **Bulk Import**: From external sources with deduplication
+1. **Manual**: Form → validation → immediate feedback
+2. **AI-Assisted**: Natural language → structured data → user confirmation
+3. **Auto-Generated**: External service → task proposal → user review
+4. **Bulk Import**: Deduplication by title/source → batch creation
 
-### Integration Connection Flow
-1. User initiates OAuth flow from settings
-2. Redirect to service provider (Google)
-3. Store tokens securely per user
-4. Enable spoke functionality automatically
-5. Background sync of relevant data
+### Error Handling Strategy
+- **User-facing**: Friendly messages with actionable steps
+- **Server-side**: Detailed logging with request context
+- **Service failures**: Clear status indicators with retry options
+- **Validation**: Field-specific feedback with correction hints
 
-### Error Handling Standards
-- Always provide user-friendly error messages
-- Log technical details server-side only
-- Graceful degradation when services are unavailable
-- Clear indication of which integrations are active/inactive
+### Data Validation Rules
+- Validate at **service layer** (business logic), not just API
+- Use **Pydantic models** for request/response validation
+- **Soft deletes** for user data (add `deleted_at` field)
+- **Hard delete** only system/temporary data
 
-## Development Priorities
+## Development Guidelines
 
-### When Adding Features
-1. **Task-centric**: All features should enhance task management
-2. **Integration-first**: Consider how new features work with existing spokes
-3. **AI-compatible**: Ensure new functionality is accessible via natural language
-4. **Source-aware**: Track origin of all data for transparency
+### AI Spoke Development
+- Maintain backward compatibility when adding capabilities
+- Implement error boundaries for service failures
+- Update hub logic when adding new spoke actions
+- Test with realistic natural language scenarios
 
-### When Modifying AI System
-- Maintain backward compatibility with existing spokes
-- Update hub logic for new spoke capabilities
-- Test natural language processing with realistic user inputs
-- Ensure proper error handling for service failures
-
-### Data Consistency Rules
-- Use Unix timestamps for all datetime fields
-- UUIDs for external references, auto-increment for internal
-- Soft deletes for user data, hard deletes for system data
-- Always validate data at service layer, not just API layer
+### Feature Development Priority
+1. **Core task management** functionality first
+2. **Integration compatibility** with existing spokes
+3. **Natural language** accessibility for AI interaction
+4. **Data provenance** tracking for transparency
+5. **User control** with confirmation for important actions
