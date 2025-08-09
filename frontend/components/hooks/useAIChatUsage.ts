@@ -150,7 +150,9 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
 
   // Check usage with error handling wrapper
   const checkUsage = useCallback(async (): Promise<void> => {
-  if (mountedRef.current) setLoading(true);
+    if (typeof window !== "undefined" && mountedRef.current) {
+      setLoading(true);
+    }
     clearError();
 
     await withErrorHandling(
@@ -164,7 +166,9 @@ export function useAIChatUsage(): UseAIChatUsageReturn {
       }
     );
 
-  if (mountedRef.current) setLoading(false);
+    if (typeof window !== "undefined" && mountedRef.current) {
+      setLoading(false);
+    }
   }, [withErrorHandling, fetchUsageData, clearError]);
 
   // Refresh usage data (alias for checkUsage for clarity)

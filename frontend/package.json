@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:fast": "vitest run --reporter=dot",
     "test:unit": "vitest run tests/components tests/hooks --reporter=dot",
+    "test:unit:ci": "vitest run tests/components tests/hooks --config=vitest.config.ci.js",
     "test:integration": "vitest run tests/integration --reporter=dot",
+    "test:integration:ci": "vitest run tests/integration --config=vitest.config.ci.js",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage"

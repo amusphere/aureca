@@ -37,6 +37,11 @@ jobs:
         working-directory: ./frontend
         run: npm ci --frozen-lockfile
 
+      - name: Create test results directory
+        if: matrix.component == 'frontend'
+        working-directory: ./frontend
+        run: mkdir -p test-results
+
       - name: Run frontend unit tests
         if: matrix.component == 'frontend'
         working-directory: ./frontend
@@ -45,7 +50,7 @@ jobs:
           NEXT_PUBLIC_APP_NAME: Test App
           API_BASE_URL: http://localhost:8000
           FRONTEND_URL: http://localhost:3000
-        run: npm run test:unit
+        run: npm run test:unit:ci
 
       # Backend setup
       - name: Set up Python (Backend)
@@ -124,7 +129,7 @@ jobs:
           NEXT_PUBLIC_APP_NAME: Test App
           API_BASE_URL: http://localhost:8000
           FRONTEND_URL: http://localhost:3000
-        run: npm run test:integration
+        run: npm run test:integration:ci
 
       # Backend integration tests
       - name: Set up Python (Backend)

@@ -134,3 +134,9 @@ dist
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Test results and reports
+test-results/
+coverage/
+*.xml
+junit.xml

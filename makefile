@@ -90,8 +90,8 @@ test-ci-backend:
 
 test-ci-frontend:
 	@echo "⚛️ CI Frontend テスト..."
-	cd frontend && npm run test:unit
-	cd frontend && npm run test:integration
+	cd frontend && npm run test:unit:ci
+	cd frontend && npm run test:integration:ci
 	cd frontend && npm run lint
 	cd frontend && npm run type-check
 

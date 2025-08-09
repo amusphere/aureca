@@ -8,8 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     globals: true,
-    testTimeout: 15000, // タイムアウト延長
-    // 並列実行の最適化
+    testTimeout: 30000, // CI環境では長めのタイムアウト
+    // CI環境では安定性重視
     pool: 'forks',
     poolOptions: {
       forks: {
@@ -20,14 +20,19 @@ export default defineConfig({
     include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     // 大きなテストファイルを除外（メモリ問題があるため）
     exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
-    // パフォーマンス最適化
-    isolate: true, // テスト間の分離を有効化（安定性重視）
+    // CI環境での安定性設定
+    isolate: true, // テスト間の完全分離
     passWithNoTests: true,
-    // 非同期処理のクリーンアップ
-    teardownTimeout: 10000,
-    hookTimeout: 10000,
+    // 非同期処理のクリーンアップ（CI環境では長め）
+    teardownTimeout: 30000,
+    hookTimeout: 30000,
     // ファイル変更監視の最適化
     watchExclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    // CI環境では詳細なレポート
+    reporter: ['verbose', 'junit'],
+    outputFile: {
+      junit: './test-results/junit.xml'
+    },
     // カバレッジ設定
     coverage: {
       provider: 'v8',

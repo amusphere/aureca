@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
 import { vi, afterEach } from 'vitest'
 import React from 'react'
 
@@ -43,9 +44,20 @@ global.console = {
 }
 
 // Clean up after each test
-afterEach(() => {
+afterEach(async () => {
+  // Clean up React Testing Library
+  cleanup()
+
   vi.clearAllTimers()
   vi.clearAllMocks()
   // Restore real timers after each test
   vi.useRealTimers()
+
+  // Wait for any pending promises to resolve
+  await new Promise(resolve => setTimeout(resolve, 0))
+
+  // Force garbage collection of any remaining async operations
+  if (global.gc) {
+    global.gc()
+  }
 })
