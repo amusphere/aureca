@@ -272,11 +272,7 @@ class TestClerkService:
         info = clerk_service.get_subscription_info("user_123")
 
         # Verify
-        assert info == {
-            "plan": "standard",
-            "status": "active",
-            "renews_at": "2024-12-31T23:59:59Z"
-        }
+        assert info == {"plan": "standard", "status": "active", "renews_at": "2024-12-31T23:59:59Z"}
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
     def test_get_subscription_info_dict_format(self, mock_clerk_service):
@@ -285,22 +281,14 @@ class TestClerkService:
 
         # Setup mock
         mock_user = MagicMock()
-        mock_user.subscription = {
-            "plan": "premium",
-            "status": "trialing",
-            "renews_at": "2024-11-30T23:59:59Z"
-        }
+        mock_user.subscription = {"plan": "premium", "status": "trialing", "renews_at": "2024-11-30T23:59:59Z"}
         mock_client.users.get.return_value = mock_user
 
         # Test
         info = clerk_service.get_subscription_info("user_123")
 
         # Verify
-        assert info == {
-            "plan": "premium",
-            "status": "trialing",
-            "renews_at": "2024-11-30T23:59:59Z"
-        }
+        assert info == {"plan": "premium", "status": "trialing", "renews_at": "2024-11-30T23:59:59Z"}
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
     def test_get_subscription_info_no_subscription(self, mock_clerk_service):
@@ -316,11 +304,7 @@ class TestClerkService:
         info = clerk_service.get_subscription_info("user_123")
 
         # Verify
-        assert info == {
-            "plan": None,
-            "status": "none",
-            "renews_at": None
-        }
+        assert info == {"plan": None, "status": "none", "renews_at": None}
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
     def test_has_active_subscription_true(self, mock_clerk_service):
