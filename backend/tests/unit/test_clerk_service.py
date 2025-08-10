@@ -23,7 +23,7 @@ class TestClerkService:
             service.client = mock_client  # Ensure we can access the mock client
             return service, mock_client
 
-    async def test_get_user_plan_success_standard(self, mock_clerk_service):
+    def test_get_user_plan_success_standard(self, mock_clerk_service):
         """Test successful retrieval of standard plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -33,13 +33,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "standard"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_success_free(self, mock_clerk_service):
+    def test_get_user_plan_success_free(self, mock_clerk_service):
         """Test successful retrieval of free plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -49,13 +49,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "free"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_no_metadata(self, mock_clerk_service):
+    def test_get_user_plan_no_metadata(self, mock_clerk_service):
         """Test user with no public metadata defaults to free"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -66,13 +66,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "free"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_none_metadata(self, mock_clerk_service):
+    def test_get_user_plan_none_metadata(self, mock_clerk_service):
         """Test user with None public metadata defaults to free"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -83,13 +83,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "free"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_private_metadata_fallback(self, mock_clerk_service):
+    def test_get_user_plan_private_metadata_fallback(self, mock_clerk_service):
         """Test fallback to private metadata when public metadata has no plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -100,13 +100,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "standard"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_invalid_plan_in_metadata(self, mock_clerk_service):
+    def test_get_user_plan_invalid_plan_in_metadata(self, mock_clerk_service):
         """Test user with invalid plan in metadata defaults to free"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -117,13 +117,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify - should return the plan as-is (validation happens elsewhere)
         assert plan == "premium"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_clerk_api_error(self, mock_clerk_service):
+    def test_get_user_plan_clerk_api_error(self, mock_clerk_service):
         """Test Clerk API error falls back to free plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -131,13 +131,13 @@ class TestClerkService:
         mock_client.users.get.side_effect = Exception("Clerk API error")
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify
         assert plan == "free"  # Should fallback to free on error
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_get_user_plan_case_handling(self, mock_clerk_service):
+    def test_get_user_plan_case_handling(self, mock_clerk_service):
         """Test that plan names are converted to lowercase"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -148,13 +148,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        plan = await clerk_service.get_user_plan("user_123")
+        plan = clerk_service.get_user_plan("user_123")
 
         # Verify - should be converted to lowercase
         assert plan == "standard"
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_has_subscription_true(self, mock_clerk_service):
+    def test_has_subscription_true(self, mock_clerk_service):
         """Test has_subscription returns True for matching plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -165,13 +165,13 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        has_sub = await clerk_service.has_subscription("user_123", "standard")
+        has_sub = clerk_service.has_subscription("user_123", "standard")
 
         # Verify
         assert has_sub is True
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
-    async def test_has_subscription_false(self, mock_clerk_service):
+    def test_has_subscription_false(self, mock_clerk_service):
         """Test has_subscription returns False for non-matching plan"""
         clerk_service, mock_client = mock_clerk_service
 
@@ -182,41 +182,10 @@ class TestClerkService:
         mock_client.users.get.return_value = mock_user
 
         # Test
-        has_sub = await clerk_service.has_subscription("user_123", "standard")
+        has_sub = clerk_service.has_subscription("user_123", "standard")
 
         # Verify
         assert has_sub is False
-        mock_client.users.get.assert_called_once_with(user_id="user_123")
-
-    def test_get_user_plan_sync_success(self, mock_clerk_service):
-        """Test synchronous plan retrieval"""
-        clerk_service, mock_client = mock_clerk_service
-
-        # Setup mock
-        mock_user = MagicMock()
-        mock_user.public_metadata = {"plan": "standard"}
-        mock_user.private_metadata = {}
-        mock_client.users.get.return_value = mock_user
-
-        # Test
-        plan = clerk_service.get_user_plan_sync("user_123")
-
-        # Verify
-        assert plan == "standard"
-        mock_client.users.get.assert_called_once_with(user_id="user_123")
-
-    def test_get_user_plan_sync_error(self, mock_clerk_service):
-        """Test synchronous plan retrieval with error"""
-        clerk_service, mock_client = mock_clerk_service
-
-        # Setup mock to raise exception
-        mock_client.users.get.side_effect = Exception("Clerk API error")
-
-        # Test
-        plan = clerk_service.get_user_plan_sync("user_123")
-
-        # Verify
-        assert plan == "free"  # Should fallback to free on error
         mock_client.users.get.assert_called_once_with(user_id="user_123")
 
     def test_clerk_service_initialization(self):

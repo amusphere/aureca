@@ -27,7 +27,7 @@ class AIChatUsageService:
         self.session = session
         self._is_clerk_mocked: bool = False
 
-    async def get_user_plan(self, user: User) -> str:
+    def get_user_plan(self, user: User) -> str:
         """
         Determine user's subscription plan using Clerk API
 
@@ -66,7 +66,7 @@ class AIChatUsageService:
                 logger.info(f"User {user.id} has no clerk_sub; defaulting to standard plan")
                 return "standard"
             clerk_service = get_clerk_service()
-            plan = await clerk_service.get_user_plan(user.clerk_sub or "")
+            plan = clerk_service.get_user_plan(user.clerk_sub or "")
             logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
             return plan
         except Exception as e:
@@ -113,7 +113,7 @@ class AIChatUsageService:
         Returns:
             Dict containing usage statistics
         """
-        user_plan = await self.get_user_plan(user)
+        user_plan = self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
         # Prefer module-level alias (integration tests patch this); if class is mocked, prefer the mock
@@ -159,7 +159,7 @@ class AIChatUsageService:
         Returns:
             bool: True if user can use chat, False otherwise
         """
-        user_plan = await self.get_user_plan(user)
+        user_plan = self.get_user_plan(user)
         daily_limit = self.get_daily_limit(user_plan)
 
         # If plan doesn't allow chat (limit is 0), return False

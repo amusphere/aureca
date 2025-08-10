@@ -333,7 +333,7 @@ async def can_use_ai_chat_endpoint(
     try:
         # 高速な利用可否チェック
         can_use = await usage_service.can_use_chat(user)
-        user_plan = await usage_service.get_user_plan(user)
+        user_plan = usage_service.get_user_plan(user)
         daily_limit = usage_service.get_daily_limit(user_plan)
 
         return {

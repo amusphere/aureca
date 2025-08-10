@@ -27,7 +27,7 @@ class ClerkService:
         self.client = Clerk(bearer_auth=clerk_secret_key)
         logger.info("ClerkService initialized successfully")
 
-    async def get_user_plan(self, user_id: str) -> str:
+    def get_user_plan(self, user_id: str) -> str:
         """
         ユーザーのサブスクリプションプランを取得
 
@@ -63,7 +63,7 @@ class ClerkService:
             logger.warning(f"Clerk API error for user {user_id}: {e}")
             return "free"  # エラー時はfreeプランにフォールバック
 
-    async def has_subscription(self, user_id: str, plan_name: str) -> bool:
+    def has_subscription(self, user_id: str, plan_name: str) -> bool:
         """
         ユーザーが指定されたプランのサブスクリプションを持っているかチェック
 
@@ -75,7 +75,7 @@ class ClerkService:
             bool: 指定されたプランを持っている場合True
         """
         try:
-            current_plan = await self.get_user_plan(user_id)
+            current_plan = self.get_user_plan(user_id)
             has_plan = current_plan.lower() == plan_name.lower()
             logger.info(f"User {user_id} subscription check: has '{plan_name}' = {has_plan}")
             return has_plan
@@ -83,42 +83,6 @@ class ClerkService:
         except Exception as e:
             logger.warning(f"Error checking subscription for user {user_id}: {e}")
             return False  # エラー時はfalseを返す
-
-    def get_user_plan_sync(self, user_id: str) -> str:
-        """
-        ユーザーのサブスクリプションプランを同期的に取得
-
-        Args:
-            user_id: Clerk user ID (string format)
-
-        Returns:
-            str: プラン名 ("free", "standard" など)
-        """
-        try:
-            # Clerk APIからユーザー情報を取得
-            user: ClerkUser = self.client.users.get(user_id=user_id)
-
-            # サブスクリプション情報をチェック
-            if hasattr(user, "public_metadata") and user.public_metadata:
-                plan = user.public_metadata.get("plan")
-                if plan:
-                    logger.info(f"Retrieved plan '{plan}' for user {user_id}")
-                    return str(plan).lower()
-
-            # プライベートメタデータもチェック
-            if hasattr(user, "private_metadata") and user.private_metadata:
-                plan = user.private_metadata.get("plan")
-                if plan:
-                    logger.info(f"Retrieved plan '{plan}' from private metadata for user {user_id}")
-                    return str(plan).lower()
-
-            # メタデータにプラン情報がない場合はfreeプランにフォールバック
-            logger.info(f"No plan information found for user {user_id}, defaulting to free plan")
-            return "free"
-
-        except Exception as e:
-            logger.warning(f"Clerk API error for user {user_id}: {e}")
-            return "free"  # エラー時はfreeプランにフォールバック
 
 
 # Global service instance

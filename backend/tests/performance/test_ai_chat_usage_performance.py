@@ -25,9 +25,9 @@ class TestAIChatUsagePerformance:
         """Mock dependencies to ensure consistent test behavior."""
         # Mock ClerkService
         with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-            from unittest.mock import AsyncMock
+            from unittest.mock import MagicMock
 
-            mock_clerk_service = AsyncMock()
+            mock_clerk_service = MagicMock()
             mock_get_clerk_service.return_value = mock_clerk_service
 
             # Default to standard plan for most tests
@@ -225,7 +225,7 @@ class TestAIChatUsagePerformance:
         start_time = time.time()
 
         for _ in range(100):
-            plan = await usage_service.get_user_plan(test_user)
+            plan = usage_service.get_user_plan(test_user)
             assert plan == "standard"
 
         end_time = time.time()

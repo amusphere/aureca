@@ -1,6 +1,6 @@
 """Integration tests for Clerk API integration."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -31,7 +31,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 mock_clerk_service.get_user_plan.return_value = "standard"
 
@@ -61,7 +61,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 mock_clerk_service.get_user_plan.return_value = "free"
 
@@ -91,7 +91,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 # ClerkService handles exceptions internally and returns "free"
                 mock_clerk_service.get_user_plan.return_value = "free"
@@ -119,7 +119,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 # ClerkService handles timeouts internally and returns "free"
                 mock_clerk_service.get_user_plan.return_value = "free"
@@ -147,7 +147,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 # Return invalid plan name
                 mock_clerk_service.get_user_plan.return_value = "invalid_plan"
@@ -175,7 +175,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
 
                 # First call returns free plan
@@ -204,7 +204,7 @@ class TestClerkAPIIntegration:
 
         try:
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
                 mock_clerk_service.get_user_plan.return_value = "standard"
 
