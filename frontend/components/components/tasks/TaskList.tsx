@@ -200,10 +200,43 @@ export function TaskList() {
             disabled={isLoading || isGeneratingTasks}
             aria-label="メールやカレンダーからタスクを自動生成"
             aria-busy={isGeneratingTasks}
-            className="h-8 px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-300 ease-out hover:scale-105 active:scale-95"
+            className="h-8 px-3 text-xs relative group border border-gray-200/50 bg-white/80 hover:bg-white/90 hover:border-gray-300/60 shadow-sm hover:shadow-lg hover:shadow-purple-200/30 transition-all duration-300 ease-out hover:scale-105 active:scale-95 overflow-hidden"
           >
-            <SparklesIcon className={`w-3 h-3 mr-1.5 transition-transform duration-300 ${isGeneratingTasks ? 'animate-pulse' : ''}`} aria-hidden="true" />
-            <span className="hidden sm:inline">自動生成</span>
+            {/* Rainbow Diagonal Stripes */}
+            <div
+              className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity duration-300"
+              style={{
+                background: `repeating-linear-gradient(
+                  45deg,
+                  rgba(255, 0, 0, 0.18) 0px,
+                  rgba(255, 154, 0, 0.18) 2px,
+                  rgba(255, 255, 0, 0.18) 4px,
+                  rgba(0, 255, 0, 0.18) 6px,
+                  rgba(0, 255, 255, 0.18) 8px,
+                  rgba(0, 0, 255, 0.18) 10px,
+                  rgba(128, 0, 128, 0.18) 12px,
+                  rgba(255, 0, 255, 0.18) 14px,
+                  transparent 16px,
+                  transparent 18px
+                )`
+              }}
+            />
+
+            {/* Subtle shimmer effect */}
+            {isGeneratingTasks && (
+              <div
+                className="absolute inset-0 animate-pulse"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)'
+                }}
+              />
+            )}
+
+            <SparklesIcon
+              className={`w-3 h-3 mr-1.5 relative z-10 text-gray-600 group-hover:text-gray-700 transition-all duration-300 ${isGeneratingTasks ? 'animate-pulse' : 'group-hover:rotate-12'}`}
+              aria-hidden="true"
+            />
+            <span className="hidden sm:inline relative z-10 text-gray-700 group-hover:text-gray-800">自動生成</span>
             <span className="sr-only sm:hidden">タスクを自動生成</span>
           </Button>
         </Protect>
