@@ -56,41 +56,31 @@ class ClerkService:
                 # サブスクリプションオブジェクトから直接プラン情報を取得
                 if hasattr(subscription, "plan") and subscription.plan:
                     plan_name = str(subscription.plan).lower()
-                    logger.info(
-                        f"Retrieved Clerk Billing plan '{plan_name}' for user {user_id}"
-                    )
+                    logger.info(f"Retrieved Clerk Billing plan '{plan_name}' for user {user_id}")
                     return plan_name
 
                 # 辞書形式でアクセスする場合の対応
                 if isinstance(subscription, dict) and subscription.get("plan"):
                     plan_name = str(subscription["plan"]).lower()
-                    logger.info(
-                        f"Retrieved Clerk Billing plan '{plan_name}' (dict access) for user {user_id}"
-                    )
+                    logger.info(f"Retrieved Clerk Billing plan '{plan_name}' (dict access) for user {user_id}")
                     return plan_name
 
             # フォールバック: メタデータからプラン情報をチェック（既存の実装との互換性）
             if hasattr(user, "public_metadata") and user.public_metadata:
                 plan = user.public_metadata.get("plan")
                 if plan:
-                    logger.info(
-                        f"Retrieved plan '{plan}' from public metadata for user {user_id}"
-                    )
+                    logger.info(f"Retrieved plan '{plan}' from public metadata for user {user_id}")
                     return str(plan).lower()
 
             # プライベートメタデータもチェック
             if hasattr(user, "private_metadata") and user.private_metadata:
                 plan = user.private_metadata.get("plan")
                 if plan:
-                    logger.info(
-                        f"Retrieved plan '{plan}' from private metadata for user {user_id}"
-                    )
+                    logger.info(f"Retrieved plan '{plan}' from private metadata for user {user_id}")
                     return str(plan).lower()
 
             # サブスクリプション情報もメタデータにもプラン情報がない場合はfreeプランにフォールバック
-            logger.info(
-                f"No subscription or plan information found for user {user_id}, defaulting to free plan"
-            )
+            logger.info(f"No subscription or plan information found for user {user_id}, defaulting to free plan")
             return "free"
 
         except Exception as e:
@@ -134,9 +124,7 @@ class ClerkService:
                         "status": status.lower(),
                         "renews_at": renews_at,
                     }
-                    logger.info(
-                        f"Retrieved subscription info for user {user_id}: {result}"
-                    )
+                    logger.info(f"Retrieved subscription info for user {user_id}: {result}")
                     return result
 
                 # 辞書形式でアクセスする場合の対応
@@ -150,9 +138,7 @@ class ClerkService:
                         "status": str(status).lower(),
                         "renews_at": str(renews_at) if renews_at else None,
                     }
-                    logger.info(
-                        f"Retrieved subscription info (dict access) for user {user_id}: {result}"
-                    )
+                    logger.info(f"Retrieved subscription info (dict access) for user {user_id}: {result}")
                     return result
 
             # サブスクリプション情報がない場合
@@ -160,9 +146,7 @@ class ClerkService:
             return {"plan": None, "status": "none", "renews_at": None}
 
         except Exception as e:
-            logger.warning(
-                f"Error retrieving subscription info for user {user_id}: {e}"
-            )
+            logger.warning(f"Error retrieving subscription info for user {user_id}: {e}")
             return {"plan": None, "status": "error", "renews_at": None}
 
     def has_subscription(self, user_id: str, plan_name: str) -> bool:
@@ -179,9 +163,7 @@ class ClerkService:
         try:
             current_plan = self.get_user_plan(user_id)
             has_plan = current_plan.lower() == plan_name.lower()
-            logger.info(
-                f"User {user_id} subscription check: has '{plan_name}' = {has_plan}"
-            )
+            logger.info(f"User {user_id} subscription check: has '{plan_name}' = {has_plan}")
             return has_plan
 
         except Exception as e:
@@ -205,15 +187,11 @@ class ClerkService:
 
             # アクティブなステータスかつ有効なプランを持っている場合
             is_active = status in ["active", "trialing"] and plan and plan != "free"
-            logger.info(
-                f"User {user_id} active subscription check: {is_active} (status: {status}, plan: {plan})"
-            )
+            logger.info(f"User {user_id} active subscription check: {is_active} (status: {status}, plan: {plan})")
             return is_active
 
         except Exception as e:
-            logger.warning(
-                f"Error checking active subscription for user {user_id}: {e}"
-            )
+            logger.warning(f"Error checking active subscription for user {user_id}: {e}")
             return False
 
 
