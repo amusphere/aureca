@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.15.2",
-    "clerk-backend-api>=2.0.2",
     "cryptography>=44.0.0",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.115.12",
@@ -30,6 +29,7 @@ dependencies = [
     "svix>=1.69.0",
     "uvicorn>=0.34.0",
     "ruff>=0.12.7",
+    "clerk-backend-api>=3.1.11",
 ]
 
 [tool.pytest.ini_options]
