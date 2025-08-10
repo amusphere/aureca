@@ -1,20 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
-import { Calendar, MessageSquare, Sparkles, Zap } from "lucide-react";
+import { Calendar, MessageSquare, Sparkles, Zap, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function AIUpgradePrompt() {
   const router = useRouter();
+  const [isVisible, setIsVisible] = useState(true);
 
   const handleUpgrade = () => {
     router.push("/subscript");
   };
 
+  const handleClose = () => {
+    setIsVisible(false);
+  };
+
+  if (!isVisible) {
+    return null;
+  }
+
   return (
-    <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+    <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 relative">
       <CardHeader className="text-center pb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-muted"
+          onClick={handleClose}
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <CardTitle className="text-xl font-semibold">
           AI機能でタスク管理をもっと便利に！
         </CardTitle>

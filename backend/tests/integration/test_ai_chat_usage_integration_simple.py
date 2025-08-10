@@ -33,9 +33,9 @@ class TestAIChatUsageIntegrationSimple:
 
             # Mock get_clerk_service function
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                from unittest.mock import AsyncMock
+                from unittest.mock import MagicMock
 
-                mock_clerk_service = AsyncMock()
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
 
                 # Default to standard plan for most tests

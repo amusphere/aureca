@@ -1,7 +1,7 @@
 """Unit tests for AI chat usage service functionality."""
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException, status
@@ -31,7 +31,9 @@ class TestAIChatUsageService:
 
             # Mock get_clerk_service function
             with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-                mock_clerk_service = AsyncMock()
+                from unittest.mock import MagicMock
+
+                mock_clerk_service = MagicMock()
                 mock_get_clerk_service.return_value = mock_clerk_service
 
                 # Default to standard plan for most tests
@@ -58,19 +60,19 @@ class TestAIChatUsageService:
             created_at=1672531200.0,
         )
 
-    async def test_get_user_plan_standard(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+    def test_get_user_plan_standard(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
         """Test get_user_plan returns standard plan from Clerk."""
         mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
-        plan = await service.get_user_plan(mock_user)
+        plan = service.get_user_plan(mock_user)
         assert plan == "standard"
         mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
 
-    async def test_get_user_plan_free(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+    def test_get_user_plan_free(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
         """Test get_user_plan returns free plan from Clerk."""
         mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "free"
 
-        plan = await service.get_user_plan(mock_user)
+        plan = service.get_user_plan(mock_user)
         assert plan == "free"
         mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
 
@@ -383,23 +385,23 @@ class TestAIChatUsageService:
         mock_repo.get_usage_history.assert_called_once_with(service.session, mock_user.id, 10)
         assert result == mock_logs
 
-    async def test_clerk_service_integration(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+    def test_clerk_service_integration(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
         """Test integration with ClerkService for plan retrieval."""
         # Test that the service properly calls ClerkService
         mock_dependencies["mock_clerk_service"].get_user_plan.return_value = "standard"
 
-        plan = await service.get_user_plan(mock_user)
+        plan = service.get_user_plan(mock_user)
 
         assert plan == "standard"
         mock_dependencies["mock_clerk_service"].get_user_plan.assert_called_once_with(mock_user.clerk_sub)
 
-    async def test_clerk_service_error_handling(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
+    def test_clerk_service_error_handling(self, service: AIChatUsageService, mock_user: User, mock_dependencies):
         """Test error handling when ClerkService fails."""
         # Mock ClerkService to raise an exception
         mock_dependencies["mock_clerk_service"].get_user_plan.side_effect = Exception("Clerk API error")
 
         # Should fallback to free plan
-        plan = await service.get_user_plan(mock_user)
+        plan = service.get_user_plan(mock_user)
 
         assert plan == "free"
 
