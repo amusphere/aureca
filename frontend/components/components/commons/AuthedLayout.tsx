@@ -7,17 +7,17 @@ export default async function AuthedLayout({ children }: { children: ReactNode }
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <AppSidebar />
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Enhanced header with better spacing and visual separation */}
-          <div className="flex-shrink-0 px-4 py-3 border-b bg-card/50 backdrop-blur-sm">
-            <SidebarTrigger className="hover:bg-secondary/80 transition-colors duration-200" />
-          </div>
-
-          {/* Main content area with improved spacing */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          {/* Main content area with full height */}
           <div className="flex-1 overflow-y-auto">
             <div className="h-full">
               {children}
             </div>
+          </div>
+
+          {/* Floating sidebar trigger in bottom left of main content */}
+          <div className="absolute bottom-6 left-6 z-50">
+            <SidebarTrigger className="bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground shadow-md rounded-full p-3 transition-all duration-200 hover:scale-105" />
           </div>
         </main>
       </div>
