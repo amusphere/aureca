@@ -101,6 +101,14 @@ export function TaskList() {
       if (response.ok) {
         const data = await response.json();
 
+        // エラーレスポンスの場合
+        if (data.error) {
+          const { toast } = await import('sonner');
+          toast.error('タスク生成に失敗しました: ' + data.error.message);
+          await fetchTasks(orderByPriority);
+          return;
+        }
+
         // タスクが生成されたら一覧を更新
         await fetchTasks(orderByPriority);
 
@@ -125,18 +133,14 @@ export function TaskList() {
           const { toast } = await import('sonner');
           toast.info('新しいタスクはありませんでした');
         }
-
-        // タスクが自動生成され、一覧を更新しました
       } else {
         const { toast } = await import('sonner');
         toast.error('タスク生成に失敗しました');
-        // エラーでもタスク一覧をリフレッシュして最新状態を確認
         await fetchTasks(orderByPriority);
       }
     } catch {
       const { toast } = await import('sonner');
       toast.error('タスク生成中にエラーが発生しました');
-      // エラーが発生してもタスク一覧をリフレッシュ
       await fetchTasks(orderByPriority);
     } finally {
       setIsGeneratingTasks(false);
