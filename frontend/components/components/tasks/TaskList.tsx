@@ -11,6 +11,7 @@ import { EmptyState } from "../commons/EmptyState";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { LoadingSpinner } from "../commons/LoadingSpinner";
 import { TaskCard } from "./TaskCard";
+import { formatTaskExpiry } from "@/utils/taskUtils";
 import { TaskForm } from "./TaskForm";
 
 
@@ -365,7 +366,17 @@ export function TaskList() {
               ) : activeTasks.length > 0 ? (
                 <div className="space-y-3" role="list" aria-label="アクティブなタスク一覧">
                   {activeTasks.map((task) => (
-                    <div key={task.uuid} role="listitem">
+                    <div key={task.uuid} role="listitem" className="relative">
+                      {task.expires_at && (
+                        <div className="absolute -top-1 -right-1">{/* 期限表示バッジ */}
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-muted/70 backdrop-blur-sm border border-border/50 text-muted-foreground"
+                            aria-label={`期限: ${formatTaskExpiry(task, 'M/d HH:mm') || ''}`}
+                          >
+                            {formatTaskExpiry(task, 'M/d HH:mm')}
+                          </span>
+                        </div>
+                      )}
                       <TaskCard
                         task={task}
                         isCompleting={completingTasks.has(task.uuid)}
@@ -403,7 +414,17 @@ export function TaskList() {
               ) : completedTasks.length > 0 ? (
                 <div className="space-y-3" role="list" aria-label="完了済みタスク一覧">
                   {completedTasks.map((task) => (
-                    <div key={task.uuid} role="listitem">
+                    <div key={task.uuid} role="listitem" className="relative">
+                      {task.expires_at && (
+                        <div className="absolute -top-1 -right-1">{/* 期限表示バッジ */}
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-muted/70 backdrop-blur-sm border border-border/50 text-muted-foreground"
+                            aria-label={`期限: ${formatTaskExpiry(task, 'M/d HH:mm') || ''}`}
+                          >
+                            {formatTaskExpiry(task, 'M/d HH:mm')}
+                          </span>
+                        </div>
+                      )}
                       <TaskCard
                         task={task}
                         isCompleting={false}
