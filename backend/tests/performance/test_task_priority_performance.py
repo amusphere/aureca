@@ -193,14 +193,16 @@ class TestTaskPriorityPerformance:
         print(f"Sequential query stats - Avg: {avg_time:.4f}s, Min: {min_time:.4f}s, Max: {max_time:.4f}s")
 
     def _create_test_tasks(self, session: Session, user: User, count: int) -> list[Tasks]:
-        """Create test tasks with mixed priorities."""
+        """Create test tasks with mixed priorities using factory pattern."""
+        from tests.utils.test_data_factory import TestDataFactory
+
         tasks = []
         priorities = [TaskPriority.HIGH, TaskPriority.MIDDLE, TaskPriority.LOW, None]
 
         for i in range(count):
             priority = priorities[i % len(priorities)]
 
-            task = Tasks(
+            task = TestDataFactory.create_task(
                 user_id=user.id,
                 title=f"Performance Test Task {i}",
                 description=f"Description for task {i}",

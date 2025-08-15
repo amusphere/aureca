@@ -168,7 +168,7 @@
   - 必要に応じて改善
   - _Requirements: 2.1, 2.2, 2.3, 3.5, 5.4_
 
-- [ ] 7. パフォーマンステストの確認・修正
+- [x] 7. パフォーマンステストの確認・修正
   - test_ai_chat_usage_performance.pyを確認
   - test_task_priority_performance.pyを確認
   - 本番コードへの依存がないか確認
