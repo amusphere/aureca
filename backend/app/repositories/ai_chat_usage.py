@@ -48,7 +48,7 @@ class AIChatUsageRepository:
 
         result = session.exec(stmt).first()
         session.commit()
-        return result
+        return result if isinstance(result, int) else result[0] if result else 0
 
     @staticmethod
     def get_daily_usage_record(session: Session, user_id: int, usage_date: str) -> AIChatUsage | None:

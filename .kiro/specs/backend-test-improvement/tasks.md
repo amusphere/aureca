@@ -117,25 +117,25 @@
   - テストデータの生成を標準化
   - _Requirements: 2.2, 2.5_
 
-- [ ] 5. ユニットテストの書き直し
+- [x] 5. ユニットテストの書き直し
   - test_ai_chat_usage_service.pyを完全に書き直し
   - 依存性注入を活用したテスト設計
   - 本番コードへの依存を除去
   - 全てのテストケースを移行
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 5.1, 5.2, 5.3_
 
-- [ ] 5.1 AIChatUsageServiceのユニットテストを再実装
+- [x] 5.1 AIChatUsageServiceのユニットテストを再実装
   - mock_dependenciesフィクスチャを削除
   - 依存性注入を使用したテストセットアップ
   - 全てのメソッドのテストケースを移行
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 5.2 ClerkServiceのユニットテストを確認・修正
+- [x] 5.2 ClerkServiceのユニットテストを確認・修正
   - 既存のテストが適切に分離されているか確認
   - 必要に応じて改善
   - _Requirements: 2.1, 2.2, 2.3, 3.5_
 
-- [ ] 5.3 その他のユニットテストを確認・修正
+- [x] 5.3 その他のユニットテストを確認・修正
   - test_ai_chat_usage_repository.pyを確認
   - test_plan_limits.pyを確認
   - test_task_repository.pyを確認

@@ -33,9 +33,12 @@ class UserFactory:
         Returns:
             User object with specified or default values
         """
+        # Handle None values explicitly to allow them to be passed through
         defaults = {
             "id": id,
-            "clerk_sub": clerk_sub or f"test_user_{uuid4().hex[:8]}",
+            "clerk_sub": f"test_user_{uuid4().hex[:8]}"
+            if clerk_sub is None and "clerk_sub" not in kwargs
+            else clerk_sub,
             "email": email or f"test{uuid4().hex[:8]}@example.com",
             "name": name or "Test User",
             "created_at": created_at or time.time(),
