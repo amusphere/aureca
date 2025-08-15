@@ -431,16 +431,22 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             生成されたタスク情報、または None（タスクに適さない場合）
         """
         try:
-            # イベント情報を整理
+            # イベント情報を整理（GoogleCalendarService._process_event_data の出力仕様に合わせる）
             summary = event.get("summary", "")
-            description = event.get("description", "")
-            location = event.get("location", "")
-            start_time = event.get("start", {})
-            end_time = event.get("end", {})
+            description = event.get("description", "") or ""
+            location = event.get("location", "") or ""
+            start_dt = event.get("start_time")  # datetime オブジェクト
+            end_dt = event.get("end_time")      # datetime オブジェクト
 
-            # 開始時刻と終了時刻の文字列を取得
-            start_str = start_time.get("dateTime", start_time.get("date", ""))
-            end_str = end_time.get("dateTime", end_time.get("date", ""))
+            # start_time / end_time はサービス側で datetime に正規化済み
+            start_str = start_dt.isoformat() if isinstance(start_dt, datetime) else ""
+            end_str = end_dt.isoformat() if isinstance(end_dt, datetime) else ""
+
+            if not start_str:
+                self.logger.warning(
+                    "Calendar event lacks start_time field expected by _generate_task_from_calendar_event: %s",
+                    summary[:80],
+                )
 
             # LLMへのプロンプトを作成
             prompts = [
@@ -580,6 +586,12 @@ JSON構造に strict 準拠し、"expires_at" には秒単位のUNIXエポック
                         datetime.fromtimestamp(fallback_due).isoformat(),
                     )
                     response.expires_at = fallback_due
+                else:
+                    self.logger.debug(
+                        "No expires_at set (LLM + fallback failed) for calendar event: %s (start=%s)",
+                        summary[:80],
+                        start_str,
+                    )
 
             # 優先度判定結果をログ出力
             self.logger.info(
