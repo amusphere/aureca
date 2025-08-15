@@ -1,48 +1,48 @@
 # 実装計画
 
-- [-] 1. 本番コードからテスト固有処理を除去
+- [x] 1. 本番コードからテスト固有処理を除去
   - AIChatUsageServiceからPYTEST_CURRENT_TEST環境変数チェックを削除
   - unittest.mockの動的インポートを除去
   - Mock検出ロジックを削除
   - テスト固有の条件分岐を除去
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.1 AIChatUsageServiceのget_user_planメソッドをクリーンアップ
+- [x] 1.1 AIChatUsageServiceのget_user_planメソッドをクリーンアップ
   - PYTEST_CURRENT_TEST環境変数チェックを削除
   - unittest.mockの動的インポートを除去
   - _is_clerk_mockedフィールドを削除
   - テスト固有の分岐処理を除去
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.2 AIChatUsageServiceのget_usage_statsメソッドをクリーンアップ
+- [x] 1.2 AIChatUsageServiceのget_usage_statsメソッドをクリーンアップ
   - Mock検出ロジックを削除
   - unittest.mockの動的インポートを除去
   - リポジトリアクセスを統一
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.3 AIChatUsageServiceのcan_use_chatメソッドをクリーンアップ
+- [x] 1.3 AIChatUsageServiceのcan_use_chatメソッドをクリーンアップ
   - Mock検出ロジックを削除
   - unittest.mockの動的インポートを除去
   - リポジトリアクセスを統一
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.4 AIChatUsageServiceのincrement_usageメソッドをクリーンアップ
+- [x] 1.4 AIChatUsageServiceのincrement_usageメソッドをクリーンアップ
   - Mock検出ロジックを削除
   - unittest.mockの動的インポートを除去
   - リポジトリアクセスを統一
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 1.5 AIChatUsageServiceのis_clerk_mockedメソッドを削除
+- [x] 1.5 AIChatUsageServiceのis_clerk_mockedメソッドを削除
   - テスト専用メソッドを削除
   - 関連するフィールドを削除
   - _Requirements: 1.5_
 
-- [ ] 1.6 AIChatUsageRepositoryのincrement_daily_usageラッパーを削除
+- [x] 1.6 AIChatUsageRepositoryのincrement_daily_usageラッパーを削除
   - テスト専用の後方互換ラッパーを削除
   - 直接increment_usage_countを使用するよう統一
   - _Requirements: 1.5_
 
-- [ ] 1.7 AIアシスタントAPIのテスト固有処理を削除
+- [x] 1.7 AIアシスタントAPIのテスト固有処理を削除
   - PYTEST_CURRENT_TEST環境変数チェックを削除
   - unittest.mockの動的インポートを除去
   - Mock検出ロジックを削除
