@@ -436,7 +436,7 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             description = event.get("description", "") or ""
             location = event.get("location", "") or ""
             start_dt = event.get("start_time")  # datetime オブジェクト
-            end_dt = event.get("end_time")      # datetime オブジェクト
+            end_dt = event.get("end_time")  # datetime オブジェクト
 
             # start_time / end_time はサービス側で datetime に正規化済み
             start_str = start_dt.isoformat() if isinstance(start_dt, datetime) else ""
