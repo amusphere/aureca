@@ -3,11 +3,11 @@
 from sqlmodel import Session
 
 from app.repositories.ai_chat_usage import (
+    AIChatUsageRepository,
     create_daily_usage,
     get_current_usage_count,
     get_daily_usage,
     get_usage_history,
-    increment_daily_usage,
     update_usage_count,
 )
 from app.schema import User
@@ -91,17 +91,22 @@ class TestAIChatUsageRepository:
 
         assert count == 0
 
-    def test_increment_daily_usage_new_record(self, session: Session, test_user: User):
+    def test_increment_usage_count_new_record(self, session: Session, test_user: User):
         """Test incrementing usage for a new record (creates with count 1)."""
         usage_date = "2023-01-02"
 
-        usage_log = increment_daily_usage(session, test_user.id, usage_date)
+        new_count = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
 
+        # Verify the count returned
+        assert new_count == 1
+
+        # Verify the record was created correctly
+        usage_log = get_daily_usage(session, test_user.id, usage_date)
         assert usage_log.user_id == test_user.id
         assert usage_log.usage_date == usage_date
         assert usage_log.usage_count == 1
 
-    def test_increment_daily_usage_existing_record(self, session: Session, test_user: User):
+    def test_increment_usage_count_existing_record(self, session: Session, test_user: User):
         """Test incrementing usage for an existing record."""
         usage_date = "2023-01-02"
         initial_count = 5
@@ -115,28 +120,35 @@ class TestAIChatUsageRepository:
         )
 
         # Increment it
-        updated_log = increment_daily_usage(session, test_user.id, usage_date)
+        new_count = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
 
+        assert new_count == initial_count + 1
+
+        # Verify the record was updated correctly
+        updated_log = get_daily_usage(session, test_user.id, usage_date)
         assert updated_log.usage_count == initial_count + 1
         assert updated_log.user_id == test_user.id
         assert updated_log.usage_date == usage_date
 
-    def test_increment_daily_usage_multiple_times(self, session: Session, test_user: User):
+    def test_increment_usage_count_multiple_times(self, session: Session, test_user: User):
         """Test incrementing usage multiple times."""
         usage_date = "2023-01-02"
 
         # First increment (creates record)
-        log1 = increment_daily_usage(session, test_user.id, usage_date)
-        assert log1.usage_count == 1
+        count1 = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
+        assert count1 == 1
+        log1 = get_daily_usage(session, test_user.id, usage_date)
 
         # Second increment
-        log2 = increment_daily_usage(session, test_user.id, usage_date)
-        assert log2.usage_count == 2
+        count2 = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
+        assert count2 == 2
+        log2 = get_daily_usage(session, test_user.id, usage_date)
         assert log2.id == log1.id  # Same record
 
         # Third increment
-        log3 = increment_daily_usage(session, test_user.id, usage_date)
-        assert log3.usage_count == 3
+        count3 = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
+        assert count3 == 3
+        log3 = get_daily_usage(session, test_user.id, usage_date)
         assert log3.id == log1.id  # Same record
 
     def test_update_usage_count_existing(self, session: Session, test_user: User):
@@ -273,10 +285,12 @@ class TestAIChatUsageRepository:
         time.sleep(0.01)
 
         # Increment usage
-        updated_log = increment_daily_usage(session, test_user.id, usage_date)
+        new_count = AIChatUsageRepository.increment_usage_count(session, test_user.id, usage_date)
+        updated_log = get_daily_usage(session, test_user.id, usage_date)
 
         assert updated_log.updated_at > initial_updated_at
         assert updated_log.usage_count == 2
+        assert new_count == 2
 
     def test_updated_at_timestamp_on_update(self, session: Session, test_user: User):
         """Test that updated_at timestamp is properly updated on count update."""

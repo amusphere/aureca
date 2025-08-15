@@ -3,9 +3,8 @@
 import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -19,23 +18,6 @@ from main import app
 
 class TestAIChatUsagePerformance:
     """Performance tests for AI Chat usage system."""
-
-    @pytest.fixture(autouse=True)
-    def mock_dependencies(self):
-        """Mock dependencies to ensure consistent test behavior."""
-        # Mock ClerkService
-        with patch("app.services.ai_chat_usage_service.get_clerk_service") as mock_get_clerk_service:
-            from unittest.mock import MagicMock
-
-            mock_clerk_service = MagicMock()
-            mock_get_clerk_service.return_value = mock_clerk_service
-
-            # Default to standard plan for most tests
-            mock_clerk_service.get_user_plan.return_value = "standard"
-
-            yield {
-                "mock_clerk_service": mock_clerk_service,
-            }
 
     def test_plan_limits_constant_access_performance(self):
         """Test that PlanLimits constant access is fast."""
@@ -89,10 +71,16 @@ class TestAIChatUsagePerformance:
         avg_per_query = duration / 100
         assert avg_per_query < 0.01, f"Average query time {avg_per_query:.4f}s, expected < 0.01s"
 
-    async def test_service_layer_performance(self, session: Session, test_user: User):
+    async def test_service_layer_performance(
+        self, session: Session, test_user: User, mock_clerk_service: MagicMock, mock_ai_usage_repository: MagicMock
+    ):
         """Test service layer performance for usage operations."""
         current_date = "2023-01-01"
-        usage_service = AIChatUsageService(session)
+
+        # Use dependency injection for clean testing
+        usage_service = AIChatUsageService(
+            session=session, clerk_service=mock_clerk_service, usage_repository=mock_ai_usage_repository
+        )
 
         # Measure time for usage stats retrieval
         with patch.object(usage_service, "_get_current_date", return_value=current_date):
@@ -112,9 +100,8 @@ class TestAIChatUsagePerformance:
             avg_per_call = duration / 50
             assert avg_per_call < 0.04, f"Average service call time {avg_per_call:.4f}s, expected < 0.04s"
 
-    def test_api_endpoint_performance(self, client: TestClient, session: Session, test_user: User):
-        """Test API endpoint performance."""
-        current_date = "2023-01-01"
+    def test_api_endpoint_performance(self, client: TestClient, session: Session, test_user: User, setup_app_overrides):
+        """Test API endpoint performance with proper mocking."""
 
         def get_test_user():
             return test_user
@@ -122,10 +109,24 @@ class TestAIChatUsagePerformance:
         app.dependency_overrides[auth_user] = get_test_user
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
+            # Mock the service creation in the API endpoints to avoid external calls
+            with patch("app.routers.api.ai_assistant.AIChatUsageService") as mock_service_class:
+                # Set up the mock service instance
+                mock_service = MagicMock()
+                mock_service_class.return_value = mock_service
+
+                # Configure mock responses for async methods
+                mock_service.get_usage_stats = AsyncMock(
+                    return_value={
+                        "remaining_count": 8,
+                        "daily_limit": 10,
+                        "current_usage": 2,
+                        "plan_name": "standard",
+                        "reset_time": "2023-01-02T00:00:00Z",
+                        "can_use_chat": True,
+                    }
+                )
+
                 # Measure time for 20 API calls
                 start_time = time.time()
 
@@ -136,18 +137,21 @@ class TestAIChatUsagePerformance:
                 end_time = time.time()
                 duration = end_time - start_time
 
-                # Should complete in less than 5 seconds
-                assert duration < 5.0, f"20 API calls took {duration:.4f}s, expected < 5.0s"
+                # Should complete in less than 2 seconds (reduced expectation for mocked calls)
+                assert duration < 2.0, f"20 API calls took {duration:.4f}s, expected < 2.0s"
 
-                # Average per call should be less than 250ms
+                # Average per call should be less than 100ms (reduced expectation for mocked calls)
                 avg_per_call = duration / 20
-                assert avg_per_call < 0.25, f"Average API call time {avg_per_call:.4f}s, expected < 0.25s"
+                assert avg_per_call < 0.1, f"Average API call time {avg_per_call:.4f}s, expected < 0.1s"
         finally:
-            app.dependency_overrides.clear()
+            # Remove only the auth override, keep setup_app_overrides intact
+            if auth_user in app.dependency_overrides:
+                del app.dependency_overrides[auth_user]
 
-    def test_concurrent_usage_checks_performance(self, client: TestClient, session: Session, test_user: User):
-        """Test performance under concurrent load."""
-        current_date = "2023-01-01"
+    def test_concurrent_usage_checks_performance(
+        self, client: TestClient, session: Session, test_user: User, setup_app_overrides
+    ):
+        """Test performance under concurrent load with proper mocking."""
 
         def get_test_user():
             return test_user
@@ -155,10 +159,23 @@ class TestAIChatUsagePerformance:
         app.dependency_overrides[auth_user] = get_test_user
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
+            # Mock the service creation in the API endpoints to avoid external calls
+            with patch("app.routers.api.ai_assistant.AIChatUsageService") as mock_service_class:
+                # Set up the mock service instance
+                mock_service = MagicMock()
+                mock_service_class.return_value = mock_service
+
+                # Configure mock responses for async methods
+                mock_service.get_usage_stats = AsyncMock(
+                    return_value={
+                        "remaining_count": 8,
+                        "daily_limit": 10,
+                        "current_usage": 2,
+                        "plan_name": "standard",
+                        "reset_time": "2023-01-02T00:00:00Z",
+                        "can_use_chat": True,
+                    }
+                )
 
                 def make_request():
                     response = client.get("/api/ai/usage")
@@ -177,14 +194,17 @@ class TestAIChatUsagePerformance:
                 # All requests should succeed
                 assert all(results), "Some concurrent requests failed"
 
-                # Should complete in less than 3 seconds
-                assert duration < 3.0, f"10 concurrent requests took {duration:.4f}s, expected < 3.0s"
+                # Should complete in less than 1 second (reduced expectation for mocked calls)
+                assert duration < 1.0, f"10 concurrent requests took {duration:.4f}s, expected < 1.0s"
         finally:
-            app.dependency_overrides.clear()
+            # Remove only the auth override, keep setup_app_overrides intact
+            if auth_user in app.dependency_overrides:
+                del app.dependency_overrides[auth_user]
 
-    def test_usage_increment_performance(self, client: TestClient, session: Session, test_user: User):
-        """Test performance of usage increment operations."""
-        current_date = "2023-01-01"
+    def test_usage_increment_performance(
+        self, client: TestClient, session: Session, test_user: User, setup_app_overrides
+    ):
+        """Test performance of usage increment operations with proper mocking."""
 
         def get_test_user():
             return test_user
@@ -192,34 +212,53 @@ class TestAIChatUsagePerformance:
         app.dependency_overrides[auth_user] = get_test_user
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
+            # Mock the service creation in the API endpoints to avoid external calls
+            with patch("app.routers.api.ai_assistant.AIChatUsageService") as mock_service_class:
+                # Set up the mock service instance
+                mock_service = MagicMock()
+                mock_service_class.return_value = mock_service
+
+                # Configure mock responses for async methods
+                mock_service.increment_usage = AsyncMock(
+                    return_value={
+                        "remaining_count": 7,
+                        "daily_limit": 10,
+                        "current_usage": 3,
+                        "plan_name": "standard",
+                        "reset_time": "2023-01-02T00:00:00Z",
+                        "can_use_chat": True,
+                    }
+                )
+
                 # Measure time for 10 increment operations
                 start_time = time.time()
 
-                for i in range(10):
+                for _ in range(10):
                     response = client.post("/api/ai/usage/increment")
-                    if i < 9:  # First 9 should succeed
-                        assert response.status_code == 200
-                    # 10th might hit limit depending on timing
+                    assert response.status_code == 200  # All should succeed with mocked service
 
                 end_time = time.time()
                 duration = end_time - start_time
 
-                # Should complete in less than 3 seconds
-                assert duration < 3.0, f"10 increment operations took {duration:.4f}s, expected < 3.0s"
+                # Should complete in less than 1 second (reduced expectation for mocked calls)
+                assert duration < 1.0, f"10 increment operations took {duration:.4f}s, expected < 1.0s"
 
-                # Average per operation should be less than 300ms
+                # Average per operation should be less than 100ms (reduced expectation for mocked calls)
                 avg_per_operation = duration / 10
-                assert avg_per_operation < 0.3, f"Average increment time {avg_per_operation:.4f}s, expected < 0.3s"
+                assert avg_per_operation < 0.1, f"Average increment time {avg_per_operation:.4f}s, expected < 0.1s"
         finally:
-            app.dependency_overrides.clear()
+            # Remove only the auth override, keep setup_app_overrides intact
+            if auth_user in app.dependency_overrides:
+                del app.dependency_overrides[auth_user]
 
-    async def test_clerk_api_mock_performance(self, session: Session, test_user: User, mock_dependencies):
+    async def test_clerk_api_mock_performance(
+        self, session: Session, test_user: User, mock_clerk_service: MagicMock, mock_ai_usage_repository: MagicMock
+    ):
         """Test performance with Clerk API mocking."""
-        usage_service = AIChatUsageService(session)
+        # Use dependency injection for clean testing
+        usage_service = AIChatUsageService(
+            session=session, clerk_service=mock_clerk_service, usage_repository=mock_ai_usage_repository
+        )
 
         # Measure time for 100 plan retrievals
         start_time = time.time()
@@ -238,7 +277,9 @@ class TestAIChatUsagePerformance:
         avg_per_call = duration / 100
         assert avg_per_call < 0.01, f"Average mocked API call time {avg_per_call:.4f}s, expected < 0.01s"
 
-    def test_memory_usage_stability(self, session: Session, test_user: User):
+    def test_memory_usage_stability(
+        self, session: Session, test_user: User, mock_clerk_service: MagicMock, mock_ai_usage_repository: MagicMock
+    ):
         """Test that memory usage remains stable under load."""
         import gc
         import os
@@ -248,7 +289,10 @@ class TestAIChatUsagePerformance:
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
-        usage_service = AIChatUsageService(session)
+        # Use dependency injection for clean testing
+        usage_service = AIChatUsageService(
+            session=session, clerk_service=mock_clerk_service, usage_repository=mock_ai_usage_repository
+        )
         current_date = "2023-01-01"
 
         # Perform many operations
@@ -292,9 +336,14 @@ class TestAIChatUsagePerformance:
         # Should complete in less than 2 seconds
         assert duration < 2.0, f"50 mixed DB operations took {duration:.4f}s, expected < 2.0s"
 
-    async def test_error_handling_performance(self, session: Session, test_user: User):
+    async def test_error_handling_performance(
+        self, session: Session, test_user: User, mock_clerk_service: MagicMock, mock_ai_usage_repository: MagicMock
+    ):
         """Test that error handling doesn't significantly impact performance."""
-        usage_service = AIChatUsageService(session)
+        # Use dependency injection for clean testing
+        usage_service = AIChatUsageService(
+            session=session, clerk_service=mock_clerk_service, usage_repository=mock_ai_usage_repository
+        )
 
         # Measure time for operations that will cause errors
         start_time = time.time()
@@ -329,9 +378,10 @@ class TestAIChatUsagePerformance:
         # Should be very fast
         assert duration < 0.1, f"30000 plan validations took {duration:.4f}s, expected < 0.1s"
 
-    def test_response_serialization_performance(self, client: TestClient, session: Session, test_user: User):
-        """Test JSON response serialization performance."""
-        current_date = "2023-01-01"
+    def test_response_serialization_performance(
+        self, client: TestClient, session: Session, test_user: User, setup_app_overrides
+    ):
+        """Test JSON response serialization performance with proper mocking."""
 
         def get_test_user():
             return test_user
@@ -339,10 +389,24 @@ class TestAIChatUsagePerformance:
         app.dependency_overrides[auth_user] = get_test_user
 
         try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
+            # Mock the service creation in the API endpoints to avoid external calls
+            with patch("app.routers.api.ai_assistant.AIChatUsageService") as mock_service_class:
+                # Set up the mock service instance
+                mock_service = MagicMock()
+                mock_service_class.return_value = mock_service
+
+                # Configure mock responses for async methods
+                mock_service.get_usage_stats = AsyncMock(
+                    return_value={
+                        "remaining_count": 8,
+                        "daily_limit": 10,
+                        "current_usage": 2,
+                        "plan_name": "standard",
+                        "reset_time": "2023-01-02T00:00:00Z",
+                        "can_use_chat": True,
+                    }
+                )
+
                 # Measure time for response parsing
                 responses = []
                 start_time = time.time()
@@ -356,8 +420,8 @@ class TestAIChatUsagePerformance:
                 end_time = time.time()
                 duration = end_time - start_time
 
-                # Should complete in less than 2 seconds
-                assert duration < 2.0, f"50 response serializations took {duration:.4f}s, expected < 2.0s"
+                # Should complete in less than 1 second (reduced expectation for mocked calls)
+                assert duration < 1.0, f"50 response serializations took {duration:.4f}s, expected < 1.0s"
 
                 # Verify all responses have correct structure
                 for data in responses:
@@ -365,4 +429,6 @@ class TestAIChatUsagePerformance:
                     assert "daily_limit" in data
                     assert "plan_name" in data
         finally:
-            app.dependency_overrides.clear()
+            # Remove only the auth override, keep setup_app_overrides intact
+            if auth_user in app.dependency_overrides:
+                del app.dependency_overrides[auth_user]

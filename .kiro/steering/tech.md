@@ -4,62 +4,49 @@ inclusion: always
 
 # Technology Stack & Development Guidelines
 
-## Core Technologies
-
-### Backend (Python 3.12+)
-- **Framework**: FastAPI with async/await (REQUIRED)
-- **ORM**: SQLModel (MANDATORY for all models)
-- **Database**: PostgreSQL with `id` (auto-increment) + `uuid` (external refs)
-- **Migrations**: Alembic (NEVER edit schema.py directly)
-- **Package Manager**: `uv` (use `uv run` for all commands)
-- **Auth**: Clerk SDK + email/password fallback
+## Stack Overview
+- **Backend**: FastAPI + SQLModel + PostgreSQL + Alembic + `uv`
+- **Frontend**: Next.js 15 + TypeScript + Tailwind + shadcn/ui
+- **Auth**: Clerk SDK with email/password fallback
 - **AI**: OpenAI API via `backend/app/utils/llm.py`
 
-### Frontend (Next.js 15)
-- **Framework**: Next.js App Router (`app/` directory)
-- **Language**: TypeScript (MANDATORY)
-- **Styling**: Tailwind CSS + shadcn/ui (DO NOT modify ui components)
-- **Auth**: `@clerk/nextjs` with middleware
-- **State**: Custom hooks in `components/hooks/`
-- **Forms**: React Hook Form + Zod validation
+## Critical Rules (NON-NEGOTIABLE)
 
-## Critical Code Patterns
-
-### Backend (ENFORCE)
+### Backend Patterns
 ```python
-# ALWAYS async/await
+# MANDATORY: All functions async/await
 async def get_tasks(user_id: str) -> List[Task]:
     return await task_repository.get_by_user(user_id)
 
-# ALWAYS SQLModel with standard fields
+# MANDATORY: SQLModel with standard fields
 class Task(SQLModel, table=True):
     id: int = Field(primary_key=True)
     uuid: str = Field(default_factory=lambda: str(uuid4()))
     created_at: float = Field(default_factory=time.time)
 
-# NEVER skip service layer: Router → Service → Repository → Database
+# MANDATORY: Layer separation - Router → Service → Repository
 ```
 
-### Frontend (ENFORCE)
+### Frontend Patterns
 ```typescript
-// ALWAYS TypeScript interfaces
+// MANDATORY: TypeScript interfaces for all props
 interface TaskProps {
   task: Task;
   onUpdate: (task: Task) => void;
 }
 
-// ALWAYS custom hooks for state
+// MANDATORY: Custom hooks for state management
 const { tasks, loading, error } = useTasks();
 
-// ALWAYS shadcn/ui components
+// MANDATORY: Use shadcn/ui components (NEVER modify)
 import { Button } from "@/components/ui/button";
 ```
 
-## Database Rules (CRITICAL)
-- **Schema Changes**: Use Alembic migrations ONLY
+### Database Rules
+- **NEVER** edit `schema.py` directly - use Alembic migrations only
+- **ALWAYS** use Unix float timestamps (`time.time()`)
+- **ALWAYS** include both `id` (auto-increment) and `uuid` fields
 - **Migration Command**: `alembic revision --autogenerate -m "description"`
-- **Timestamps**: Unix float format
-- **Primary Keys**: Auto-increment `id` + UUID `uuid`
 
 ## Essential Commands
 
@@ -68,41 +55,44 @@ import { Button } from "@/components/ui/button";
 # Full stack
 docker compose up
 
-# Backend only
+# Backend only (use uv for all Python commands)
 cd backend && uv run fastapi dev --host 0.0.0.0
 
 # Frontend only
 cd frontend && npm run dev
-```
 
-### Database
-```bash
-# Apply migrations
+# Database migrations
 docker compose run --rm backend alembic upgrade head
-
-# Create migration
-docker compose run --rm backend alembic revision --autogenerate -m "feature"
 ```
 
-### Code Quality (REQUIRED)
+### Package Management
 ```bash
-# Backend
-cd backend && uv run black .
-
-# Frontend
-cd frontend && npm run build
-```
-
-## Package Management
-```bash
-# Backend
+# Backend (ALWAYS use uv)
 cd backend && uv add package-name
 
 # Frontend
 cd frontend && npm install package-name
 ```
 
+## Code Quality Standards
+- **Backend**: Use `uv run black .` for formatting
+- **Frontend**: TypeScript strict mode, build must pass
+- **Testing**: Run tests before commits
+- **Imports**: Absolute imports from `app.` root (backend)
+
 ## Environment Variables
-- **Backend**: `DATABASE_URL`, `OPENAI_API_KEY`, `CLERK_SECRET_KEY`
-- **Frontend**: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- **Auth Control**: `NEXT_PUBLIC_AUTH_SYSTEM=clerk|email`
+```bash
+# Backend
+DATABASE_URL=postgresql://...
+OPENAI_API_KEY=sk-...
+CLERK_SECRET_KEY=sk_...
+
+# Frontend
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+NEXT_PUBLIC_AUTH_SYSTEM=clerk  # or 'email'
+```
+
+## File Structure Conventions
+- **Backend**: `routers/` → `services/` → `repositories/` → `models/`
+- **Frontend**: `app/` → `components/` → `hooks/` → `utils/`
+- **Naming**: snake_case (Python), camelCase (TypeScript), PascalCase (components)

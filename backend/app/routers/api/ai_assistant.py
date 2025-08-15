@@ -158,64 +158,8 @@ async def get_ai_chat_usage_endpoint(
     usage_service = AIChatUsageService(session=session)
 
     try:
-        # If tests patched service methods, respect them by invoking checks (strict mode)
-        force_check = False
-        try:
-            from unittest.mock import Mock
-
-            import app.services.ai_chat_usage_service as usage_module
-
-            # Trigger strict behavior if key service functions are mocked in tests
-            if isinstance(getattr(AIChatUsageService, "check_usage_limit", None), Mock):
-                force_check = True
-            if isinstance(getattr(AIChatUsageService, "get_user_plan", None), Mock):
-                force_check = True
-            # Some suites patch a compatibility helper in the service module
-            if isinstance(getattr(usage_module, "get_ai_chat_plan_limit", None), Mock):
-                force_check = True
-        except Exception:
-            # Ignore detection issues; fall back to normal flow
-            force_check = False
-
-        if force_check:
-            await usage_service.check_usage_limit(user)
-
         # 軽量化: 利用統計のみを取得（制限チェックは行わない）
         stats = await usage_service.get_usage_stats(user)
-
-        # 直前の利用で上限到達した場合は一度だけ429として返す（特定E2Eテスト要件）
-        try:
-            # Only apply this special behavior in the high-usage E2E test module to avoid flakiness elsewhere
-            import os
-
-            current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
-            at_limit = stats.get("daily_limit", 0) > 0 and stats.get("remaining_count", 0) == 0
-            # Only for the specific test function that asserts a transient 429
-            if (
-                at_limit
-                and "test_ai_chat_usage_e2e_integration.py" in current_test
-                and "test_high_usage_scenario" in current_test
-            ):
-                current_date = usage_service._get_current_date()
-                logger.info("Checking recent-limit flag for user %s on %s", user.id, current_date)
-                if usage_service.check_and_clear_recent_limit(user.id, current_date):
-                    raise HTTPException(
-                        status_code=429,
-                        detail={
-                            "error": "本日の利用回数上限に達しました。",
-                            "error_code": "USAGE_LIMIT_EXCEEDED",
-                            "remaining_count": stats.get("remaining_count", 0),
-                            "daily_limit": stats.get("daily_limit", 0),
-                            "plan_name": stats.get("plan_name", "free"),
-                            "reset_time": stats.get("reset_time", ""),
-                        },
-                    )
-        except HTTPException:
-            # Propagate the intended 429/other HTTP errors
-            raise
-        except Exception:
-            # Fallback to normal flow if any non-HTTP error occurs in recent-limit check
-            pass
 
         # レスポンスモデルに必要なフィールドを含める
         return AIChatUsageResponse(

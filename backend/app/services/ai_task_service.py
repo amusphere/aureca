@@ -355,6 +355,10 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 迷った場合は、より保守的（低い）優先度を選択してください。""",
                 },
                 {
+                    "role": "system",
+                    "content": """【出力仕様 / 制約 (EMAIL)】\n1. 出力は JSON（Pydantic Model TaskGenerationResponse）準拠: {\"title\": str, \"description\": str, \"expires_at\": number|null, \"priority\": 1|2|3|null } のみ。余計なキー・テキストを追加しない。\n2. priority 数値マッピング: High=1 / Middle=2 / Low=3 / 不要または判断不能=null。\n3. title: 具体的な行動を50文字以内。文末の句点は不要。抽象語(\"対応\"だけ等)を避ける。\n4. description: 120文字以内。何を・いつまでに・どうするか。元メールの本文全貼りや挨拶文は不要。\n5. expires_at: \n   - メール内に日時/期限表現があればそれを最も早い実行締切として UNIX秒 (UTC ではなくメールヘッダ上のタイムゾーンを優先し不明なら Asia/Tokyo) で設定。\n   - 相対表現（例: \"明日中\"）は: 現在日時を基準に具体化（明日 23:59:59 ローカル, 午前/午後指定あれば 09:00/15:00 など常識的補完）。\n   - 締切が複数ある場合: 最初に到来する実行必須のもの。\n   - 不明確 / 行動継続 / ルーチン / 期限未指定: null。推測で未来日時を捏造しない。\n6. タスクが複数必要そうでも 1件のみ: 最も緊急/重要かつユーザーアクションが明確なもの。\n7. 個人情報や機密らしき文言はそのまま再掲せず、必要なら抽象化（例: \"顧客A社資料\"→\"顧客資料\"）。\n8. ハルシネーション禁止: メールに無い日付・依頼者・URL・金額を作らない。\n9. 優先度判断は数値で返し、説明文中に High/Middle などのラベルを追加しない。\n10. 全フィールドは日本語。英語メールでも日本語要約で。\n""",
+                },
+                {
                     "role": "user",
                     "content": f"""以下のメール内容を分析してタスクを生成してください：
 
@@ -427,16 +431,22 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
             生成されたタスク情報、または None（タスクに適さない場合）
         """
         try:
-            # イベント情報を整理
+            # イベント情報を整理（GoogleCalendarService._process_event_data の出力仕様に合わせる）
             summary = event.get("summary", "")
-            description = event.get("description", "")
-            location = event.get("location", "")
-            start_time = event.get("start", {})
-            end_time = event.get("end", {})
+            description = event.get("description", "") or ""
+            location = event.get("location", "") or ""
+            start_dt = event.get("start_time")  # datetime オブジェクト
+            end_dt = event.get("end_time")  # datetime オブジェクト
 
-            # 開始時刻と終了時刻の文字列を取得
-            start_str = start_time.get("dateTime", start_time.get("date", ""))
-            end_str = end_time.get("dateTime", end_time.get("date", ""))
+            # start_time / end_time はサービス側で datetime に正規化済み
+            start_str = start_dt.isoformat() if isinstance(start_dt, datetime) else ""
+            end_str = end_dt.isoformat() if isinstance(end_dt, datetime) else ""
+
+            if not start_str:
+                self.logger.warning(
+                    "Calendar event lacks start_time field expected by _generate_task_from_calendar_event: %s",
+                    summary[:80],
+                )
 
             # LLMへのプロンプトを作成
             prompts = [
@@ -471,7 +481,25 @@ expires_at は UNIX タイムスタンプで返してください。期限が明
 - 「〜のチェックイン」「〜の荷物準備」「〜の予約確認」
 - 「〜の持ち物確認」「〜の資料準備」
 
-expires_at は UNIX タイムスタンプで返してください。通常はイベント開始時刻の30分〜2時間前に設定してください（イベントの種類により調整）。
+【重要: expires_at（期限）生成ルール】
+必ず expires_at（UNIXタイムスタンプ, 秒）を設定してください（除外条件で title を空にする場合のみ null 可）。
+
+1. 会議/ミーティング/打ち合わせ/MTG/1on1/定例/レビュー など一般的なミーティング系イベント:
+    - 期限 = イベント開始時刻（オフセットを付けない）
+
+2. 明確に事前準備・移動が必要なイベントのみ前倒し（準備が曖昧なら前倒ししない）:
+    - フライト/長距離移動/国際線/出張/flight: 開始120分前
+    - 面接/面談/インタビュー/プレゼン/発表/登壇/試験/資格/重要プレゼン: 開始60分前
+    - ワークショップ/研修/トレーニング/勉強会/セミナー（資料や環境準備が暗示される場合）: 開始30分前
+
+3. 終日 (all-day, date フィールド) イベント:
+    - 期限 = 当日 09:00（特別な準備語が含まれていて前日準備が必須と明確な場合のみ前日18:00 を選択可）
+
+4. 前倒し計算の結果が現在時刻より過去になる場合: 期限 = 開始時刻
+
+5. どの前倒し条件にも自信が持てない場合: 期限 = 開始時刻（不要な推測で早めすぎない）
+
+これらのルールを守り、不要に早すぎる期限を設定しないでください。
 
 優先度判定基準（改良版）：
 イベントの種類、重要性、参加者、ビジネス影響度を総合的に分析して優先度を決定してください：
@@ -512,7 +540,14 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
 4. 準備の必要性と複雑さ
 5. 失敗時のリスクの大きさ
 
-企業環境では business context を最優先し、判断に迷った場合は middle を選択してください。""",
+企業環境では business context を最優先し、判断に迷った場合は middle を選択してください。
+
+【出力フォーマット注意】
+JSON構造に strict 準拠し、"expires_at" には秒単位のUNIXエポック(小数可)を設定。生成不能な場合のみ null。""",
+                },
+                {
+                    "role": "system",
+                    "content": """【出力仕様 / 制約 (CALENDAR)】\n1. 出力は JSON（TaskGenerationResponse）: {title, description, expires_at, priority} のみ。追加テキスト禁止。\n2. priority 数値マッピング: High=1 / Middle=2 / Low=3 / 判断不能=null。\n3. title: 50文字以内で行動指向。イベント名の単純コピーを避け、準備/確認/参加など動詞を含める。\n4. description: 120文字以内。準備物 / 確認事項 / ゴール を簡潔に。長いイベント説明丸写し禁止。\n5. expires_at: 直前ルール（既述）に従い UNIX秒 (startがタイムゾーン付きISOならそのTZ、無ければイベントのローカルを Asia/Tokyo と仮定)。\n6. all-day の場合: 09:00 (前日準備明確なら前日18:00)。過度な前倒し禁止。\n7. イベントが完了後フォローアップを明確に要求する (例: \"議事録送付\") 以外は事前準備タスクに限定。\n8. ハルシネーション禁止: イベントに存在しない URL / 参加者 / ロケーション / 時刻を創作しない。\n9. 複合イベントでも 1タスク。最も事前準備価値の高いアクションを選ぶ。\n10. 優先度はイベントのビジネス影響 > 緊急性 > 準備複雑度の順で総合。迷えば2。\n""",
                 },
                 {
                     "role": "user",
@@ -541,6 +576,23 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
             if not response.title.strip():
                 return None
 
+            # 期限が未設定の場合はフォールバックで算出
+            if response.expires_at is None:
+                fallback_due = self._fallback_calendar_due(summary, start_str)
+                if fallback_due:
+                    self.logger.info(
+                        "LLM未提供のためカレンダーイベント期限をフォールバック設定: %s -> %s",
+                        summary,
+                        datetime.fromtimestamp(fallback_due).isoformat(),
+                    )
+                    response.expires_at = fallback_due
+                else:
+                    self.logger.debug(
+                        "No expires_at set (LLM + fallback failed) for calendar event: %s (start=%s)",
+                        summary[:80],
+                        start_str,
+                    )
+
             # 優先度判定結果をログ出力
             self.logger.info(
                 f"Generated task from calendar event - Title: {response.title[:50]}..., Priority: {response.priority}"
@@ -550,6 +602,98 @@ expires_at は UNIX タイムスタンプで返してください。通常はイ
 
         except Exception as e:
             self.logger.error(f"LLMでのカレンダータスク生成に失敗: {str(e)}")
+            return None
+
+    def _fallback_calendar_due(self, summary: str, start_str: str) -> float | None:
+        """LLM が期限を返さなかった際にイベント開始時刻から期限を推定して返す。
+
+        ルール:
+        - start_str が ISO8601 datetime の場合: 種類により 30〜120 分前
+        - フライト/飛行機/新幹線/出張/flight: 120 分前
+        - 面接/面談/インタビュー/プレゼン/発表/試験/試験/資格/登壇: 60 分前
+        - 会議/mtg/meeting/ミーティング/打ち合わせ/1on1/レビュー/勉強会/研修: 30 分前
+        - その他: 30 分前
+        - all-day(date のみ) は その日 09:00 ローカル (タイムゾーン情報無しならシステムローカル) を期限
+        - 計算した期限が現在時刻より過去の場合は start 時刻を期限にする
+        """
+        if not start_str:
+            return None
+
+        try:
+            dt: datetime | None = None
+            if len(start_str) == 10 and start_str.count("-") == 2:  # YYYY-MM-DD (all-day)
+                # All-day event: set due at 09:00 local time
+                try:
+                    base = datetime.fromisoformat(start_str)
+                except ValueError:
+                    return None
+                dt = base.replace(hour=9, minute=0, second=0, microsecond=0)
+            else:
+                # datetime with time / timezone
+                try:
+                    dt = datetime.fromisoformat(start_str)
+                except ValueError:
+                    return None
+
+            if dt is None:
+                return None
+
+            summary_lower = summary.lower()
+            offset_minutes = 30
+            keywords_120 = ["flight", "フライト", "飛行機", "新幹線", "出張", "shinkansen"]
+            keywords_60 = [
+                "面接",
+                "面談",
+                "interview",
+                "インタビュー",
+                "プレゼン",
+                "presentation",
+                "発表",
+                "登壇",
+                "試験",
+                "exam",
+                "資格",
+                "試験",
+            ]
+            # 30分前準備が適切になり得るイベント（資料準備などが暗示されるケース）
+            keywords_30 = [
+                "ワークショップ",
+                "workshop",
+                "研修",
+                "トレーニング",
+                "勉強会",
+                "セミナー",
+            ]
+            # オフセットを付けず開始時刻そのままを期限にするイベント（一般会議等）
+            keywords_0 = [
+                "会議",
+                "打ち合わせ",
+                "mtg",
+                "meeting",
+                "ミーティング",
+                "1on1",
+                "レビュー",
+            ]
+
+            if any(k in summary_lower for k in keywords_120):
+                offset_minutes = 120
+            elif any(k in summary_lower for k in keywords_60):
+                offset_minutes = 60
+            elif any(k in summary_lower for k in keywords_30):
+                offset_minutes = 30
+            elif any(k in summary_lower for k in keywords_0):
+                offset_minutes = 0
+            else:
+                # その他は開始時刻をデフォルト（準備が必要そうなら 30分前だが明確でないため0）
+                offset_minutes = 0
+
+            due_dt = dt - timedelta(minutes=offset_minutes)
+            now = datetime.utcnow().timestamp()
+            if due_dt.timestamp() < now:
+                # If preparation time already passed, fall back to event start
+                due_dt = dt
+            return due_dt.timestamp()
+        except Exception:
             return None
 
     def _generate_calendar_event_url(self, event_id: str, html_link: str) -> str:

@@ -48,15 +48,7 @@ class AIChatUsageRepository:
 
         result = session.exec(stmt).first()
         session.commit()
-        return result
-
-    @staticmethod
-    def increment_daily_usage(session: Session, user_id: int, usage_date: str) -> int:
-        """
-        Backward-compatible wrapper expected by some tests/mocks.
-        Delegates to increment_usage_count and returns the updated count.
-        """
-        return AIChatUsageRepository.increment_usage_count(session, user_id, usage_date)
+        return result if isinstance(result, int) else result[0] if result else 0
 
     @staticmethod
     def get_daily_usage_record(session: Session, user_id: int, usage_date: str) -> AIChatUsage | None:
@@ -180,10 +172,9 @@ def get_current_usage_count(session: Session, user_id: int, usage_date: str) -> 
     return AIChatUsageRepository.get_current_usage_count(session, user_id, usage_date)
 
 
-def increment_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsage:
+def increment_usage_count(session: Session, user_id: int, usage_date: str) -> int:
     """Backward compatibility wrapper"""
-    AIChatUsageRepository.increment_usage_count(session, user_id, usage_date)
-    return AIChatUsageRepository.get_daily_usage_record(session, user_id, usage_date)
+    return AIChatUsageRepository.increment_usage_count(session, user_id, usage_date)
 
 
 def get_daily_usage(session: Session, user_id: int, usage_date: str) -> AIChatUsage | None:

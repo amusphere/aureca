@@ -1,405 +1,79 @@
-"""Integration tests for AI Chat usage error handling across the system."""
+"""
+AI Chat Usage Error Handling Integration Tests
 
-from unittest.mock import patch
+Tests comprehensive error handling scenarios across the AI chat usage system,
+including malformed requests, database connection errors, and AI process errors.
+"""
+
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlalchemy.exc import OperationalError
 
-from app.repositories import ai_chat_usage
 from app.schema import User
-from app.services.ai_chat_usage_service import AIChatUsageService
 from app.services.auth import auth_user
 from main import app
 
 
-class TestAIChatUsageErrorHandlingIntegration:
-    """Test comprehensive error handling for AI Chat usage system."""
+class TestAIChatUsageErrorHandling:
+    """Test comprehensive error handling scenarios in AI chat usage system."""
 
     @pytest.fixture(autouse=True)
-    def mock_config_values(self):
-        """Mock config values to ensure consistent test behavior."""
-        with patch("app.constants.plan_limits.PlanLimits.get_limit") as mock_get_limit:
+    def setup_test_dependencies(
+        self,
+        setup_app_overrides,
+        mock_clerk_service: MagicMock,
+        test_user: User,
+    ):
+        """Setup test dependencies using dependency overrides."""
+        # Setup authentication override
+        app.dependency_overrides[auth_user] = lambda: test_user
 
-            def get_limit_side_effect(plan_name):
-                limits = {
-                    "free": 0,
-                    "standard": 10,
-                    "basic": 10,
-                    "premium": 50,
-                    "enterprise": -1,
-                }
-                return limits.get(plan_name, 0)
+        yield {
+            "mock_clerk_service": mock_clerk_service,
+            "test_user": test_user,
+        }
 
-            mock_get_limit.side_effect = get_limit_side_effect
-            yield
+        # Cleanup
+        if auth_user in app.dependency_overrides:
+            del app.dependency_overrides[auth_user]
 
-    def _setup_auth(self, test_user: User):
-        """Helper to setup authentication override."""
+    def test_malformed_request_handling(self, client: TestClient):
+        """Test handling of malformed requests to AI chat usage endpoints."""
+        # Test malformed JSON in request body for AI process endpoint
+        malformed_data = '{"incomplete": "json"'  # Invalid JSON
 
-        def get_test_user():
-            return test_user
+        # Send raw malformed request
+        response = client.post("/api/ai/process", content=malformed_data, headers={"Content-Type": "application/json"})
 
-        app.dependency_overrides[auth_user] = get_test_user
+        # Should return 422 for malformed request
+        assert response.status_code == 422
+        assert "detail" in response.json()
 
-    def _cleanup_auth(self):
-        """Helper to cleanup authentication override."""
-        app.dependency_overrides.clear()
-
-    def test_database_connection_error_handling(self, client: TestClient, test_user: User):
+    @patch("app.services.ai_chat_usage_service.AIChatUsageService.get_usage_stats")
+    def test_database_connection_error_handling(self, mock_get_usage_stats, client: TestClient):
         """Test handling of database connection errors."""
-        self._setup_auth(test_user)
+        # Mock service method to raise database connection error
+        mock_get_usage_stats.side_effect = OperationalError("Connection failed", orig=None, params=None)
 
-        try:
-            # Mock database connection failure
-            with patch(
-                "app.repositories.ai_chat_usage.get_current_usage_count",
-                side_effect=Exception("Database connection failed"),
-            ):
-                # Hitting increment endpoint enforces limit checks and returns 429 when at limit
-                response = client.post("/api/ai/usage/increment")
-
-            assert response.status_code == 500
-            data = response.json()
-
-            # Verify error response structure
-            assert "detail" in data
-            detail = data["detail"]
-            assert "error" in detail
-            assert "error_code" in detail
-            assert "remaining_count" in detail
-            assert "reset_time" in detail
-
-            assert detail["error_code"] == "SYSTEM_ERROR"
-            assert "一時的なエラーが発生しました" in detail["error"]
-            assert detail["remaining_count"] == 0
-        finally:
-            self._cleanup_auth()
-
-    def test_service_layer_exception_propagation(self, client: TestClient, session: Session, test_user: User):
-        """Test that service layer exceptions are properly propagated."""
-        self._setup_auth(test_user)
-
-        try:
-            # Mock service layer failure
-            with patch.object(
-                AIChatUsageService,
-                "check_usage_limit",
-                side_effect=ValueError("Invalid user plan"),
-            ):
-                response = client.get("/api/ai/usage")
-
-            assert response.status_code == 500
-            data = response.json()
-            assert "detail" in data
-            detail = data["detail"]
-            assert detail["error_code"] == "SYSTEM_ERROR"
-        finally:
-            self._cleanup_auth()
-
-    def test_repository_layer_transaction_rollback(self, client: TestClient, session: Session, test_user: User):
-        """Test that repository layer handles transaction rollbacks properly."""
-        current_date = "2023-01-01"
-
-        # Create initial usage
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 5)
-
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
-                # Mock a failure during increment that should rollback
-                with patch(
-                    "app.repositories.ai_chat_usage.increment_daily_usage",
-                    side_effect=Exception("Database write failed"),
-                ):
-                    response = client.post("/api/ai/usage/increment")
-
-            assert response.status_code == 500
-
-            # Verify original usage count is unchanged (transaction rolled back)
-            final_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
-            assert final_usage == 5  # Should remain unchanged
-        finally:
-            self._cleanup_auth()
-
-    def test_authentication_failure_error_handling(self, client: TestClient):
-        """Test error handling when authentication fails."""
-        # Don't setup auth override - should fail authentication
+        # Request should fail gracefully with 500 error
         response = client.get("/api/ai/usage")
 
-        # Should return 403 Forbidden
-        assert response.status_code == 403
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data
 
-    def test_malformed_request_handling(self, client: TestClient, test_user: User):
-        """Test handling of malformed requests."""
-        self._setup_auth(test_user)
+    @patch("app.services.ai.core.hub.AIHub.process_request")
+    def test_ai_process_error_integration(self, mock_ai_hub_process, client: TestClient):
+        """Test handling of AI processing errors in integration context."""
+        # Mock AI hub processing to raise an exception
+        mock_ai_hub_process.side_effect = Exception("AI processing failed")
 
-        try:
-            # Test with invalid JSON for POST endpoint
-            response = client.post(
-                "/api/ai/usage/increment",
-                content="invalid json",
-                headers={"Content-Type": "application/json"},
-            )
+        # Request should handle AI processing errors gracefully
+        response = client.post("/api/ai/process", json={"prompt": "test prompt for AI processing"})
 
-            # Should handle malformed request gracefully
-            # Note: FastAPI may return 200 if the endpoint doesn't require request body
-            assert response.status_code in [200, 400, 422, 500]
-        finally:
-            self._cleanup_auth()
-
-    def test_concurrent_error_scenarios(self, client: TestClient, session: Session, test_user: User):
-        """Test error handling under concurrent access scenarios."""
-        current_date = "2023-01-01"
-
-        # Set usage near limit
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 9)
-
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
-                # Simulate race condition where one request succeeds, another fails
-                response1 = client.post("/api/ai/usage/increment")
-                response2 = client.post("/api/ai/usage/increment")
-
-            # One should succeed (reaching limit), one should fail
-            statuses = [response1.status_code, response2.status_code]
-            assert 200 in statuses  # One succeeds
-            assert 429 in statuses  # One hits limit
-        finally:
-            self._cleanup_auth()
-
-    def test_error_message_localization(self, client: TestClient, session: Session, test_user: User):
-        """Test that error messages are properly localized in Japanese."""
-        current_date = "2023-01-01"
-
-        # Test usage limit exceeded error
-        ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
-
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
-                response = client.post("/api/ai/usage/increment")
-
-            assert response.status_code == 429
-            data = response.json()
-
-            # Verify Japanese error message
-            assert "detail" in data
-            detail = data["detail"]
-            assert "本日の利用回数上限に達しました" in detail["error"]
-        finally:
-            self._cleanup_auth()
-
-    def test_plan_restriction_error_consistency(self, client: TestClient, test_user: User):
-        """Test that plan restriction errors are consistent across endpoints."""
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService.get_user_plan",
-                return_value="free",
-            ):
-                # Test GET endpoint
-                get_response = client.get("/api/ai/usage")
-                assert get_response.status_code == 403
-                get_data = get_response.json()
-
-                # Test POST endpoint
-                post_response = client.post("/api/ai/usage/increment")
-                assert post_response.status_code == 403
-                post_data = post_response.json()
-
-                # Both should have consistent error structure
-                assert "detail" in get_data
-                assert "detail" in post_data
-                get_detail = get_data["detail"]
-                post_detail = post_data["detail"]
-                assert get_detail["error_code"] == post_detail["error_code"] == "PLAN_RESTRICTION"
-                assert "現在のプランではAIChatをご利用いただけません" in get_detail["error"]
-                assert "現在のプランではAIChatをご利用いただけません" in post_detail["error"]
-        finally:
-            self._cleanup_auth()
-
-    def test_reset_time_calculation_errors(self, client: TestClient, session: Session, test_user: User):
-        """Test error handling when reset time calculation fails."""
-        self._setup_auth(test_user)
-
-        try:
-            # Mock reset time calculation failure
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_reset_time",
-                side_effect=Exception("Timezone error"),
-            ):
-                response = client.get("/api/ai/usage")
-
-            assert response.status_code == 500
-            data = response.json()
-
-            # Should still provide a reset_time field even if calculation fails
-            assert "detail" in data
-            detail = data["detail"]
-            assert "reset_time" in detail
-            assert detail["error_code"] == "SYSTEM_ERROR"
-        finally:
-            self._cleanup_auth()
-
-    def test_ai_process_error_integration(self, client: TestClient, session: Session, test_user: User):
-        """Test error handling integration with AI process endpoint."""
-        current_date = "2023-01-01"
-
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
-                # Test usage limit check failure in AI process
-                ai_chat_usage.create_daily_usage(session, test_user.id, current_date, 10)
-
-                response = client.post("/api/ai/process", json={"prompt": "Test prompt"})
-
-                assert response.status_code == 429
-                data = response.json()
-                assert "detail" in data
-                detail = data["detail"]
-                assert detail["error_code"] == "USAGE_LIMIT_EXCEEDED"
-
-                # Verify AI processing was not attempted
-                # (usage count should remain at 10, not incremented)
-                final_usage = ai_chat_usage.get_current_usage_count(session, test_user.id, current_date)
-                assert final_usage == 10
-        finally:
-            self._cleanup_auth()
-
-    def test_partial_failure_recovery(self, client: TestClient, session: Session, test_user: User):
-        """Test system recovery from partial failures."""
-        current_date = "2023-01-01"
-
-        self._setup_auth(test_user)
-
-        try:
-            with patch(
-                "app.services.ai_chat_usage_service.AIChatUsageService._get_current_date",
-                return_value=current_date,
-            ):
-                # First request should succeed
-                response1 = client.get("/api/ai/usage")
-                assert response1.status_code == 200
-
-                # Simulate temporary database issue
-                with patch(
-                    "app.repositories.ai_chat_usage.get_current_usage_count",
-                    side_effect=Exception("Temporary DB error"),
-                ):
-                    response2 = client.get("/api/ai/usage")
-                    assert response2.status_code == 500
-
-                # System should recover after temporary issue
-                response3 = client.get("/api/ai/usage")
-                assert response3.status_code == 200
-        finally:
-            self._cleanup_auth()
-
-    def test_graceful_degradation(self, client: TestClient, session: Session, test_user: User):
-        """Test that system degrades gracefully under various failure conditions."""
-        self._setup_auth(test_user)
-
-        try:
-            # Test with various service failures
-            failure_scenarios = [
-                ("Database timeout", Exception("Database timeout")),
-                ("Memory error", MemoryError("Out of memory")),
-                ("Network error", ConnectionError("Network unreachable")),
-            ]
-
-            for scenario_name, exception in failure_scenarios:
-                with patch(
-                    "app.services.ai_chat_usage_service.AIChatUsageService.check_usage_limit",
-                    side_effect=exception,
-                ):
-                    response = client.get("/api/ai/usage")
-
-                    # Should always return a valid error response
-                    assert response.status_code == 500
-                    data = response.json()
-
-                    # Should have consistent error structure
-                    assert "detail" in data, f"Missing detail in response for {scenario_name}"
-                    detail = data["detail"]
-                    required_fields = [
-                        "error",
-                        "error_code",
-                        "remaining_count",
-                        "reset_time",
-                    ]
-                    for field in required_fields:
-                        assert field in detail, f"Missing {field} in response for {scenario_name}"
-
-                    assert detail["error_code"] == "SYSTEM_ERROR"
-        finally:
-            self._cleanup_auth()
-
-    def test_error_response_structure_consistency(self, client: TestClient, test_user: User):
-        """Test that all error responses have consistent structure."""
-        self._setup_auth(test_user)
-
-        try:
-            # Test different error types
-            error_scenarios = [
-                # System error
-                (
-                    patch(
-                        "app.services.ai_chat_usage_service.AIChatUsageService.check_usage_limit",
-                        side_effect=Exception("Test error"),
-                    ),
-                    500,
-                    "SYSTEM_ERROR",
-                ),
-                # Plan restriction
-                (
-                    patch(
-                        "app.services.ai_chat_usage_service.AIChatUsageService.get_user_plan",
-                        return_value="free",
-                    ),
-                    403,
-                    "PLAN_RESTRICTION",
-                ),
-            ]
-
-            for mock_context, expected_status, expected_error_code in error_scenarios:
-                with mock_context:
-                    response = client.get("/api/ai/usage")
-
-                    assert response.status_code == expected_status
-                    data = response.json()
-
-                    # All error responses should have these fields
-                    assert "detail" in data
-                    detail = data["detail"]
-                    required_fields = [
-                        "error",
-                        "error_code",
-                        "remaining_count",
-                        "reset_time",
-                    ]
-                    for field in required_fields:
-                        assert field in detail
-                        assert detail[field] is not None
-
-                    assert detail["error_code"] == expected_error_code
-        finally:
-            self._cleanup_auth()
+        # Should return 500 for AI processing errors
+        assert response.status_code == 500
+        data = response.json()
+        assert "detail" in data

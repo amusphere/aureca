@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from datetime import UTC, datetime
 
@@ -7,10 +6,9 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.constants.plan_limits import PlanLimits
-from app.repositories import ai_chat_usage as ai_usage_repo
 from app.repositories.ai_chat_usage import AIChatUsageRepository
 from app.schema import AIChatUsage, User
-from app.services.clerk_service import get_clerk_service
+from app.services.clerk_service import ClerkService, get_clerk_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +21,15 @@ class AIChatUsageService:
     _recent_limit_users: dict[int, tuple[str, float]] = {}
     _recent_limit_ttl_seconds: float = 0.05
 
-    def __init__(self, session: Session):
+    def __init__(
+        self,
+        session: Session,
+        clerk_service: ClerkService | None = None,
+        usage_repository: AIChatUsageRepository | None = None,
+    ):
         self.session = session
-        self._is_clerk_mocked: bool = False
+        self.clerk_service = clerk_service or get_clerk_service()
+        self.usage_repository = usage_repository or AIChatUsageRepository()
 
     def get_user_plan(self, user: User) -> str:
         """
@@ -37,40 +41,14 @@ class AIChatUsageService:
         Returns:
             str: User's plan name ("free", "standard", etc.)
         """
-        # During pytest runs, handle special test scenarios
-        if os.environ.get("PYTEST_CURRENT_TEST"):
-            try:
-                from unittest.mock import Mock
-
-                # Detect if get_clerk_service in this module has been patched to a Mock
-                self._is_clerk_mocked = isinstance(get_clerk_service, Mock)
-
-                # If there is no clerk_sub during tests, default based on test suite expectations
-                if not getattr(user, "clerk_sub", None):
-                    current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
-                    # In Clerk API integration tests, expect free when clerk_sub is missing
-                    if "test_clerk_api_integration.py" in current_test:
-                        return "free"
-                    # In other integration tests, default to standard to provide usable quota
-                    return "standard"
-
-                if not self._is_clerk_mocked:
-                    # In tests without a mock and with a clerk_sub, default to standard to keep scenarios predictable
-                    return "standard"
-            except Exception:
-                # If mock detection fails, default to standard
-                self._is_clerk_mocked = False
-                return "standard"
-
         # Handle missing clerk_sub
         if not user.clerk_sub:
             logger.info(f"User {user.id} has no clerk_sub; defaulting to standard plan")
             return "standard"
 
-        # Delegate to ClerkService for actual plan retrieval
+        # Delegate to injected ClerkService for actual plan retrieval
         try:
-            clerk_service = get_clerk_service()
-            plan = clerk_service.get_user_plan(user.clerk_sub)
+            plan = self.clerk_service.get_user_plan(user.clerk_sub)
             logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
             return plan
         except Exception as e:
@@ -120,26 +98,7 @@ class AIChatUsageService:
         user_plan = self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
-        # Prefer module-level alias (integration tests patch this); if class is mocked, prefer the mock
-        try:
-            from unittest.mock import Mock
-
-            if isinstance(AIChatUsageRepository, Mock) or isinstance(
-                getattr(AIChatUsageRepository, "get_current_usage_count", None), Mock
-            ):
-                # Let exceptions from mocked repository propagate for unit tests
-                current_usage = AIChatUsageRepository.get_current_usage_count(self.session, user.id, current_date)
-            else:
-                current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
-        except Exception:
-            # Propagate repository exceptions when class-mocked; otherwise, fallback to module alias
-            from unittest.mock import Mock
-
-            if isinstance(AIChatUsageRepository, Mock) or isinstance(
-                getattr(AIChatUsageRepository, "get_current_usage_count", None), Mock
-            ):
-                raise
-            current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = self.usage_repository.get_current_usage_count(self.session, user.id, current_date)
 
         remaining_count = max(0, daily_limit - current_usage)
         can_use_chat = daily_limit > 0 and current_usage < daily_limit
@@ -172,17 +131,7 @@ class AIChatUsageService:
 
         # Check current usage against limit
         current_date = self._get_current_date()
-        try:
-            from unittest.mock import Mock
-
-            if isinstance(AIChatUsageRepository, Mock) or isinstance(
-                getattr(AIChatUsageRepository, "get_current_usage_count", None), Mock
-            ):
-                current_usage = AIChatUsageRepository.get_current_usage_count(self.session, user.id, current_date)
-            else:
-                current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
-        except Exception:
-            current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = self.usage_repository.get_current_usage_count(self.session, user.id, current_date)
 
         return current_usage < daily_limit
 
@@ -263,18 +212,7 @@ class AIChatUsageService:
         # Increment usage count
         current_date = self._get_current_date()
         try:
-            # Prefer class-level mock if present, else module-level alias (integration tests patch this)
-            try:
-                from unittest.mock import Mock
-
-                if isinstance(AIChatUsageRepository, Mock) or isinstance(
-                    getattr(AIChatUsageRepository, "increment_daily_usage", None), Mock
-                ):
-                    AIChatUsageRepository.increment_daily_usage(self.session, user.id, current_date)
-                else:
-                    ai_usage_repo.increment_daily_usage(self.session, user.id, current_date)
-            except Exception:
-                ai_usage_repo.increment_daily_usage(self.session, user.id, current_date)
+            self.usage_repository.increment_usage_count(self.session, user.id, current_date)
 
             # Return updated statistics
             updated = await self.get_usage_stats(user)
@@ -322,10 +260,6 @@ class AIChatUsageService:
                 del AIChatUsageService._recent_limit_users[user_id]
         return False
 
-    def is_clerk_mocked(self) -> bool:
-        """Whether Clerk service access is mocked (based on detection in get_user_plan)."""
-        return self._is_clerk_mocked
-
     async def get_usage_history(self, user: User, limit: int = 30) -> list[AIChatUsage]:
         """
         Get usage history for a user
@@ -337,7 +271,7 @@ class AIChatUsageService:
         Returns:
             List of AIChatUsage records
         """
-        return AIChatUsageRepository.get_usage_history(self.session, user.id, limit)
+        return self.usage_repository.get_usage_history(self.session, user.id, limit)
 
     def get_plan_config(self, user_plan: str) -> dict:
         """

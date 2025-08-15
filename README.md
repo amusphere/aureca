@@ -43,6 +43,20 @@ docker compose run --rm backend alembic upgrade head
 - [アーキテクチャ](./docs/architecture.md)
 - [開発ガイド](./docs/development.md)
 - [デプロイメント](./docs/deployment.md)
+- [バックエンドテスト仕様](./docs/backend-testing.md)
+
+## 🧪 テスト
+
+### テスト実行
+```bash
+# 全テスト実行
+cd backend && uv run pytest
+
+# 特定のテストタイプ
+cd backend && uv run pytest tests/unit/        # ユニットテスト
+cd backend && uv run pytest tests/integration/ # 統合テスト
+cd backend && uv run pytest tests/performance/ # パフォーマンステスト
+```
 
 ## 🔧 開発環境
 
@@ -53,6 +67,16 @@ cd backend && uv run fastapi dev --host 0.0.0.0
 
 # フロントエンドのみ
 cd frontend && npm run dev
+```
+
+### コード品質チェック
+```bash
+# バックエンド
+cd backend && uv run ruff format .  # フォーマット
+cd backend && uv run ruff check . --fix  # リント
+
+# フロントエンド
+cd frontend && npm run build  # ビルドチェック
 ```
 
 ### パッケージ追加
