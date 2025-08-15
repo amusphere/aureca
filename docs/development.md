@@ -94,6 +94,7 @@ cd frontend && npm run build
 ```bash
 cd backend && uv run pytest
 ```
+詳細なテスト仕様は [バックエンドテスト仕様書](./backend-testing.md) を参照してください。
 
 ### フロントエンドテスト
 ```bash
