@@ -122,6 +122,34 @@ def mock_ai_usage_repository_fixture() -> Generator[MagicMock, None, None]:
         yield mock_repo
 
 
+@pytest.fixture(name="setup_app_overrides")
+def setup_app_overrides_fixture(
+    mock_clerk_service: MagicMock,
+    mock_ai_usage_repository: MagicMock,
+) -> Generator[None, None, None]:
+    """Setup FastAPI dependency overrides for integration tests.
+
+    This fixture configures all necessary dependency overrides for integration tests,
+    ensuring proper test isolation and cleanup.
+    """
+    from app.services.clerk_service import get_clerk_service
+
+    # Store existing overrides to preserve them
+    existing_overrides = app.dependency_overrides.copy()
+
+    # Set up dependency overrides
+    app.dependency_overrides[get_clerk_service] = lambda: mock_clerk_service
+
+    # For repository, we need to override the class itself since it's used directly
+    # This is handled by the mock_ai_usage_repository fixture
+
+    yield
+
+    # Clean up: restore original overrides
+    app.dependency_overrides.clear()
+    app.dependency_overrides.update(existing_overrides)
+
+
 @pytest.fixture(name="sample_tasks")
 def sample_tasks_fixture(session: Session, test_user: User) -> list[Tasks]:
     """Create sample tasks with different priorities for testing using factory pattern."""

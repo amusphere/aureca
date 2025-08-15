@@ -142,26 +142,26 @@
   - 必要に応じて改善
   - _Requirements: 2.1, 2.2, 2.3, 3.5_
 
-- [ ] 6. 統合テストの改善
+- [x] 6. 統合テストの改善
   - test_ai_chat_usage_integration_simple.pyを書き直し
   - FastAPIの依存性オーバーライドを活用
   - 環境変数への依存を除去
   - テストの分離を確保
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4_
 
-- [ ] 6.1 統合テストの依存性オーバーライドを実装
+- [x] 6.1 統合テストの依存性オーバーライドを実装
   - setup_app_overridesフィクスチャを作成
   - FastAPIのdependency_overridesを活用
   - テスト後のクリーンアップを確保
   - _Requirements: 2.1, 2.2, 2.3, 3.2_
 
-- [ ] 6.2 統合テストケースを書き直し
+- [x] 6.2 統合テストケースを書き直し
   - _setup_authと_cleanup_authを削除
   - 依存性オーバーライドを使用
   - 全てのテストケースを移行
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 6.3 その他の統合テストを確認・修正
+- [x] 6.3 その他の統合テストを確認・修正
   - test_ai_chat_usage_api_integration.pyを確認
   - test_ai_chat_usage_e2e_integration.pyを確認
   - test_clerk_api_integration.pyを確認
