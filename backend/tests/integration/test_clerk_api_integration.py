@@ -188,7 +188,7 @@ class TestClerkAPIIntegration:
         # Clerk API should have been called for each request
         assert mock_clerk_service.get_user_plan.call_count == 3
 
-    def test_clerk_api_user_without_clerk_sub(self, client: TestClient, session: Session):
+    def test_clerk_api_user_without_clerk_sub(self, client: TestClient, session: Session, mock_clerk_service):
         """Test user without clerk_sub field."""
         from tests.utils.test_data_factory import TestDataFactory
 
@@ -201,6 +201,9 @@ class TestClerkAPIIntegration:
         session.add(test_user)
         session.commit()
         session.refresh(test_user)
+
+        # Mock Clerk service to return free plan for users without clerk_sub
+        mock_clerk_service.get_user_plan.return_value = "free"
 
         # Override auth for this specific test
         app.dependency_overrides[auth_user] = lambda: test_user

@@ -261,7 +261,7 @@ class TestAIChatUsageAPIIntegration:
         """Test that system errors are handled gracefully."""
         # Mock a database error
         with patch(
-            "app.services.ai_chat_usage_service.AIChatUsageService.check_usage_limit",
+            "app.services.ai_chat_usage_service.AIChatUsageService.get_usage_stats",
             side_effect=Exception("Database error"),
         ):
             response = client.get("/api/ai/usage")
@@ -284,14 +284,23 @@ class TestAIChatUsageAPIIntegration:
 
         from main import app
 
-        with TestClient(app) as client_no_auth:
-            # Test GET endpoint
-            response = client_no_auth.get("/api/ai/usage")
-            assert response.status_code == 403  # Forbidden
+        # Clear all dependency overrides to test unauthenticated access
+        original_overrides = app.dependency_overrides.copy()
+        app.dependency_overrides.clear()
 
-            # Test POST endpoint
-            response = client_no_auth.post("/api/ai/usage/increment")
-            assert response.status_code == 403  # Forbidden
+        try:
+            with TestClient(app) as client_no_auth:
+                # Test GET endpoint
+                response = client_no_auth.get("/api/ai/usage")
+                assert response.status_code == 403  # Forbidden
+
+                # Test POST endpoint
+                response = client_no_auth.post("/api/ai/usage/increment")
+                assert response.status_code == 403  # Forbidden
+        finally:
+            # Restore original overrides
+            app.dependency_overrides.clear()
+            app.dependency_overrides.update(original_overrides)
 
     def test_response_format_consistency(self, client: TestClient, session: Session, test_user: User):
         """Test that all endpoints return consistent response formats."""
