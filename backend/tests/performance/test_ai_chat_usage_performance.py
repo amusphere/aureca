@@ -102,7 +102,6 @@ class TestAIChatUsagePerformance:
 
     def test_api_endpoint_performance(self, client: TestClient, session: Session, test_user: User, setup_app_overrides):
         """Test API endpoint performance with proper mocking."""
-        current_date = "2023-01-01"
 
         def get_test_user():
             return test_user
@@ -153,7 +152,6 @@ class TestAIChatUsagePerformance:
         self, client: TestClient, session: Session, test_user: User, setup_app_overrides
     ):
         """Test performance under concurrent load with proper mocking."""
-        current_date = "2023-01-01"
 
         def get_test_user():
             return test_user
@@ -207,7 +205,6 @@ class TestAIChatUsagePerformance:
         self, client: TestClient, session: Session, test_user: User, setup_app_overrides
     ):
         """Test performance of usage increment operations with proper mocking."""
-        current_date = "2023-01-01"
 
         def get_test_user():
             return test_user
@@ -236,7 +233,7 @@ class TestAIChatUsagePerformance:
                 # Measure time for 10 increment operations
                 start_time = time.time()
 
-                for i in range(10):
+                for _ in range(10):
                     response = client.post("/api/ai/usage/increment")
                     assert response.status_code == 200  # All should succeed with mocked service
 
@@ -385,7 +382,6 @@ class TestAIChatUsagePerformance:
         self, client: TestClient, session: Session, test_user: User, setup_app_overrides
     ):
         """Test JSON response serialization performance with proper mocking."""
-        current_date = "2023-01-01"
 
         def get_test_user():
             return test_user
