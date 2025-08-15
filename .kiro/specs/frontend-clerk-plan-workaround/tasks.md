@@ -4,7 +4,7 @@
 
 **注意: これは暫定対応です。Clerk Python SDKが修正されたら削除予定**
 
-- [-] 1. シンプルなClerkプラン取得ヘルパーの作成
+- [x] 1. シンプルなClerkプラン取得ヘルパーの作成
   - `frontend/utils/clerkPlanHelper.ts`ファイルを作成
   - Clerk JavaScript SDKを使用してユーザープラン情報を取得する関数を実装
   - エラー時は"free"プランにフォールバックする処理を実装
