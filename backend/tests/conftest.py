@@ -43,12 +43,17 @@ def client_fixture(session: Session) -> Generator[TestClient, None, None]:
     def get_session_override():
         return session
 
+    # Store existing overrides to preserve them
+    existing_overrides = app.dependency_overrides.copy()
+
     app.dependency_overrides[get_session] = get_session_override
 
     with TestClient(app) as client:
         yield client
 
+    # Restore original overrides instead of clearing all
     app.dependency_overrides.clear()
+    app.dependency_overrides.update(existing_overrides)
 
 
 @pytest.fixture(name="test_user")
@@ -90,48 +95,45 @@ def mock_clerk_service_fixture() -> Generator[MagicMock, None, None]:
 
 @pytest.fixture(name="mock_ai_usage_repository")
 def mock_ai_usage_repository_fixture() -> Generator[MagicMock, None, None]:
-    """Create a mock AIChatUsageRepository with standard method behaviors."""
-    with patch("app.repositories.ai_chat_usage.AIChatUsageRepository") as mock_repo_class:
-        mock_repo = MagicMock()
+    """Create a real AIChatUsageRepository for integration tests.
 
-        # Set up standard responses for static methods
-        mock_repo.get_current_usage_count.return_value = 0
-        mock_repo.increment_usage_count.return_value = 1
-        mock_repo.get_daily_usage_record.return_value = None
-        mock_repo.reset_daily_usage.return_value = None
-        mock_repo.bulk_reset_daily_usage.return_value = 0
-        mock_repo.get_usage_stats.return_value = {"usage_count": 0, "updated_at": None, "usage_date": "2023-01-01"}
-        mock_repo.cleanup_old_records.return_value = 0
-        mock_repo.get_usage_history.return_value = []
-        mock_repo.create_daily_usage.return_value = None
+    For integration tests, we want to use the real repository with the test database
+    rather than mocking it completely.
+    """
+    from app.repositories.ai_chat_usage import AIChatUsageRepository
 
-        # Make the class return the mock instance
-        mock_repo_class.return_value = mock_repo
+    # Return the real repository class for integration tests
+    yield AIChatUsageRepository()
 
-        # Also mock the static methods directly on the class
-        mock_repo_class.get_current_usage_count = mock_repo.get_current_usage_count
-        mock_repo_class.increment_usage_count = mock_repo.increment_usage_count
-        mock_repo_class.get_daily_usage_record = mock_repo.get_daily_usage_record
-        mock_repo_class.reset_daily_usage = mock_repo.reset_daily_usage
-        mock_repo_class.bulk_reset_daily_usage = mock_repo.bulk_reset_daily_usage
-        mock_repo_class.get_usage_stats = mock_repo.get_usage_stats
-        mock_repo_class.cleanup_old_records = mock_repo.cleanup_old_records
-        mock_repo_class.get_usage_history = mock_repo.get_usage_history
-        mock_repo_class.create_daily_usage = mock_repo.create_daily_usage
 
-        yield mock_repo
+@pytest.fixture(name="ai_chat_usage_service")
+def ai_chat_usage_service_fixture(
+    session: Session,
+    mock_clerk_service: MagicMock,
+    mock_ai_usage_repository: MagicMock,
+):
+    """Create AIChatUsageService with mocked dependencies."""
+    from app.services.ai_chat_usage_service import AIChatUsageService
+
+    return AIChatUsageService(
+        session=session,
+        clerk_service=mock_clerk_service,
+        usage_repository=mock_ai_usage_repository,
+    )
 
 
 @pytest.fixture(name="setup_app_overrides")
 def setup_app_overrides_fixture(
     mock_clerk_service: MagicMock,
     mock_ai_usage_repository: MagicMock,
+    ai_chat_usage_service,
 ) -> Generator[None, None, None]:
     """Setup FastAPI dependency overrides for integration tests.
 
     This fixture configures all necessary dependency overrides for integration tests,
     ensuring proper test isolation and cleanup.
     """
+    from app.services.ai_chat_usage_service import AIChatUsageService
     from app.services.clerk_service import get_clerk_service
 
     # Store existing overrides to preserve them
@@ -140,14 +142,24 @@ def setup_app_overrides_fixture(
     # Set up dependency overrides
     app.dependency_overrides[get_clerk_service] = lambda: mock_clerk_service
 
-    # For repository, we need to override the class itself since it's used directly
-    # This is handled by the mock_ai_usage_repository fixture
+    # Override the service creation by patching the constructor
+    def get_ai_chat_usage_service(session: Session):
+        return AIChatUsageService(
+            session=session,
+            clerk_service=mock_clerk_service,
+            usage_repository=mock_ai_usage_repository,
+        )
 
-    yield
+    # Patch the service instantiation in the router
+    with patch("app.routers.api.ai_assistant.AIChatUsageService", side_effect=get_ai_chat_usage_service):
+        yield
 
-    # Clean up: restore original overrides
+    # Clean up: restore original overrides but preserve session override
+    session_override = app.dependency_overrides.get(get_session)
     app.dependency_overrides.clear()
     app.dependency_overrides.update(existing_overrides)
+    if session_override:
+        app.dependency_overrides[get_session] = session_override
 
 
 @pytest.fixture(name="sample_tasks")

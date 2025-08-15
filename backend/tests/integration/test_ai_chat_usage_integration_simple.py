@@ -160,14 +160,23 @@ class TestAIChatUsageIntegrationSimple:
         assert data["remaining_count"] == 10
         assert data["can_use_chat"] is True
 
-    def test_authentication_required_flow(self):
+    def test_authentication_required_flow(self, session: Session):
         """Test that authentication is required."""
-        # Create a client without auth override
+        # Create a client without auth override but with test database
         from fastapi.testclient import TestClient
 
+        from app.database import get_session
         from main import app
 
-        with TestClient(app) as client_no_auth:
+        def get_session_override():
+            return session
+
+        # Create a new app instance with only database override, no auth override
+        test_app = app
+        test_app.dependency_overrides.clear()
+        test_app.dependency_overrides[get_session] = get_session_override
+
+        with TestClient(test_app) as client_no_auth:
             # Test GET endpoint
             response = client_no_auth.get("/api/ai/usage")
             assert response.status_code in [
@@ -184,9 +193,9 @@ class TestAIChatUsageIntegrationSimple:
 
     def test_system_error_handling_flow(self, client: TestClient, test_user: User):
         """Test system error handling flow."""
-        # Mock a database error
+        # Mock a database error in the service method that's actually called
         with patch(
-            "app.services.ai_chat_usage_service.AIChatUsageService.check_usage_limit",
+            "app.services.ai_chat_usage_service.AIChatUsageService.get_usage_stats",
             side_effect=Exception("Database error"),
         ):
             response = client.get("/api/ai/usage")
@@ -275,14 +284,14 @@ class TestAIChatUsageIntegrationSimple:
         """Test that usage limits are properly isolated between users."""
         from tests.utils.test_data_factory import TestDataFactory
 
-        # Create two test users using factory
+        # Create two test users using factory with unique IDs
         user1 = TestDataFactory.create_user(
-            id=1,
+            id=101,  # Use unique ID to avoid conflicts
             clerk_sub="user1_123",
             email="user1@example.com",
         )
         user2 = TestDataFactory.create_user(
-            id=2,
+            id=102,  # Use unique ID to avoid conflicts
             clerk_sub="user2_123",
             email="user2@example.com",
         )
