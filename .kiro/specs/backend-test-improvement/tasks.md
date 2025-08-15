@@ -67,51 +67,51 @@
   - 全メソッドで注入された依存性を活用
   - _Requirements: 2.3_
 
-- [ ] 3. テストユーティリティの作成
+- [x] 3. テストユーティリティの作成
   - TestDataFactoryクラスを作成
   - TestErrorScenariosクラスを作成
   - UserFactoryクラスを作成
   - 再利用可能なテストヘルパーを実装
   - _Requirements: 2.1, 2.2, 2.5_
 
-- [ ] 3.1 TestDataFactoryクラスを実装
+- [x] 3.1 TestDataFactoryクラスを実装
   - create_userメソッドを実装
   - create_usage_recordメソッドを実装
   - デフォルト値とカスタマイズ可能なパラメータを提供
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.2 UserFactoryクラスを実装
+- [x] 3.2 UserFactoryクラスを実装
   - buildメソッドでUserオブジェクト生成
   - createメソッドでデータベース永続化
   - ファクトリーパターンを適用
   - _Requirements: 2.1, 2.2_
 
-- [ ] 3.3 TestErrorScenariosクラスを実装
+- [x] 3.3 TestErrorScenariosクラスを実装
   - simulate_clerk_api_errorメソッド
   - simulate_database_errorメソッド
   - エラーシナリオのテストを支援
   - _Requirements: 2.1, 2.2_
 
-- [ ] 4. conftest.pyの再設計
+- [x] 4. conftest.pyの再設計
   - 既存のテスト固有処理を削除
   - 適切なfixtureを作成
   - 依存性オーバーライドを活用
   - テストの分離を確保
   - _Requirements: 2.1, 2.2, 2.3, 3.5_
 
-- [ ] 4.1 mock_clerk_serviceフィクスチャを作成
+- [x] 4.1 mock_clerk_serviceフィクスチャを作成
   - get_clerk_serviceをモック
   - 標準的なレスポンスを設定
   - テスト間での状態分離を確保
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 4.2 mock_ai_usage_repositoryフィクスチャを作成
+- [x] 4.2 mock_ai_usage_repositoryフィクスチャを作成
   - AIChatUsageRepositoryをモック
   - 標準的なメソッドの動作を設定
   - テスト間での状態分離を確保
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 4.3 sample_tasksフィクスチャを修正
+- [x] 4.3 sample_tasksフィクスチャを修正
   - リポジトリ関数の直接呼び出しを削除
   - ファクトリーパターンを使用
   - テストデータの生成を標準化

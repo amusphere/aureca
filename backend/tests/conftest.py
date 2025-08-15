@@ -3,6 +3,7 @@
 import sys
 from collections.abc import Generator
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -67,62 +68,122 @@ def test_user_fixture(session: Session) -> User:
     return user
 
 
+@pytest.fixture(name="mock_clerk_service")
+def mock_clerk_service_fixture() -> Generator[MagicMock, None, None]:
+    """Create a mock ClerkService with standard responses."""
+    with patch("app.services.clerk_service.get_clerk_service") as mock_get_service:
+        mock_service = MagicMock()
+
+        # Set up standard responses
+        mock_service.get_user_plan.return_value = "standard"
+        mock_service.get_subscription_info.return_value = {
+            "plan": "standard",
+            "status": "active",
+            "renews_at": "2024-12-31T23:59:59Z",
+        }
+        mock_service.has_subscription.return_value = True
+        mock_service.has_active_subscription.return_value = True
+
+        mock_get_service.return_value = mock_service
+        yield mock_service
+
+
+@pytest.fixture(name="mock_ai_usage_repository")
+def mock_ai_usage_repository_fixture() -> Generator[MagicMock, None, None]:
+    """Create a mock AIChatUsageRepository with standard method behaviors."""
+    with patch("app.repositories.ai_chat_usage.AIChatUsageRepository") as mock_repo_class:
+        mock_repo = MagicMock()
+
+        # Set up standard responses for static methods
+        mock_repo.get_current_usage_count.return_value = 0
+        mock_repo.increment_usage_count.return_value = 1
+        mock_repo.get_daily_usage_record.return_value = None
+        mock_repo.reset_daily_usage.return_value = None
+        mock_repo.bulk_reset_daily_usage.return_value = 0
+        mock_repo.get_usage_stats.return_value = {"usage_count": 0, "updated_at": None, "usage_date": "2023-01-01"}
+        mock_repo.cleanup_old_records.return_value = 0
+        mock_repo.get_usage_history.return_value = []
+        mock_repo.create_daily_usage.return_value = None
+
+        # Make the class return the mock instance
+        mock_repo_class.return_value = mock_repo
+
+        # Also mock the static methods directly on the class
+        mock_repo_class.get_current_usage_count = mock_repo.get_current_usage_count
+        mock_repo_class.increment_usage_count = mock_repo.increment_usage_count
+        mock_repo_class.get_daily_usage_record = mock_repo.get_daily_usage_record
+        mock_repo_class.reset_daily_usage = mock_repo.reset_daily_usage
+        mock_repo_class.bulk_reset_daily_usage = mock_repo.bulk_reset_daily_usage
+        mock_repo_class.get_usage_stats = mock_repo.get_usage_stats
+        mock_repo_class.cleanup_old_records = mock_repo.cleanup_old_records
+        mock_repo_class.get_usage_history = mock_repo.get_usage_history
+        mock_repo_class.create_daily_usage = mock_repo.create_daily_usage
+
+        yield mock_repo
+
+
 @pytest.fixture(name="sample_tasks")
 def sample_tasks_fixture(session: Session, test_user: User) -> list[Tasks]:
-    """Create sample tasks with different priorities for testing."""
-    from app.repositories.tasks import create_task
+    """Create sample tasks with different priorities for testing using factory pattern."""
+    from tests.utils.test_data_factory import TestDataFactory
 
     tasks = []
 
-    # Create tasks using the repository function to ensure proper handling
-    task1 = create_task(
-        session=session,
+    # Create tasks using the factory pattern for standardized test data generation
+    task1 = TestDataFactory.create_task(
         user_id=test_user.id,
         title="High Priority Task 1",
         description="Urgent task",
         priority=TaskPriority.HIGH,
         expires_at=1672617600.0,  # 2023-01-02 00:00:00
     )
+    session.add(task1)
     tasks.append(task1)
 
-    task2 = create_task(
-        session=session,
+    task2 = TestDataFactory.create_task(
         user_id=test_user.id,
         title="High Priority Task 2",
         description="Another urgent task",
         priority=TaskPriority.HIGH,
         expires_at=1672704000.0,  # 2023-01-03 00:00:00
     )
+    session.add(task2)
     tasks.append(task2)
 
-    task3 = create_task(
-        session=session,
+    task3 = TestDataFactory.create_task(
         user_id=test_user.id,
         title="Middle Priority Task 1",
         description="Moderate importance",
         priority=TaskPriority.MIDDLE,
         expires_at=1672617600.0,  # 2023-01-02 00:00:00
     )
+    session.add(task3)
     tasks.append(task3)
 
-    task4 = create_task(
-        session=session,
+    task4 = TestDataFactory.create_task(
         user_id=test_user.id,
         title="Low Priority Task 1",
         description="Low importance",
         priority=TaskPriority.LOW,
         expires_at=1672531200.0,  # 2023-01-01 00:00:00
     )
+    session.add(task4)
     tasks.append(task4)
 
-    task5 = create_task(
-        session=session,
+    task5 = TestDataFactory.create_task(
         user_id=test_user.id,
         title="No Priority Task 1",
         description="No priority set",
         priority=None,
         expires_at=1672531200.0,  # 2023-01-01 00:00:00
     )
+    session.add(task5)
     tasks.append(task5)
+
+    session.commit()
+
+    # Refresh all tasks to get their IDs
+    for task in tasks:
+        session.refresh(task)
 
     return tasks
