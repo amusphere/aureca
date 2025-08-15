@@ -48,20 +48,20 @@
   - Mock検出ロジックを削除
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. 依存性注入の導入
+- [x] 2. 依存性注入の導入
   - AIChatUsageServiceにコンストラクタ注入を追加
   - ClerkServiceの注入を可能にする
   - AIChatUsageRepositoryの注入を可能にする
   - デフォルト値で後方互換性を保つ
   - _Requirements: 2.3_
 
-- [ ] 2.1 AIChatUsageServiceのコンストラクタを拡張
+- [x] 2.1 AIChatUsageServiceのコンストラクタを拡張
   - clerk_serviceパラメータを追加
   - usage_repositoryパラメータを追加
   - デフォルト値で既存コードとの互換性を保つ
   - _Requirements: 2.3_
 
-- [ ] 2.2 AIChatUsageServiceのメソッドを依存性注入対応に修正
+- [x] 2.2 AIChatUsageServiceのメソッドを依存性注入対応に修正
   - get_user_planでself.clerk_serviceを使用
   - リポジトリアクセスでself.usage_repositoryを使用
   - 全メソッドで注入された依存性を活用

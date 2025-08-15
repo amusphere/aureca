@@ -6,10 +6,9 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.constants.plan_limits import PlanLimits
-from app.repositories import ai_chat_usage as ai_usage_repo
 from app.repositories.ai_chat_usage import AIChatUsageRepository
 from app.schema import AIChatUsage, User
-from app.services.clerk_service import get_clerk_service
+from app.services.clerk_service import ClerkService, get_clerk_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,15 @@ class AIChatUsageService:
     _recent_limit_users: dict[int, tuple[str, float]] = {}
     _recent_limit_ttl_seconds: float = 0.05
 
-    def __init__(self, session: Session):
+    def __init__(
+        self,
+        session: Session,
+        clerk_service: ClerkService | None = None,
+        usage_repository: AIChatUsageRepository | None = None,
+    ):
         self.session = session
+        self.clerk_service = clerk_service or get_clerk_service()
+        self.usage_repository = usage_repository or AIChatUsageRepository()
 
     def get_user_plan(self, user: User) -> str:
         """
@@ -40,10 +46,9 @@ class AIChatUsageService:
             logger.info(f"User {user.id} has no clerk_sub; defaulting to standard plan")
             return "standard"
 
-        # Delegate to ClerkService for actual plan retrieval
+        # Delegate to injected ClerkService for actual plan retrieval
         try:
-            clerk_service = get_clerk_service()
-            plan = clerk_service.get_user_plan(user.clerk_sub)
+            plan = self.clerk_service.get_user_plan(user.clerk_sub)
             logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
             return plan
         except Exception as e:
@@ -93,7 +98,7 @@ class AIChatUsageService:
         user_plan = self.get_user_plan(user)
         current_date = self._get_current_date()
         daily_limit = self.get_daily_limit(user_plan)
-        current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = self.usage_repository.get_current_usage_count(self.session, user.id, current_date)
 
         remaining_count = max(0, daily_limit - current_usage)
         can_use_chat = daily_limit > 0 and current_usage < daily_limit
@@ -126,7 +131,7 @@ class AIChatUsageService:
 
         # Check current usage against limit
         current_date = self._get_current_date()
-        current_usage = ai_usage_repo.get_current_usage_count(self.session, user.id, current_date)
+        current_usage = self.usage_repository.get_current_usage_count(self.session, user.id, current_date)
 
         return current_usage < daily_limit
 
@@ -207,7 +212,7 @@ class AIChatUsageService:
         # Increment usage count
         current_date = self._get_current_date()
         try:
-            ai_usage_repo.increment_usage_count(self.session, user.id, current_date)
+            self.usage_repository.increment_usage_count(self.session, user.id, current_date)
 
             # Return updated statistics
             updated = await self.get_usage_stats(user)
@@ -266,7 +271,7 @@ class AIChatUsageService:
         Returns:
             List of AIChatUsage records
         """
-        return AIChatUsageRepository.get_usage_history(self.session, user.id, limit)
+        return self.usage_repository.get_usage_history(self.session, user.id, limit)
 
     def get_plan_config(self, user_plan: str) -> dict:
         """
