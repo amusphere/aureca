@@ -25,7 +25,7 @@ export class ClerkPlanHelper {
    */
   static async getUserPlan(): Promise<ClerkPlanResult> {
     try {
-      const { userId } = auth();
+      const { userId } = await auth();
 
       if (!userId) {
         return {
@@ -36,7 +36,8 @@ export class ClerkPlanHelper {
         };
       }
 
-      const user = await clerkClient.users.getUser(userId);
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
 
       // 1. サブスクリプション情報から取得を試行
       // Try to get plan from subscription information
@@ -122,7 +123,7 @@ export class ClerkPlanHelper {
    * @param result ClerkPlanResult
    * @returns ログ出力用オブジェクト / Object for logging
    */
-  static toLogSafeFormat(result: ClerkPlanResult): Record<string, any> {
+  static toLogSafeFormat(result: ClerkPlanResult): Record<string, unknown> {
     return {
       plan: result.plan,
       success: result.success,
