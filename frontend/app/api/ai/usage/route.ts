@@ -5,15 +5,34 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from "next/server";
 
 /**
- * 暫定対応: すべての機能を統合したシンプルな実装
- * TODO: Clerk Python SDKが修正されたら削除予定
+ * 🚨 暫定対応 - 削除予定 🚨
+ * TEMPORARY WORKAROUND - SCHEDULED FOR DELETION
  *
- * Temporary workaround: All functionality integrated in simple implementation
- * This should be deleted once the Clerk Python SDK is fixed.
+ * 作成日: 2025-01-16
+ * 削除予定: Clerk Python SDK修正後 (TBD)
+ *
+ * 【削除条件】
+ * - Clerk Python SDKでサブスクリプションプラン情報が正常に取得できるようになったら削除
+ * - バックエンドの /api/ai/usage エンドポイントが正しいプラン情報を返すようになったら削除
+ *
+ * 【削除対象】
+ * - workaroundLog関数
+ * - safeExecute関数
+ * - getClerkPlan関数
+ * - overridePlanInformation関数
+ * - GET関数内の暫定対応処理ロジック
+ *
+ * 【削除手順】
+ * 1. WORKAROUND_ENABLED = false に設定して1週間動作確認
+ * 2. 問題なければ暫定対応コードを完全削除
+ * 3. GET関数を簡素化されたバージョンに置き換え
+ *
+ * 詳細: .kiro/specs/frontend-clerk-plan-workaround/DELETION_GUIDE.md 参照
  */
 
-// シンプルなログ機能
-// Simple logging functionality
+// 🚨 削除予定: シンプルなログ機能 🚨
+// TODO: Clerk Python SDK修正後に削除
+// Simple logging functionality - TO BE DELETED
 function workaroundLog(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, unknown>): void {
   const timestamp = new Date().toISOString();
   const logMessage = `[WORKAROUND] ${timestamp} ${message}`;
@@ -31,8 +50,9 @@ function workaroundLog(level: 'info' | 'warn' | 'error', message: string, data?:
   }
 }
 
-// 安全な実行（絶対に例外を投げない）
-// Safe execution (never throws exceptions)
+// 🚨 削除予定: 安全な実行（絶対に例外を投げない）🚨
+// TODO: Clerk Python SDK修正後に削除
+// Safe execution (never throws exceptions) - TO BE DELETED
 async function safeExecute<T>(
   operation: () => Promise<T>,
   fallbackValue: T,
@@ -56,17 +76,51 @@ async function safeExecute<T>(
   }
 }
 
-// Clerkからプラン情報を取得
-// Retrieve plan information from Clerk
+// 🚨 削除予定: Clerkからプラン情報を取得 🚨
+// TODO: Clerk Python SDK修正後に削除
+// Retrieve plan information from Clerk - TO BE DELETED
 async function getClerkPlan(): Promise<{
   plan: string;
   success: boolean;
   error?: string;
-  source: 'subscription' | 'metadata' | 'fallback';
+  source: 'has_method' | 'metadata' | 'fallback';
 }> {
   try {
-    const { userId } = await auth();
+    // Clerk推奨のhas()メソッドを使用してプラン情報を取得
+    // Use Clerk's recommended has() method to get plan information
+    const { has } = await auth();
 
+    workaroundLog('info', 'Using Clerk has() method to check plans');
+
+    // standardプランをチェック
+    // Check for standard plan
+    const hasStandard = has({ plan: 'standard' });
+    if (hasStandard) {
+      workaroundLog('info', 'User has standard plan', { plan: 'standard' });
+      return {
+        plan: 'standard',
+        success: true,
+        source: 'has_method'
+      };
+    }
+
+    // freeプランをチェック
+    // Check for free plan
+    const hasFree = has({ plan: 'free' });
+    if (hasFree) {
+      workaroundLog('info', 'User has free plan', { plan: 'free' });
+      return {
+        plan: 'free',
+        success: true,
+        source: 'has_method'
+      };
+    }
+
+    // has()メソッドで見つからない場合はメタデータフォールバックを試行
+    // If not found via has() method, try metadata fallback
+    workaroundLog('info', 'Plan not found via has() method, trying metadata fallback');
+
+    const { userId } = await auth();
     if (!userId) {
       throw new Error('User not authenticated');
     }
@@ -74,33 +128,12 @@ async function getClerkPlan(): Promise<{
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
 
-    workaroundLog('info', 'Retrieved user data from Clerk', {
-      hasPublicMetadata: !!user.publicMetadata,
-      hasPrivateMetadata: !!user.privateMetadata
-    });
-
-    // 1. サブスクリプション情報から取得を試行
-    // Try to get plan from subscription information
-    if (user.publicMetadata?.subscription) {
-      const subscription = user.publicMetadata.subscription as Record<string, unknown>;
-      if (subscription.plan) {
-        const planName = String(subscription.plan).toLowerCase();
-        if (planName === 'free' || planName === 'standard') {
-          workaroundLog('info', 'Plan found in subscription metadata', { plan: planName });
-          return {
-            plan: planName,
-            success: true,
-            source: 'subscription'
-          };
-        }
-      }
-    }
-
-    // 2. メタデータから直接取得を試行
+    // メタデータから直接取得を試行
     // Try to get plan directly from metadata
     if (user.publicMetadata?.plan) {
       const planName = String(user.publicMetadata.plan).toLowerCase();
       if (planName === 'free' || planName === 'standard') {
+        workaroundLog('info', 'Plan found in public metadata', { plan: planName });
         return {
           plan: planName,
           success: true,
@@ -109,11 +142,12 @@ async function getClerkPlan(): Promise<{
       }
     }
 
-    // 3. プライベートメタデータもチェック
+    // プライベートメタデータもチェック
     // Check private metadata as well
     if (user.privateMetadata?.plan) {
       const planName = String(user.privateMetadata.plan).toLowerCase();
       if (planName === 'free' || planName === 'standard') {
+        workaroundLog('info', 'Plan found in private metadata', { plan: planName });
         return {
           plan: planName,
           success: true,
@@ -122,8 +156,9 @@ async function getClerkPlan(): Promise<{
       }
     }
 
-    // 4. フォールバック - デフォルトでfreeプランを返す
-    // Fallback - return free plan as default
+    // どのプランも見つからない場合はfreeをデフォルトとする
+    // If no plan is found, default to free
+    workaroundLog('info', 'No specific plan found, defaulting to free');
     return {
       plan: 'free',
       success: true,
@@ -132,7 +167,7 @@ async function getClerkPlan(): Promise<{
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    workaroundLog('error', 'Error retrieving plan from Clerk', { error: errorMessage });
+    workaroundLog('error', 'Error using Clerk has() method', { error: errorMessage });
 
     return {
       plan: 'free',
@@ -143,11 +178,12 @@ async function getClerkPlan(): Promise<{
   }
 }
 
-// プラン情報を上書き
-// Override plan information
+// 🚨 削除予定: プラン情報を上書き 🚨
+// TODO: Clerk Python SDK修正後に削除
+// Override plan information - TO BE DELETED
 function overridePlanInformation(
   backendResponse: AIChatUsage,
-  clerkPlan: { plan: string; success: boolean; error?: string; source: string }
+  clerkPlan: { plan: string; success: boolean; error?: string; source: 'has_method' | 'metadata' | 'fallback' }
 ): {
   data: AIChatUsage;
   wasOverridden: boolean;
@@ -311,8 +347,9 @@ export async function GET(): Promise<NextResponse> {
       );
     }
 
-    // 暫定対応: プラン情報の上書き処理
-    // Temporary workaround: Plan information override process
+    // 🚨 削除予定: プラン情報の上書き処理 🚨
+    // TODO: Clerk Python SDK修正後にこのif文ブロック全体を削除
+    // Temporary workaround: Plan information override process - TO BE DELETED
     if (response.data) {
       try {
         workaroundLog('info', 'Starting plan override process');
@@ -325,7 +362,7 @@ export async function GET(): Promise<NextResponse> {
             plan: 'free',
             success: false,
             error: 'Safe execution fallback',
-            source: 'fallback'
+            source: 'fallback' as const
           },
           'clerkPlanRetrieval'
         );
@@ -358,8 +395,9 @@ export async function GET(): Promise<NextResponse> {
         return NextResponse.json(overrideResult.data);
 
       } catch (workaroundError) {
-        // 暫定対応でエラーが発生した場合は元のレスポンスを返す
-        // Return original response if workaround fails
+        // 🚨 削除予定: 暫定対応でエラーが発生した場合は元のレスポンスを返す 🚨
+        // TODO: Clerk Python SDK修正後にこのcatch文も削除
+        // Return original response if workaround fails - TO BE DELETED
         const errorMessage = workaroundError instanceof Error ? workaroundError.message : String(workaroundError);
         workaroundLog('error', 'Workaround process failed, using original response', {
           error: errorMessage
