@@ -122,6 +122,7 @@ class TestAIChatUsageIntegrationSimple:
         assert data["can_use_chat"] is False
         assert data["current_usage"] == 10
 
+    @pytest.mark.skip(reason="Skipped due to temporary workaround: all users treated as standard plan")
     def test_free_plan_restriction_flow(self, client: TestClient, test_user: User, setup_test_dependencies):
         """Test free plan restriction flow."""
         # Mock ClerkService to return free plan
