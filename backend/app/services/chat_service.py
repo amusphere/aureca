@@ -360,7 +360,7 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             return await chat_thread.delete_by_uuid(self.session, thread_uuid, user_id)
         except Exception as e:
             self.logger.error(f"Failed to delete thread {thread_uuid}: {str(e)}")
-            raise
+            raise Exception(f"Failed to delete thread {thread_uuid}") from e
 
     async def create_thread(self, user_id: int, title: str | None = None) -> ChatThread:
         """
