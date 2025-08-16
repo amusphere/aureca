@@ -6,14 +6,14 @@
   - 必要なインデックスとリレーションシップを設定
   - _要件: 要件5.2, 要件6.1, 要件6.4_
 
-- [ ] 2. リポジトリ層の実装
-- [ ] 2.1 ChatThreadRepositoryの実装
+- [x] 2. リポジトリ層の実装
+- [x] 2.1 ChatThreadRepositoryの実装
   - chat_thread.pyリポジトリファイルを作成
   - スレッドのCRUD操作メソッドを実装
   - ユーザー権限チェック付きのクエリメソッドを実装
   - _要件: 要件5.1, 要件6.2, 要件6.3_
 
-- [ ] 2.2 ChatMessageRepositoryの実装
+- [x] 2.2 ChatMessageRepositoryの実装
   - chat_message.pyリポジトリファイルを作成
   - メッセージのCRUD操作とページネーション機能を実装
   - AIコンテキスト用の履歴取得メソッドを実装
