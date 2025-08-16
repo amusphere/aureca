@@ -35,27 +35,35 @@ class AIChatUsageService:
         """
         Determine user's subscription plan using ClerkService
 
+        🚨 暫定対応: プランチェックを一旦オミット 🚨
+        TODO: フロントエンドでのプラン取得が安定したら復活
+
         Args:
             user: User object
 
         Returns:
             str: User's plan name ("free", "standard", etc.)
         """
-        # Handle missing clerk_sub
-        if not user.clerk_sub:
-            logger.info(f"User {user.id} has no clerk_sub; defaulting to standard plan")
-            return "standard"
+        # 🚨 暫定対応: 全ユーザーをstandardプランとして扱う
+        # TODO: Clerk Python SDK問題解決後に元のロジックに戻す
+        logger.info(f"🚨 WORKAROUND: User {user.id} treated as standard plan (plan check omitted)")
+        return "standard"
 
-        # Delegate to injected ClerkService for actual plan retrieval
-        try:
-            plan = self.clerk_service.get_user_plan(user.clerk_sub)
-            logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
-            return plan
-        except Exception as e:
-            logger.warning(
-                f"Failed to retrieve plan for user {getattr(user, 'id', 'unknown')}: {e}. Falling back to free plan"
-            )
-            return "free"
+        # # Handle missing clerk_sub
+        # if not user.clerk_sub:
+        #     logger.info(f"User {user.id} has no clerk_sub; defaulting to standard plan")
+        #     return "standard"
+
+        # # Delegate to injected ClerkService for actual plan retrieval
+        # try:
+        #     plan = self.clerk_service.get_user_plan(user.clerk_sub)
+        #     logger.debug(f"Retrieved plan '{plan}' for user {user.id}")
+        #     return plan
+        # except Exception as e:
+        #     logger.warning(
+        #         f"Failed to retrieve plan for user {getattr(user, 'id', 'unknown')}: {e}. Falling back to free plan"
+        #     )
+        #     return "free"
 
     def get_daily_limit(self, user_plan: str) -> int:
         """
@@ -192,6 +200,47 @@ class AIChatUsageService:
             "reset_time": stats["reset_time"],
             "can_use_chat": stats["can_use_chat"],
         }
+
+    async def increment_usage_without_check(self, user: User) -> dict:
+        """
+        Increment usage count for a user without plan/limit checking
+
+        🚨 暫定対応: プラン制限チェックを行わずに利用回数のみインクリメント 🚨
+        TODO: フロントエンドでのプラン取得が安定したら削除
+
+        Args:
+            user: User object
+
+        Returns:
+            Dict containing updated usage statistics
+        """
+        # Increment usage count without any checks
+        current_date = self._get_current_date()
+        try:
+            self.usage_repository.increment_usage_count(self.session, user.id, current_date)
+
+            # Return updated statistics
+            updated = await self.get_usage_stats(user)
+
+            logger.info(
+                f"🚨 WORKAROUND: Usage incremented for user {user.id} without plan check (usage={updated.get('current_usage')})"
+            )
+
+            return updated
+
+        except Exception as e:
+            # Handle database errors with more detailed logging
+            logger.error(f"AI Chat usage increment failed for user {user.id}: {str(e)}")
+
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": "一時的なエラーが発生しました。しばらく時間をおいてから再度お試しください。",
+                    "error_code": "SYSTEM_ERROR",
+                    "remaining_count": 0,
+                    "reset_time": self._get_reset_time(),
+                },
+            ) from e
 
     async def increment_usage(self, user: User) -> dict:
         """

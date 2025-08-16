@@ -68,6 +68,7 @@ class TestAIProcessUsageLimits:
             final_count = AIChatUsageRepository.get_current_usage_count(session, test_user.id, current_date)
             assert final_count == 1
 
+    @pytest.mark.skip(reason="Skipped due to temporary workaround: all users treated as standard plan")
     async def test_ai_process_with_free_plan_restriction(self, session: Session, test_user: User, mock_dependencies):
         """Test that free plan users cannot use AI process."""
         usage_service = AIChatUsageService(session)
