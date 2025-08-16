@@ -377,7 +377,7 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             return await chat_thread.create(self.session, user_id, title)
         except Exception as e:
             self.logger.error(f"Failed to create thread for user {user_id}: {str(e)}")
-            raise
+            raise Exception(f"Failed to create thread for user {user_id}") from e
 
     async def get_user_threads(self, user_id: int, page: int = 1, per_page: int = 30) -> tuple[list[ChatThread], int]:
         """
@@ -395,4 +395,4 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             return await chat_thread.find_by_user_id_paginated(self.session, user_id, page, per_page)
         except Exception as e:
             self.logger.error(f"Failed to get threads for user {user_id}: {str(e)}")
-            raise
+            raise Exception(f"Failed to get threads for user {user_id}") from e
