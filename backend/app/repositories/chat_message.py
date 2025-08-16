@@ -58,6 +58,10 @@ async def get_by_id(session: Session, id: int) -> ChatMessage | None:
 
 async def get_by_uuid(session: Session, uuid: str | UUID) -> ChatMessage | None:
     """Get a message by UUID"""
+    # Convert string to UUID if needed
+    if isinstance(uuid, str):
+        uuid = UUID(uuid)
+
     stmt = select(ChatMessage).where(ChatMessage.uuid == uuid)
     return session.exec(stmt).first()
 

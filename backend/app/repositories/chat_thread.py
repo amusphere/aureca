@@ -14,6 +14,10 @@ async def find_by_user_id(session: Session, user_id: int) -> list[ChatThread]:
 
 async def find_by_uuid(session: Session, uuid: str | UUID, user_id: int) -> ChatThread | None:
     """Find a chat thread by UUID with user permission check"""
+    # Convert string to UUID if needed
+    if isinstance(uuid, str):
+        uuid = UUID(uuid)
+
     stmt = select(ChatThread).where(ChatThread.uuid == uuid, ChatThread.user_id == user_id)
 
     return session.exec(stmt).first()
@@ -69,6 +73,10 @@ async def update_timestamp(session: Session, thread_id: int) -> ChatThread | Non
 
 async def delete_by_uuid(session: Session, uuid: str | UUID, user_id: int) -> bool:
     """Delete a chat thread by UUID with user permission check (hard delete)"""
+    # Convert string to UUID if needed
+    if isinstance(uuid, str):
+        uuid = UUID(uuid)
+
     thread = await find_by_uuid(session, uuid, user_id)
     if not thread:
         return False
