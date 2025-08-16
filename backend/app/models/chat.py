@@ -1,12 +1,16 @@
-from typing import Any
-
 from pydantic import BaseModel, Field, field_validator
 
 
 class CreateChatThreadRequest(BaseModel):
     """Request model for creating a new chat thread"""
 
-    title: str | None = Field(default=None, max_length=200, description="Optional thread title")
+    title: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=200,
+        description="Optional thread title (3-200 characters)",
+        examples=["My AI Conversation", "Project Planning Discussion"],
+    )
 
     @field_validator("title")
     @classmethod
@@ -21,14 +25,23 @@ class CreateChatThreadRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     """Request model for sending a message to a chat thread"""
 
-    content: str = Field(min_length=1, max_length=4000, description="Message content")
+    content: str = Field(
+        min_length=1,
+        max_length=4000,
+        description="Message content (1-4000 characters)",
+        examples=["Hello, can you help me with my project?", "What are the best practices for API design?"],
+    )
 
     @field_validator("content")
     @classmethod
     def validate_content(cls, v: str) -> str:
+        # Strip whitespace
         v = v.strip()
+
+        # Check if empty after stripping
         if not v:
-            raise ValueError("Message content cannot be empty or whitespace only")
+            raise ValueError("Message content cannot be empty")
+
         return v
 
 
@@ -80,11 +93,3 @@ class ChatThreadWithMessagesResponse(BaseModel):
     thread: ChatThreadResponse
     messages: list[ChatMessageResponse]
     pagination: PaginationInfo
-
-
-class ErrorResponse(BaseModel):
-    """Standard error response model"""
-
-    error: str = Field(description="Error message")
-    error_code: str = Field(description="Error code for programmatic handling")
-    details: dict[str, Any] | None = Field(default=None, description="Additional error details")

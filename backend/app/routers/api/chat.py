@@ -10,7 +10,7 @@ This router provides endpoints for:
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlmodel import Session
 
 from app.database import get_session
@@ -42,34 +42,29 @@ async def get_chat_threads(
 
     Returns a list of chat threads ordered by most recently updated.
     """
-    try:
-        chat_service = ChatService(session)
-        threads, total_count = await chat_service.get_user_threads(user.id, page, per_page)
+    chat_service = ChatService(session)
+    threads, total_count = await chat_service.get_user_threads(user.id, page, per_page)
 
-        # Convert to response models
-        thread_responses = []
-        for thread in threads:
-            # Count messages for each thread
-            message_count = len(thread.messages) if hasattr(thread, "messages") and thread.messages else 0
+    # Convert to response models
+    thread_responses = []
+    for thread in threads:
+        # Count messages for each thread
+        message_count = len(thread.messages) if hasattr(thread, "messages") and thread.messages else 0
 
-            thread_responses.append(
-                ChatThreadResponse(
-                    uuid=str(thread.uuid),
-                    title=thread.title,
-                    created_at=thread.created_at,
-                    updated_at=thread.updated_at,
-                    message_count=message_count,
-                )
+        thread_responses.append(
+            ChatThreadResponse(
+                uuid=str(thread.uuid),
+                title=thread.title,
+                created_at=thread.created_at,
+                updated_at=thread.updated_at,
+                message_count=message_count,
             )
+        )
 
-        return thread_responses
-
-    except Exception as e:
-        logger.error(f"Failed to get chat threads for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve chat threads") from e
+    return thread_responses
 
 
-@router.post("/threads", response_model=ChatThreadResponse)
+@router.post("/threads", response_model=ChatThreadResponse, status_code=status.HTTP_201_CREATED)
 async def create_chat_thread(
     request: CreateChatThreadRequest,
     session: Session = Depends(get_session),
@@ -80,21 +75,16 @@ async def create_chat_thread(
 
     Optionally accepts a title, otherwise it will be auto-generated from the first message.
     """
-    try:
-        chat_service = ChatService(session)
-        thread = await chat_service.create_thread(user.id, request.title)
+    chat_service = ChatService(session)
+    thread = await chat_service.create_thread(user.id, request.title)
 
-        return ChatThreadResponse(
-            uuid=str(thread.uuid),
-            title=thread.title,
-            created_at=thread.created_at,
-            updated_at=thread.updated_at,
-            message_count=0,
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to create chat thread for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create chat thread") from e
+    return ChatThreadResponse(
+        uuid=str(thread.uuid),
+        title=thread.title,
+        created_at=thread.created_at,
+        updated_at=thread.updated_at,
+        message_count=0,
+    )
 
 
 @router.get("/threads/{thread_uuid}", response_model=ChatThreadWithMessagesResponse)
@@ -110,62 +100,50 @@ async def get_chat_thread(
 
     Returns thread details and messages in chronological order (oldest first).
     """
-    try:
-        chat_service = ChatService(session)
-        result = await chat_service.get_thread_with_messages(thread_uuid, user.id, page, per_page)
+    chat_service = ChatService(session)
+    thread, messages, total_count = await chat_service.get_thread_with_messages(thread_uuid, user.id, page, per_page)
 
-        if not result:
-            raise HTTPException(status_code=404, detail="Chat thread not found")
-
-        thread, messages, total_count = result
-
-        # Convert messages to response models
-        message_responses = [
-            ChatMessageResponse(
-                uuid=str(msg.uuid),
-                role=msg.role,
-                content=msg.content,
-                created_at=msg.created_at,
-            )
-            for msg in messages
-        ]
-
-        # Calculate pagination info
-        total_pages = (total_count + per_page - 1) // per_page
-        has_next = page < total_pages
-        has_prev = page > 1
-
-        pagination = PaginationInfo(
-            page=page,
-            per_page=per_page,
-            total_messages=total_count,
-            total_pages=total_pages,
-            has_next=has_next,
-            has_prev=has_prev,
+    # Convert messages to response models
+    message_responses = [
+        ChatMessageResponse(
+            uuid=str(msg.uuid),
+            role=msg.role,
+            content=msg.content,
+            created_at=msg.created_at,
         )
+        for msg in messages
+    ]
 
-        thread_response = ChatThreadResponse(
-            uuid=str(thread.uuid),
-            title=thread.title,
-            created_at=thread.created_at,
-            updated_at=thread.updated_at,
-            message_count=total_count,
-        )
+    # Calculate pagination info
+    total_pages = (total_count + per_page - 1) // per_page
+    has_next = page < total_pages
+    has_prev = page > 1
 
-        return ChatThreadWithMessagesResponse(
-            thread=thread_response,
-            messages=message_responses,
-            pagination=pagination,
-        )
+    pagination = PaginationInfo(
+        page=page,
+        per_page=per_page,
+        total_messages=total_count,
+        total_pages=total_pages,
+        has_next=has_next,
+        has_prev=has_prev,
+    )
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get chat thread {thread_uuid} for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve chat thread") from e
+    thread_response = ChatThreadResponse(
+        uuid=str(thread.uuid),
+        title=thread.title,
+        created_at=thread.created_at,
+        updated_at=thread.updated_at,
+        message_count=total_count,
+    )
+
+    return ChatThreadWithMessagesResponse(
+        thread=thread_response,
+        messages=message_responses,
+        pagination=pagination,
+    )
 
 
-@router.post("/threads/{thread_uuid}/messages", response_model=ChatMessageResponse)
+@router.post("/threads/{thread_uuid}/messages", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
 async def send_message(
     thread_uuid: str,
     request: SendMessageRequest,
@@ -177,29 +155,19 @@ async def send_message(
 
     The AI will consider the conversation history when generating a response.
     """
-    try:
-        chat_service = ChatService(session)
-        user_msg, ai_msg = await chat_service.send_message_with_ai_response(thread_uuid, request.content, user)
+    chat_service = ChatService(session)
+    user_msg, ai_msg = await chat_service.send_message_with_ai_response(thread_uuid, request.content, user)
 
-        # Return the AI response
-        return ChatMessageResponse(
-            uuid=str(ai_msg.uuid),
-            role=ai_msg.role,
-            content=ai_msg.content,
-            created_at=ai_msg.created_at,
-        )
-
-    except ValueError as e:
-        # Handle thread not found or access denied
-        if "not found" in str(e).lower() or "access denied" in str(e).lower():
-            raise HTTPException(status_code=404, detail="Chat thread not found") from e
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logger.error(f"Failed to send message to thread {thread_uuid} for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to process message") from e
+    # Return the AI response
+    return ChatMessageResponse(
+        uuid=str(ai_msg.uuid),
+        role=ai_msg.role,
+        content=ai_msg.content,
+        created_at=ai_msg.created_at,
+    )
 
 
-@router.delete("/threads/{thread_uuid}")
+@router.delete("/threads/{thread_uuid}", status_code=status.HTTP_200_OK)
 async def delete_chat_thread(
     thread_uuid: str,
     session: Session = Depends(get_session),
@@ -210,20 +178,10 @@ async def delete_chat_thread(
 
     This is a hard delete operation and cannot be undone.
     """
-    try:
-        chat_service = ChatService(session)
-        deleted = await chat_service.delete_thread(thread_uuid, user.id)
+    chat_service = ChatService(session)
+    await chat_service.delete_thread(thread_uuid, user.id)
 
-        if not deleted:
-            raise HTTPException(status_code=404, detail="Chat thread not found")
-
-        return {"message": "Chat thread deleted successfully"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to delete chat thread {thread_uuid} for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to delete chat thread") from e
+    return {"message": "Chat thread deleted successfully"}
 
 
 @router.get("/threads/{thread_uuid}/context")
@@ -239,27 +197,16 @@ async def get_conversation_context(
     This endpoint is primarily for internal use and debugging.
     Returns the conversation history formatted for AI context.
     """
-    try:
-        chat_service = ChatService(session)
+    chat_service = ChatService(session)
 
-        # Verify thread access
-        result = await chat_service.get_thread_with_messages(thread_uuid, user.id, 1, 1)
-        if not result:
-            raise HTTPException(status_code=404, detail="Chat thread not found")
+    # Verify thread access
+    thread, _, _ = await chat_service.get_thread_with_messages(thread_uuid, user.id, 1, 1)
 
-        thread, _, _ = result
+    # Get conversation context
+    context = await chat_service.get_conversation_context(thread.id, limit)
 
-        # Get conversation context
-        context = await chat_service.get_conversation_context(thread.id, limit)
-
-        return {
-            "thread_uuid": thread_uuid,
-            "context_messages": len(context),
-            "context": context,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get context for thread {thread_uuid} for user {user.id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to get conversation context") from e
+    return {
+        "thread_uuid": thread_uuid,
+        "context_messages": len(context),
+        "context": context,
+    }

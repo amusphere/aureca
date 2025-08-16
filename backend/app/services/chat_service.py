@@ -10,6 +10,7 @@ This service handles:
 
 import logging
 
+from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.repositories import chat_message, chat_thread
@@ -48,7 +49,7 @@ class ChatService:
 
         except Exception as e:
             self.logger.error(f"Failed to get or create default thread for user {user_id}: {str(e)}")
-            raise Exception(f"Failed to get or create default thread for user {user_id}") from e
+            raise HTTPException(status_code=500, detail="Failed to get or create default thread") from e
 
     async def send_message_with_ai_response(
         self, thread_uuid: str, user_message: str, user: User
@@ -63,16 +64,12 @@ class ChatService:
 
         Returns:
             tuple[ChatMessage, ChatMessage]: User message and AI response
-
-        Raises:
-            ValueError: If thread not found or access denied
-            Exception: If AI processing fails
         """
         try:
             # Get thread with permission check
             thread = await chat_thread.find_by_uuid(self.session, thread_uuid, user.id)
             if not thread:
-                raise ValueError(f"Thread not found or access denied: {thread_uuid}")
+                raise HTTPException(status_code=404, detail="Chat thread not found")
 
             # Save user message
             user_msg = await chat_message.create(self.session, thread.id, "user", user_message)
@@ -101,12 +98,12 @@ class ChatService:
 
             return user_msg, ai_msg
 
-        except ValueError:
-            # Re-raise permission/validation errors
+        except HTTPException:
+            # Re-raise HTTP exceptions
             raise
         except Exception as e:
             self.logger.error(f"Failed to process message in thread {thread_uuid}: {str(e)}")
-            raise Exception(f"Failed to process AI response: {str(e)}") from e
+            raise HTTPException(status_code=500, detail="Failed to process message") from e
 
     async def get_conversation_context(self, thread_id: int, limit: int = 30) -> list[dict[str, str]]:
         """
@@ -173,7 +170,7 @@ class ChatService:
         try:
             # Get the current message
             if not conversation_context:
-                raise ValueError("No conversation context provided")
+                raise HTTPException(status_code=400, detail="No conversation context provided")
 
             current_message = conversation_context[-1]["content"]
 
@@ -190,10 +187,15 @@ class ChatService:
 
             return response
 
+        except HTTPException:
+            raise
         except Exception as e:
             self.logger.error(f"AI response generation failed: {str(e)}")
-            # Fallback to direct LLM call
-            return await self._fallback_ai_response(conversation_context)
+            # Try fallback before raising error
+            try:
+                return await self._fallback_ai_response(conversation_context)
+            except Exception:
+                raise HTTPException(status_code=500, detail="AI processing failed") from None
 
     async def _fallback_ai_response(self, conversation_context: list[dict[str, str]]) -> str:
         """
@@ -207,8 +209,6 @@ class ChatService:
         """
         try:
             # Use direct LLM call with conversation context
-            from app.utils.llm import llm_chat_completions
-
             # Add system message for chat context
             messages = [
                 {
@@ -220,7 +220,10 @@ class ChatService:
 
             response = llm_chat_completions(prompts=messages, temperature=0.7, max_tokens=1500)
 
-            return response or "I apologize, but I'm having trouble generating a response right now. Please try again."
+            if not response:
+                return "I apologize, but I'm having trouble generating a response right now. Please try again."
+
+            return response
 
         except Exception as e:
             self.logger.error(f"Fallback AI response failed: {str(e)}")
@@ -308,7 +311,7 @@ Generate only the title, nothing else. Make it concise and descriptive."""
 
     async def get_thread_with_messages(
         self, thread_uuid: str, user_id: int, page: int = 1, per_page: int = 30
-    ) -> tuple[ChatThread, list[ChatMessage], int] | None:
+    ) -> tuple[ChatThread, list[ChatMessage], int]:
         """
         Get thread with paginated messages.
 
@@ -319,13 +322,13 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             per_page: Messages per page
 
         Returns:
-            tuple[ChatThread, list[ChatMessage], int] | None: Thread, messages, total count or None if not found
+            tuple[ChatThread, list[ChatMessage], int]: Thread, messages, total count
         """
         try:
             # Get thread with permission check
             thread = await chat_thread.find_by_uuid(self.session, thread_uuid, user_id)
             if not thread:
-                return None
+                raise HTTPException(status_code=404, detail="Chat thread not found")
 
             # Get paginated messages
             messages, total_count = await chat_message.find_by_thread_id_paginated(
@@ -334,9 +337,11 @@ Generate only the title, nothing else. Make it concise and descriptive."""
 
             return thread, messages, total_count
 
+        except HTTPException:
+            raise
         except Exception as e:
             self.logger.error(f"Failed to get thread with messages {thread_uuid}: {str(e)}")
-            raise Exception(f"Failed to get thread with messages {thread_uuid}") from e
+            raise HTTPException(status_code=500, detail="Failed to retrieve thread messages") from e
 
     async def delete_thread(self, thread_uuid: str, user_id: int) -> bool:
         """
@@ -347,13 +352,18 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             user_id: User ID for permission check
 
         Returns:
-            bool: True if deleted successfully, False if not found
+            bool: True if deleted successfully
         """
         try:
-            return await chat_thread.delete_by_uuid(self.session, thread_uuid, user_id)
+            deleted = await chat_thread.delete_by_uuid(self.session, thread_uuid, user_id)
+            if not deleted:
+                raise HTTPException(status_code=404, detail="Chat thread not found")
+            return True
+        except HTTPException:
+            raise
         except Exception as e:
             self.logger.error(f"Failed to delete thread {thread_uuid}: {str(e)}")
-            raise Exception(f"Failed to delete thread {thread_uuid}") from e
+            raise HTTPException(status_code=500, detail="Failed to delete thread") from e
 
     async def create_thread(self, user_id: int, title: str | None = None) -> ChatThread:
         """
@@ -370,7 +380,7 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             return await chat_thread.create(self.session, user_id, title)
         except Exception as e:
             self.logger.error(f"Failed to create thread for user {user_id}: {str(e)}")
-            raise Exception(f"Failed to create thread for user {user_id}") from e
+            raise HTTPException(status_code=500, detail="Failed to create thread") from e
 
     async def get_user_threads(self, user_id: int, page: int = 1, per_page: int = 30) -> tuple[list[ChatThread], int]:
         """
@@ -388,4 +398,4 @@ Generate only the title, nothing else. Make it concise and descriptive."""
             return await chat_thread.find_by_user_id_paginated(self.session, user_id, page, per_page)
         except Exception as e:
             self.logger.error(f"Failed to get threads for user {user_id}: {str(e)}")
-            raise Exception(f"Failed to get threads for user {user_id}") from e
+            raise HTTPException(status_code=500, detail="Failed to retrieve user threads") from e
