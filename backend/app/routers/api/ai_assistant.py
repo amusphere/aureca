@@ -74,12 +74,11 @@ async def process_ai_request_endpoint(
         logger.debug(f"AI processing for user {user.id} completed in {ai_duration:.3f}s")
 
         # Phase 3: 利用数インクリメント - パフォーマンス最適化
-        # 🚨 暫定対応: 利用数インクリメントを一旦オミット 🚨
-        # TODO: フロントエンドでのプラン取得が安定したら復活
+        # 🚨 暫定対応: プラン制限チェックなしで利用回数のみインクリメント 🚨
+        # TODO: フロントエンドでのプラン取得が安定したら元のincrement_usageに戻す
         increment_start = time.time()
-        # await usage_service.increment_usage(user)  # 暫定的にコメントアウト
+        await usage_service.increment_usage_without_check(user)
         increment_duration = time.time() - increment_start
-        logger.debug(f"🚨 WORKAROUND: Usage increment for user {user.id} omitted")
 
         total_duration = time.time() - start_time
         logger.info(
@@ -221,8 +220,9 @@ async def increment_ai_chat_usage_endpoint(
     usage_service = AIChatUsageService(session=session)
 
     try:
-        # 利用制限チェックと利用数インクリメントを実行
-        updated_stats = await usage_service.increment_usage(user)
+        # 🚨 暫定対応: プラン制限チェックなしで利用数インクリメントのみ実行 🚨
+        # TODO: フロントエンドでのプラン取得が安定したら元のincrement_usageに戻す
+        updated_stats = await usage_service.increment_usage_without_check(user)
 
         # レスポンスモデルに必要なフィールドを含める
         return AIChatUsageResponse(
