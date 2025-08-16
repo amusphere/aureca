@@ -131,10 +131,12 @@ async def process_ai_request_endpoint(
 
         # Check if it's a Clerk API related error
         if "clerk" in str(e).lower():
-            error_detail.update({
-                "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
-                "error_code": "CLERK_API_ERROR",
-            })
+            error_detail.update(
+                {
+                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                    "error_code": "CLERK_API_ERROR",
+                }
+            )
             raise HTTPException(status_code=503, detail=error_detail) from e
 
         # General system error
