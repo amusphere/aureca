@@ -36,6 +36,7 @@ def _safe_get_reset_time(usage_service: AIChatUsageService) -> str:
 @router.post("/process", response_model=AIResponseModel)
 async def process_ai_request_endpoint(
     request: AIRequestModel,
+    thread_uuid: str | None = None,
     session: Session = Depends(get_session),
     user: User = Depends(auth_user),
 ):
@@ -65,10 +66,31 @@ async def process_ai_request_endpoint(
         #     # 詳細な制限チェックでエラー情報を取得 - 改善されたエラーレスポンス
         #     await usage_service.check_usage_limit(user)
 
-        # Phase 2: AI処理実行
+        # Phase 2: AI処理実行 (with optional chat history)
         ai_start = time.time()
         hub = AIHub(user.id, session)
-        result = await hub.process_request(prompt=request.prompt, current_user=user)
+
+        # Get conversation history if thread_uuid is provided
+        conversation_history = None
+        if thread_uuid:
+            try:
+                from app.services.chat_service import ChatService
+
+                chat_service = ChatService(session)
+
+                # Verify thread access and get conversation context
+                thread_result = await chat_service.get_thread_with_messages(thread_uuid, user.id, 1, 1)
+                if thread_result:
+                    thread, _, _ = thread_result
+                    conversation_history = await chat_service.get_conversation_context(thread.id, limit=30)
+            except Exception as e:
+                logger.warning(f"Failed to get conversation history for thread {thread_uuid}: {str(e)}")
+                # Continue without history if there's an error
+                conversation_history = None
+
+        result = await hub.process_request(
+            prompt=request.prompt, current_user=user, conversation_history=conversation_history
+        )
         ai_duration = time.time() - ai_start
 
         logger.debug(f"AI processing for user {user.id} completed in {ai_duration:.3f}s")
@@ -271,3 +293,131 @@ async def increment_ai_chat_usage_endpoint(
                 "can_use_chat": False,
             },
         ) from e
+
+
+@router.post("/chat", response_model=dict)
+async def process_ai_chat_with_history(
+    request: AIRequestModel,
+    thread_uuid: str | None = None,
+    session: Session = Depends(get_session),
+    user: User = Depends(auth_user),
+):
+    """
+    Process AI request with automatic chat history management.
+
+    This endpoint:
+    1. Creates or uses existing chat thread
+    2. Saves user message to history
+    3. Processes AI request with conversation context
+    4. Saves AI response to history
+    5. Returns both the AI response and thread information
+    """
+    start_time = time.time()
+    usage_service = AIChatUsageService(session=session)
+
+    try:
+        # Phase 1: Usage check (same as regular AI process)
+        check_start = time.time()
+        can_use = True  # 暫定的に全ユーザーが利用可能とする
+        check_duration = time.time() - check_start
+
+        logger.debug(
+            f"🚨 WORKAROUND: Usage check for user {user.id} completed in {check_duration:.3f}s: {can_use} (check omitted)"
+        )
+
+        # Phase 2: Chat history integration
+        chat_start = time.time()
+        from app.services.chat_service import ChatService
+
+        chat_service = ChatService(session)
+
+        # Get or create thread
+        if thread_uuid:
+            # Use existing thread
+            thread_result = await chat_service.get_thread_with_messages(thread_uuid, user.id, 1, 1)
+            if not thread_result:
+                raise HTTPException(status_code=404, detail="Chat thread not found")
+            thread, _, _ = thread_result
+        else:
+            # Create or get default thread
+            thread = await chat_service.get_or_create_default_thread(user.id)
+
+        # Send message and get AI response with history context
+        user_msg, ai_msg = await chat_service.send_message_with_ai_response(str(thread.uuid), request.prompt, user)
+        chat_duration = time.time() - chat_start
+
+        # Phase 3: Usage increment
+        increment_start = time.time()
+        await usage_service.increment_usage_without_check(user)
+        increment_duration = time.time() - increment_start
+
+        total_duration = time.time() - start_time
+        logger.info(
+            f"AI chat request completed for user {user.id} - "
+            f"Total: {total_duration:.3f}s "
+            f"(Check: {check_duration:.3f}s, Chat: {chat_duration:.3f}s, Increment: {increment_duration:.3f}s)"
+        )
+
+        return {
+            "success": True,
+            "thread_uuid": str(thread.uuid),
+            "user_message": {
+                "uuid": str(user_msg.uuid),
+                "content": user_msg.content,
+                "created_at": user_msg.created_at,
+            },
+            "ai_response": {
+                "uuid": str(ai_msg.uuid),
+                "content": ai_msg.content,
+                "created_at": ai_msg.created_at,
+            },
+            "thread_info": {
+                "title": thread.title,
+                "created_at": thread.created_at,
+                "updated_at": thread.updated_at,
+            },
+        }
+
+    except HTTPException as http_exc:
+        total_duration = time.time() - start_time
+        logger.warning(f"AI chat request blocked for user {user.id} after {total_duration:.3f}s: {http_exc.detail}")
+        raise
+    except Exception as e:
+        total_duration = time.time() - start_time
+        logger.error(
+            f"Error processing AI chat request for user {user.id} after {total_duration:.3f}s: {e}", exc_info=True
+        )
+
+        # Enhanced error response
+        try:
+            stats = await usage_service.get_usage_stats(user)
+            remaining_count = stats.get("remaining_count", 0)
+            reset_time = stats.get("reset_time", _safe_get_reset_time(usage_service))
+            plan_name = stats.get("plan_name", "free")
+            daily_limit = stats.get("daily_limit", 0)
+        except Exception:
+            remaining_count = 0
+            reset_time = _safe_get_reset_time(usage_service)
+            plan_name = "free"
+            daily_limit = 0
+
+        error_detail = {
+            "error": "一時的なエラーが発生しました。しばらく後にお試しください。",
+            "error_code": "SYSTEM_ERROR",
+            "remaining_count": remaining_count,
+            "daily_limit": daily_limit,
+            "plan_name": plan_name,
+            "reset_time": reset_time,
+            "can_use_chat": False,
+        }
+
+        if "clerk" in str(e).lower():
+            error_detail.update(
+                {
+                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                    "error_code": "CLERK_API_ERROR",
+                }
+            )
+            raise HTTPException(status_code=503, detail=error_detail) from e
+
+        raise HTTPException(status_code=500, detail=error_detail) from e

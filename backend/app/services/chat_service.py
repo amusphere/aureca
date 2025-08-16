@@ -171,31 +171,24 @@ class ChatService:
             str: AI response content
         """
         try:
-            # Create a prompt that includes conversation history
-            if len(conversation_context) > 1:
-                # Format conversation history for the AI
-                history_text = self._format_conversation_for_prompt(conversation_context[:-1])
-                current_message = conversation_context[-1]["content"]
+            # Get the current message
+            if not conversation_context:
+                raise ValueError("No conversation context provided")
 
-                enhanced_prompt = f"""Previous conversation:
-{history_text}
+            current_message = conversation_context[-1]["content"]
 
-Current message: {current_message}
+            # Get conversation history (excluding current message)
+            history = conversation_context[:-1] if len(conversation_context) > 1 else []
 
-Please respond considering the conversation history above."""
-            else:
-                # First message in conversation
-                enhanced_prompt = conversation_context[-1]["content"]
+            # Use the enhanced AI hub with conversation history
+            response = await ai_hub.process_chat_message(current_message, user, history)
 
-            # Process through AI Hub
-            result = await ai_hub.process_request(enhanced_prompt, user)
-
-            if result["success"] and result.get("summary", {}).get("results_text"):
-                return result["summary"]["results_text"]
-            else:
-                # Fallback to direct LLM call if hub processing fails
-                self.logger.warning("AI Hub processing failed, falling back to direct LLM")
+            # Validate response
+            if not response or not isinstance(response, str):
+                self.logger.warning("AI hub returned empty or invalid response, using fallback")
                 return await self._fallback_ai_response(conversation_context)
+
+            return response
 
         except Exception as e:
             self.logger.error(f"AI response generation failed: {str(e)}")

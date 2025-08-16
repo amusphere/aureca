@@ -43,6 +43,7 @@ class AIHub:
         self,
         prompt: str,
         current_user: User,
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """
         Process user request through the hub-and-spoke system
@@ -50,19 +51,20 @@ class AIHub:
         Args:
             prompt: User's natural language prompt
             current_user: Current user object
+            conversation_history: Optional conversation history for context
 
         Returns:
             Dictionary containing analysis, execution results, and summary
         """
         try:
             # Step 1: Analyze prompt and generate action plan
-            operator_response = await self._analyze_prompt(prompt)
+            operator_response = await self._analyze_prompt(prompt, conversation_history)
 
             # Step 2: Execute action plan through spokes
             execution_results = await self._execute_actions(operator_response.actions, current_user)
 
             # Step 3: Create summary
-            summary = self._create_execution_summary(prompt, operator_response, execution_results)
+            summary = self._create_execution_summary(prompt, operator_response, execution_results, conversation_history)
 
             return {
                 "success": True,
@@ -98,18 +100,29 @@ class AIHub:
                 },
             }
 
-    async def _analyze_prompt(self, prompt: str) -> OperatorResponse:
+    async def _analyze_prompt(
+        self, prompt: str, conversation_history: list[dict[str, str]] | None = None
+    ) -> OperatorResponse:
         """Analyze user prompt and generate action plan"""
         system_prompt = self._generate_system_prompt()
 
         self.logger.info(f"Analyzing prompt with system prompt length: {len(system_prompt)}")
 
         try:
+            # Build conversation messages with history
+            messages = [{"role": "system", "content": system_prompt}]
+
+            # Add conversation history if provided
+            if conversation_history:
+                # Add recent conversation history (limit to avoid token overflow)
+                recent_history = conversation_history[-10:]  # Last 10 messages
+                messages.extend(recent_history)
+
+            # Add current prompt
+            messages.append({"role": "user", "content": prompt})
+
             operator_response = llm_chat_completions_perse(
-                prompts=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt},
-                ],
+                prompts=messages,
                 response_format=OperatorResponse,
                 temperature=0.7,
                 max_tokens=1500,
@@ -221,6 +234,7 @@ class AIHub:
         prompt: str,
         operator_response: OperatorResponse,
         execution_results: list[SpokeResponse],
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """Create execution summary"""
         total_actions = len(execution_results)
@@ -255,12 +269,11 @@ class AIHub:
                 }
             )
 
-        # Generate natural language response
-        results_text = llm_chat_completions(
-            prompts=[
-                {
-                    "role": "system",
-                    "content": """あなたは親切で知識豊富なAIアシスタントです。ユーザーの質問に対して実行した処理の結果を基に、自然で分かりやすい日本語で直接的な回答をしてください。
+        # Generate natural language response with conversation context
+        messages = [
+            {
+                "role": "system",
+                "content": """あなたは親切で知識豊富なAIアシスタントです。ユーザーの質問に対して実行した処理の結果を基に、自然で分かりやすい日本語で直接的な回答をしてください。
 
 重要なガイドライン：
 - IDなどの個人情報は含めない
@@ -269,11 +282,21 @@ class AIHub:
 - 成功した場合は結果を具体的に示し、失敗した場合は理由と対処法を説明する
 - 技術的な詳細は避け、ユーザーにとって価値のある情報に焦点を当てる
 - 自然で親しみやすい口調で、簡潔かつ明確に回答する
-- JSON形式ではなく、自然な文章で回答する""",
-                },
-                {
-                    "role": "user",
-                    "content": f"""ユーザーの質問: "{prompt}"
+- JSON形式ではなく、自然な文章で回答する
+- 会話の文脈を考慮して、継続的で自然な対話を心がける""",
+            }
+        ]
+
+        # Add conversation history for context (recent messages only)
+        if conversation_history:
+            recent_history = conversation_history[-6:]  # Last 6 messages for context
+            messages.extend(recent_history)
+
+        # Add current analysis
+        messages.append(
+            {
+                "role": "user",
+                "content": f"""ユーザーの質問: "{prompt}"
 
 実行した処理の結果:
 - 実行したアクション数: {total_actions}
@@ -291,8 +314,11 @@ class AIHub:
 {chr(10).join([f"- {item['description']}: {item['data']}" for item in results_data if item["success"] and item["data"] is not None])}
 
 この情報を基に、ユーザーの質問「{prompt}」に対する適切で自然な返答を生成してください。ユーザーが求めている具体的な情報や回答を中心に、分かりやすく説明してください。""",
-                },
-            ],
+            }
+        )
+
+        results_text = llm_chat_completions(
+            prompts=messages,
             temperature=0.7,
             max_tokens=800,
         )
@@ -307,3 +333,117 @@ class AIHub:
             "results_data": results_data,
             "results_text": results_text,
         }
+
+    def format_conversation_history(self, messages: list[dict[str, str]], limit: int = 30) -> list[dict[str, str]]:
+        """
+        Format conversation history for AI context.
+
+        Args:
+            messages: List of conversation messages in OpenAI format
+            limit: Maximum number of messages to include
+
+        Returns:
+            list[dict[str, str]]: Formatted conversation history
+        """
+        if not messages:
+            return []
+
+        # Take the most recent messages up to the limit
+        recent_messages = messages[-limit:] if len(messages) > limit else messages
+
+        # Ensure proper format for OpenAI API
+        formatted_messages = []
+        for msg in recent_messages:
+            if isinstance(msg, dict) and "role" in msg and "content" in msg:
+                # Ensure role is valid for OpenAI API
+                role = msg["role"]
+                if role not in ["user", "assistant", "system"]:
+                    role = "user" if role == "human" else "assistant"
+
+                formatted_messages.append({"role": role, "content": str(msg["content"])})
+
+        return formatted_messages
+
+    async def process_chat_message(
+        self,
+        message: str,
+        current_user: User,
+        conversation_history: list[dict[str, str]] | None = None,
+    ) -> str:
+        """
+        Process a chat message with conversation context and return AI response.
+
+        Args:
+            message: User's message
+            current_user: Current user object
+            conversation_history: Previous conversation messages
+
+        Returns:
+            str: AI response text
+        """
+        try:
+            # Format conversation history
+            formatted_history = self.format_conversation_history(conversation_history or [])
+
+            # Process through the hub system
+            result = await self.process_request(message, current_user, formatted_history)
+
+            if result["success"] and result.get("summary", {}).get("results_text"):
+                return result["summary"]["results_text"]
+            else:
+                # Fallback to simple chat response
+                return await self._generate_simple_chat_response(message, formatted_history)
+
+        except Exception as e:
+            self.logger.log_error(e, {"user_id": self.user_id, "message": message})
+            return "申し訳ございませんが、現在技術的な問題が発生しています。しばらくしてからもう一度お試しください。"
+
+    async def _generate_simple_chat_response(
+        self,
+        message: str,
+        conversation_history: list[dict[str, str]],
+    ) -> str:
+        """
+        Generate a simple chat response when hub processing fails.
+
+        Args:
+            message: User's message
+            conversation_history: Conversation history
+
+        Returns:
+            str: AI response
+        """
+        try:
+            # Build messages for direct LLM call
+            messages = [
+                {
+                    "role": "system",
+                    "content": """あなたは親切で知識豊富なAIアシスタントです。ユーザーと自然で有用な会話を行ってください。
+
+重要なガイドライン：
+- 日本語で自然に応答する
+- 会話の文脈を考慮する
+- 具体的で有用な情報を提供する
+- 親しみやすく丁寧な口調を保つ
+- 不明な点があれば素直に伝える""",
+                }
+            ]
+
+            # Add conversation history
+            if conversation_history:
+                messages.extend(conversation_history[-10:])  # Last 10 messages
+
+            # Add current message
+            messages.append({"role": "user", "content": message})
+
+            response = llm_chat_completions(
+                prompts=messages,
+                temperature=0.7,
+                max_tokens=1000,
+            )
+
+            return response or "申し訳ございませんが、応答を生成できませんでした。もう一度お試しください。"
+
+        except Exception as e:
+            self.logger.log_error(e, {"message": message})
+            return "申し訳ございませんが、応答の生成中にエラーが発生しました。"
