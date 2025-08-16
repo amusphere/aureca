@@ -51,15 +51,19 @@ async def process_ai_request_endpoint(
 
     try:
         # Phase 1: 高速な利用可否チェック - 新しいサービス層インターフェース使用
+        # 🚨 暫定対応: プランチェックを一旦オミット 🚨
+        # TODO: フロントエンドでのプラン取得が安定したら復活
         check_start = time.time()
-        can_use = await usage_service.can_use_chat(user)
+        can_use = True  # 暫定的に全ユーザーが利用可能とする
         check_duration = time.time() - check_start
 
-        logger.debug(f"Usage check for user {user.id} completed in {check_duration:.3f}s: {can_use}")
+        logger.debug(
+            f"🚨 WORKAROUND: Usage check for user {user.id} completed in {check_duration:.3f}s: {can_use} (check omitted)"
+        )
 
-        if not can_use:
-            # 詳細な制限チェックでエラー情報を取得 - 改善されたエラーレスポンス
-            await usage_service.check_usage_limit(user)
+        # if not can_use:
+        #     # 詳細な制限チェックでエラー情報を取得 - 改善されたエラーレスポンス
+        #     await usage_service.check_usage_limit(user)
 
         # Phase 2: AI処理実行
         ai_start = time.time()
@@ -70,9 +74,12 @@ async def process_ai_request_endpoint(
         logger.debug(f"AI processing for user {user.id} completed in {ai_duration:.3f}s")
 
         # Phase 3: 利用数インクリメント - パフォーマンス最適化
+        # 🚨 暫定対応: 利用数インクリメントを一旦オミット 🚨
+        # TODO: フロントエンドでのプラン取得が安定したら復活
         increment_start = time.time()
-        await usage_service.increment_usage(user)
+        # await usage_service.increment_usage(user)  # 暫定的にコメントアウト
         increment_duration = time.time() - increment_start
+        logger.debug(f"🚨 WORKAROUND: Usage increment for user {user.id} omitted")
 
         total_duration = time.time() - start_time
         logger.info(
@@ -125,12 +132,10 @@ async def process_ai_request_endpoint(
 
         # Check if it's a Clerk API related error
         if "clerk" in str(e).lower():
-            error_detail.update(
-                {
-                    "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
-                    "error_code": "CLERK_API_ERROR",
-                }
-            )
+            error_detail.update({
+                "error": "プラン情報の取得に失敗しました。しばらく後にお試しください。",
+                "error_code": "CLERK_API_ERROR",
+            })
             raise HTTPException(status_code=503, detail=error_detail) from e
 
         # General system error
@@ -264,36 +269,3 @@ async def increment_ai_chat_usage_endpoint(
                 "can_use_chat": False,
             },
         ) from e
-
-
-@router.get("/usage/can-use", response_model=dict)
-async def can_use_ai_chat_endpoint(
-    session: Session = Depends(get_session),
-    user: User = Depends(auth_user),
-):
-    """AI Chat利用可否の高速チェック - 軽量エンドポイント"""
-    usage_service = AIChatUsageService(session=session)
-
-    try:
-        # 高速な利用可否チェック
-        can_use = await usage_service.can_use_chat(user)
-        user_plan = usage_service.get_user_plan(user)
-        daily_limit = usage_service.get_daily_limit(user_plan)
-
-        return {
-            "can_use_chat": can_use,
-            "plan_name": user_plan,
-            "daily_limit": daily_limit,
-            "reset_time": usage_service._get_reset_time(),
-        }
-
-    except Exception as e:
-        logger.error(f"Error checking AI chat availability for user {user.id}: {e}", exc_info=True)
-
-        # エラー時はfreeプランとして安全にフォールバック
-        return {
-            "can_use_chat": False,
-            "plan_name": "free",
-            "daily_limit": 0,
-            "reset_time": usage_service._get_reset_time(),
-        }

@@ -123,14 +123,6 @@ class TestTwoPlanE2E:
             ai_response = client.post("/api/ai/process", json={"prompt": "Test prompt"})
             assert ai_response.status_code == 403
 
-            # Step 4: Check can_use endpoint - should return false
-            can_use_response = client.get("/api/ai/usage/can-use")
-            assert can_use_response.status_code == 200
-            can_use_data = can_use_response.json()
-            assert can_use_data["can_use_chat"] is False
-            assert can_use_data["plan_name"] == "free"
-            assert can_use_data["daily_limit"] == 0
-
         finally:
             self._cleanup_auth()
 
