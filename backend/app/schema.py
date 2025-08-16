@@ -1,5 +1,6 @@
+import time
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from uuid import UUID, uuid4
 
 from sqlalchemy import Index, UniqueConstraint
@@ -12,7 +13,7 @@ class TaskPriority(int, Enum):
     LOW = 3
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     EMAIL = "email"
     CALENDAR = "calendar"
     SLACK = "slack"
@@ -43,6 +44,7 @@ class User(SQLModel, table=True):
     google_oauth_tokens: list["GoogleOAuthToken"] = Relationship(back_populates="user", cascade_delete=True)
     tasks: list["Tasks"] = Relationship(back_populates="user", cascade_delete=True)
     ai_chat_usage: list["AIChatUsage"] = Relationship(back_populates="user", cascade_delete=True)
+    chat_threads: list["ChatThread"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class GoogleOAuthToken(SQLModel, table=True):
@@ -125,6 +127,50 @@ class AIChatUsage(SQLModel, table=True):
 
     # Relationship to User
     user: User = Relationship(back_populates="ai_chat_usage")
+
+
+class ChatThread(SQLModel, table=True):
+    __tablename__ = "chat_threads"
+    __table_args__ = (
+        Index("idx_chat_threads_user_id", "user_id"),
+        Index("idx_chat_threads_uuid", "uuid"),
+        {"extend_existing": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    uuid: UUID = Field(default_factory=uuid4, index=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    title: str | None = Field(nullable=True)
+    created_at: float = Field(default_factory=time.time)
+    updated_at: float = Field(default_factory=time.time)
+
+    # Relationships
+    user: User = Relationship(back_populates="chat_threads")
+    messages: list["ChatMessage"] = Relationship(
+        back_populates="thread", cascade_delete=True, sa_relationship_kwargs={"order_by": "ChatMessage.created_at"}
+    )
+
+
+class ChatMessage(SQLModel, table=True):
+    __tablename__ = "chat_messages"
+    __table_args__ = (
+        Index("idx_chat_messages_thread_id", "thread_id"),
+        Index("idx_chat_messages_created_at", "created_at"),
+        Index("idx_chat_messages_thread_created", "thread_id", "created_at"),
+        Index("idx_chat_messages_uuid", "uuid"),
+        Index("idx_chat_messages_role", "role"),
+        {"extend_existing": True},
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    uuid: UUID = Field(default_factory=uuid4, index=True)
+    thread_id: int = Field(foreign_key="chat_threads.id", index=True)
+    role: str = Field(index=True)  # OpenAI API compliant: "user", "assistant", "system"
+    content: str
+    created_at: float = Field(default_factory=time.time, index=True)
+
+    # Relationship
+    thread: ChatThread = Relationship(back_populates="messages")
 
 
 metadata = SQLModel.metadata
