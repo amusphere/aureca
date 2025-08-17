@@ -32,6 +32,7 @@ async def find_by_thread_id_paginated(
 
 async def get_recent_messages_for_context(session: Session, thread_id: int, limit: int = 30) -> list[ChatMessage]:
     """Get the most recent messages for AI context, ordered chronologically (oldest first)"""
+    # This query will use idx_chat_messages_thread_created_desc for optimal performance
     stmt = (
         select(ChatMessage)
         .where(ChatMessage.thread_id == thread_id)

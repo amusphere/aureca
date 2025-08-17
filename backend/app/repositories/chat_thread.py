@@ -7,6 +7,7 @@ from app.schema import ChatThread
 
 async def find_by_user_id(session: Session, user_id: int) -> list[ChatThread]:
     """Find all chat threads for a specific user, ordered by most recent first"""
+    # This query will use idx_chat_threads_user_updated_desc for optimal performance
     stmt = select(ChatThread).where(ChatThread.user_id == user_id).order_by(ChatThread.updated_at.desc())
 
     return session.exec(stmt).all()
