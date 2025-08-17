@@ -61,11 +61,10 @@ def test_user_fixture(session: Session) -> User:
     """Create a test user."""
     user = User(
         id=1,
-        clerk_user_id="test_user_123",
         clerk_sub="test_user_123",  # Add clerk_sub for plan determination
         email="test@example.com",
+        name="Test User",
         created_at=1672531200.0,  # 2023-01-01 00:00:00
-        updated_at=1672531200.0,
     )
     session.add(user)
     session.commit()

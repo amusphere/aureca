@@ -94,11 +94,10 @@ class TestChatThreadRepository:
         # Create another user
         other_user = User(
             id=999,
-            clerk_user_id="other_user_123",
             clerk_sub="other_user_123",
             email="other@example.com",
+            name="Other User",
             created_at=time.time(),
-            updated_at=time.time(),
         )
         session.add(other_user)
         session.commit()
@@ -209,11 +208,10 @@ class TestChatThreadRepository:
         # Create another user
         other_user = User(
             id=999,
-            clerk_user_id="other_user_123",
             clerk_sub="other_user_123",
             email="other@example.com",
+            name="Other User",
             created_at=time.time(),
-            updated_at=time.time(),
         )
         session.add(other_user)
         session.commit()
@@ -300,11 +298,10 @@ class TestChatThreadRepository:
         # Create another user
         other_user = User(
             id=999,
-            clerk_user_id="other_user_123",
             clerk_sub="other_user_123",
             email="other@example.com",
+            name="Other User",
             created_at=time.time(),
-            updated_at=time.time(),
         )
         session.add(other_user)
         session.commit()
