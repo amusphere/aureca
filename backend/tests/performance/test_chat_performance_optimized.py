@@ -145,7 +145,7 @@ class TestOptimizedChatPerformance:
         per_page = 30
 
         # Test different page positions
-        test_pages = [1, 10, 50, 100, 166]  # Last page for 5000 messages
+        test_pages = [1, 10, 50, 100, 167]  # Last page for 5000 messages (167th page)
         page_times = {}
 
         for page in test_pages:
@@ -157,7 +157,8 @@ class TestOptimizedChatPerformance:
             page_times[page] = metrics["execution_time_ms"]
 
             # Verify results
-            expected_count = per_page if page < 166 else 20  # Last page has 20 messages
+            # Calculate expected count for the last page: 5000 - (166 * 30) = 20
+            expected_count = per_page if page < 167 else 20  # Last page (167) has 20 messages
             assert len(messages) == expected_count
             assert total_count == 5000
 
@@ -168,7 +169,7 @@ class TestOptimizedChatPerformance:
 
         # Verify that performance doesn't degrade too much for later pages
         first_page_time = page_times[1]
-        last_page_time = page_times[166]
+        last_page_time = page_times[167]
         degradation_ratio = last_page_time / first_page_time
 
         # Performance degradation should be reasonable (less than 10x)

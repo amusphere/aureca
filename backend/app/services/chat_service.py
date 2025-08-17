@@ -74,17 +74,17 @@ class ChatService:
             # Save user message
             user_msg = await chat_message.create(self.session, thread.id, "user", user_message)
 
-            # Get conversation context for AI
+            # Get conversation context for AI (this now includes the saved user message)
             conversation_context = await self.get_conversation_context(thread.id, limit=30)
 
             # Process with AI Hub
             ai_hub = AIHub(user_id=user.id, session=self.session)
 
-            # Add current message to context
-            conversation_context.append({"role": "user", "content": user_message})
-
             # Get AI response using the hub with conversation history
-            ai_response_content = await self._get_ai_response_with_context(conversation_context, ai_hub, user)
+            # Note: conversation_context already includes the saved user message
+            ai_response_content = await self._get_ai_response_with_context_fixed(
+                user_message, conversation_context, ai_hub, user
+            )
 
             # Save AI response
             ai_msg = await chat_message.create(self.session, thread.id, "assistant", ai_response_content)
@@ -153,6 +153,46 @@ class ChatService:
             self.logger.error(f"Failed to generate title for thread {thread_id}: {str(e)}")
             return None
 
+    async def _get_ai_response_with_context_fixed(
+        self, current_message: str, conversation_context: list[dict[str, str]], ai_hub: AIHub, user: User
+    ) -> str:
+        """
+        Get AI response using the hub system with conversation context.
+
+        Args:
+            current_message: The current user message being processed
+            conversation_context: Previous conversation messages (includes the current message)
+            ai_hub: AI Hub instance
+            user: User object
+
+        Returns:
+            str: AI response content
+        """
+        try:
+            # The conversation_context includes the current message at the end
+            # We need to pass only the previous messages as history
+            history = conversation_context[:-1] if conversation_context else []
+
+            # Use the enhanced AI hub with conversation history
+            response = await ai_hub.process_chat_message(current_message, user, history)
+
+            # Validate response
+            if not response or not isinstance(response, str):
+                self.logger.warning("AI hub returned empty or invalid response, using fallback")
+                return await self._fallback_ai_response_fixed(current_message, history)
+
+            return response
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            self.logger.error(f"AI response generation failed: {str(e)}")
+            # Try fallback before raising error
+            try:
+                return await self._fallback_ai_response_fixed(current_message, history)
+            except Exception:
+                raise HTTPException(status_code=500, detail="AI processing failed") from None
+
     async def _get_ai_response_with_context(
         self, conversation_context: list[dict[str, str]], ai_hub: AIHub, user: User
     ) -> str:
@@ -196,6 +236,36 @@ class ChatService:
                 return await self._fallback_ai_response(conversation_context)
             except Exception:
                 raise HTTPException(status_code=500, detail="AI processing failed") from None
+
+    async def _fallback_ai_response_fixed(self, current_message: str, history: list[dict[str, str]]) -> str:
+        """
+        Fallback AI response using direct LLM call.
+
+        Args:
+            current_message: The current user message
+            history: Previous conversation messages
+
+        Returns:
+            str: AI response content
+        """
+        try:
+            # Use direct LLM call with conversation context
+            # Add system message for chat context
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a helpful AI assistant. Respond naturally and helpfully to the user's messages, considering the conversation history.",
+                }
+            ]
+            messages.extend(history)
+            messages.append({"role": "user", "content": current_message})
+
+            response = llm_chat_completions(prompts=messages)
+            return response if response else "I'm experiencing technical difficulties. Please try again."
+
+        except Exception as e:
+            self.logger.error(f"Fallback AI response failed: {str(e)}")
+            return "I'm experiencing technical difficulties. Please try again."
 
     async def _fallback_ai_response(self, conversation_context: list[dict[str, str]]) -> str:
         """
