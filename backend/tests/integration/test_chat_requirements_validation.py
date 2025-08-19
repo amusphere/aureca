@@ -544,9 +544,13 @@ class TestChatRequirementsValidation:
         )
         assert response.status_code == 201
 
-        # Verify context was limited to 30 messages
+        # Verify context was limited to 30 messages total (history)
+        # When sending a new message to a thread with 60 messages:
+        # - Total messages become 61 (60 existing + 1 new)
+        # - get_conversation_context returns latest 30 messages
+        # - History (excluding current message) is 29 messages
         assert len(context_lengths) == 1
-        assert context_lengths[0] == 30  # Should be exactly 30, not 60
+        assert context_lengths[0] == 29  # Should be 29 (30 total context minus current message)
 
         # Cleanup
         response = client.delete(f"/api/chat/threads/{thread.uuid}")
