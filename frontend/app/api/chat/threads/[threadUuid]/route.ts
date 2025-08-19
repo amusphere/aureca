@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://backend:8000/api';
 
 interface RouteContext {
   params: Promise<{
@@ -15,9 +15,10 @@ interface RouteContext {
  */
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { userId } = await auth();
+    const { getToken } = await auth();
+    const token = await getToken();
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -32,13 +33,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const per_page = searchParams.get('per_page') || '30';
 
     // Forward request to backend
-    const backendUrl = `${BACKEND_URL}/api/chat/threads/${threadUuid}?page=${page}&per_page=${per_page}`;
+    const backendUrl = `${API_BASE_URL}/chat/threads/${threadUuid}?page=${page}&per_page=${per_page}`;
 
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': userId,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
@@ -77,9 +78,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
  */
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { userId } = await auth();
+    const { getToken } = await auth();
+    const token = await getToken();
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -89,13 +91,13 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const { threadUuid } = await context.params;
 
     // Forward request to backend
-    const backendUrl = `${BACKEND_URL}/api/chat/threads/${threadUuid}`;
+    const backendUrl = `${API_BASE_URL}/chat/threads/${threadUuid}`;
 
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': userId,
+        'Authorization': `Bearer ${token}`,
       },
     });
 

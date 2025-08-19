@@ -2,8 +2,7 @@
 
 import { getErrorMessage } from "@/constants/error_messages";
 import { AlertCircle, RefreshCw, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import type { ChatMessage as ChatMessageType } from "../../../types/chat";
+import { useEffect, useState } from "react";
 import { useAIChatUsage } from "../../hooks/useAIChatUsage";
 import { useChatMessages } from "../../hooks/useChatMessages";
 import { useChatThreads } from "../../hooks/useChatThreads";
@@ -11,11 +10,10 @@ import { cn } from "../../lib/utils";
 import { EmptyState } from "../commons/EmptyState";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { UsageDisplay } from "../ui/usage-display";
 import AIChatInput from "./ChatInput";
-import ChatMessage from "./ChatMessage";
+import { MessageHistoryDisplay } from "./MessageHistoryDisplay";
 
 interface AIChatModalProps {
   isOpen: boolean;
@@ -55,6 +53,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
   const {
     messages: chatMessages,
     loading: messagesLoading,
+    loadingMore: loadingMoreMessages,
     sendingMessage,
     error: messagesError,
     sendMessage: sendChatMessage,
@@ -77,15 +76,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     clearError: clearUsageError
   } = useAIChatUsage();
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Convert ChatMessage to legacy Message format for ChatMessage component
-  const convertToLegacyMessage = (chatMessage: ChatMessageType) => ({
-    id: chatMessage.uuid,
-    content: chatMessage.content,
-    isUser: chatMessage.role === 'user',
-    timestamp: new Date(chatMessage.created_at * 1000),
-  });
 
   // Get or create default thread
   const ensureDefaultThread = async (): Promise<string | null> => {
@@ -128,10 +119,6 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   // Enhanced message sending with usage tracking
   const handleSendMessage = async (message: string) => {
     // Check if user can use chat before sending
@@ -156,10 +143,6 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
       console.error('Failed to send message:', error);
     }
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatMessages]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -222,7 +205,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               {EMPTY_STATE_MESSAGES.title}
             </h2>
 
-            {(usageLoading || threadsLoading || messagesLoading) && (
+            {(usageLoading || threadsLoading || messagesLoading || loadingMoreMessages) && (
               <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" aria-label="読み込み中" />
             )}
 
@@ -354,7 +337,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
           {/* System Error Display */}
           {(threadsError || messagesError) && (
-            <div className="p-4">
+            <div className="p-4" data-testid="error-display">
               <ErrorDisplay
                 error={threadsError || messagesError || ''}
                 variant="compact"
@@ -367,50 +350,27 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/50 to-background/80">
-            <ScrollArea className="h-full">
-              <div className="px-6 py-2">
-                {/* Load More Messages Button */}
-                {pagination?.has_prev && (
-                  <div className="text-center py-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={loadMoreMessages}
-                      disabled={messagesLoading}
-                      className="text-xs"
-                    >
-                      {messagesLoading ? (
-                        <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                      ) : null}
-                      過去のメッセージを読み込む
-                    </Button>
-                  </div>
-                )}
-
-                {chatMessages.length === 0 && !messagesLoading ? (
-                  <EmptyState
-                    type="no-data"
-                    title={EMPTY_STATE_MESSAGES.title}
-                    description={EMPTY_STATE_MESSAGES.description}
-                    size="sm"
-                    showIcon={false}
-                    className="min-h-[320px] flex items-center justify-center"
-                  />
-                ) : (
-                  <div className="space-y-6 py-6">
-                    {chatMessages.map((message) => (
-                      <ChatMessage
-                        key={message.uuid}
-                        message={convertToLegacyMessage(message)}
-                      />
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+          {chatMessages.length === 0 && !messagesLoading ? (
+            <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/50 to-background/80 flex items-center justify-center">
+              <EmptyState
+                type="no-data"
+                title={EMPTY_STATE_MESSAGES.title}
+                description={EMPTY_STATE_MESSAGES.description}
+                size="sm"
+                showIcon={false}
+                className="min-h-[320px] flex items-center justify-center"
+              />
+            </div>
+          ) : (
+            <MessageHistoryDisplay
+              messages={chatMessages}
+              pagination={pagination}
+              loading={messagesLoading}
+              loadingMore={loadingMoreMessages}
+              onLoadMore={loadMoreMessages}
+              className="bg-gradient-to-b from-background/50 to-background/80"
+            />
+          )}
 
           <Separator className="bg-border/20" />
 

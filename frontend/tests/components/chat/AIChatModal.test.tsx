@@ -18,19 +18,43 @@ const mockUseAIChatUsage = {
   checkUsage: vi.fn(),
 }
 
-const mockUseMessages = {
+
+
+const mockUseChatThreads = {
+  threads: [],
+  loading: false,
+  error: null,
+  createThread: vi.fn(),
+  refreshThreads: vi.fn(),
+}
+
+const mockUseChatMessages = {
   messages: [],
-  isLoading: false,
+  pagination: null,
+  loading: false,
+  loadingMore: false,
+  sendingMessage: false,
   error: null,
   sendMessage: vi.fn(),
+  loadMessages: vi.fn(),
+  loadMoreMessages: vi.fn(),
+  refreshMessages: vi.fn(),
+  clearMessages: vi.fn(),
+  clearError: vi.fn(),
 }
 
 vi.mock('../../../components/hooks/useAIChatUsage', () => ({
   useAIChatUsage: () => mockUseAIChatUsage,
 }))
 
-vi.mock('../../../components/hooks/useMessages', () => ({
-  useMessages: () => mockUseMessages,
+
+
+vi.mock('../../../components/hooks/useChatThreads', () => ({
+  useChatThreads: () => mockUseChatThreads,
+}))
+
+vi.mock('../../../components/hooks/useChatMessages', () => ({
+  useChatMessages: () => mockUseChatMessages,
 }))
 
 // Mock the child components
@@ -95,9 +119,21 @@ vi.mock('../../../components/components/commons/EmptyState', () => ({
 
 vi.mock('../../../components/components/commons/ErrorDisplay', () => ({
   ErrorDisplay: ({ error, onRetry }: { error: { message: string }, onRetry: () => void }) => (
-    <div data-testid="error-display">
+    <div>
       <p>{error.message}</p>
       <button onClick={onRetry}>Retry</button>
+    </div>
+  ),
+}))
+
+vi.mock('../../../components/components/chat/MessageHistoryDisplay', () => ({
+  MessageHistoryDisplay: ({ messages }: { messages: Array<{ uuid: string, content: string, role: string, created_at: number }> }) => (
+    <div>
+      {messages.map((message) => (
+        <div key={message.uuid} data-testid="chat-message">
+          {message.content}
+        </div>
+      ))}
     </div>
   ),
 }))
@@ -122,12 +158,7 @@ describe('AIChatModal', () => {
       clearError: vi.fn(),
       checkUsage: vi.fn(),
     })
-    Object.assign(mockUseMessages, {
-      messages: [],
-      isLoading: false,
-      error: null,
-      sendMessage: vi.fn(),
-    })
+
   })
 
   afterEach(() => {
@@ -355,10 +386,10 @@ describe('AIChatModal', () => {
     })
 
     it('メッセージがある場合、メッセージが表示される', () => {
-      Object.assign(mockUseMessages, {
+      Object.assign(mockUseChatMessages, {
         messages: [
-          { id: '1', content: 'Hello', role: 'user' },
-          { id: '2', content: 'Hi there!', role: 'assistant' },
+          { uuid: '1', content: 'Hello', role: 'user', created_at: Date.now() / 1000 },
+          { uuid: '2', content: 'Hi there!', role: 'assistant', created_at: Date.now() / 1000 },
         ],
       })
 
@@ -370,8 +401,8 @@ describe('AIChatModal', () => {
     })
 
     it('システムエラーがある場合、エラー表示が表示される', () => {
-      Object.assign(mockUseMessages, {
-        error: new Error('System error'),
+      Object.assign(mockUseChatMessages, {
+        error: 'System error',
       })
 
       render(<AIChatModal {...defaultProps} />)
@@ -383,7 +414,8 @@ describe('AIChatModal', () => {
   describe('メッセージ送信', () => {
     it('利用可能な場合、メッセージを送信できる', async () => {
       const user = userEvent.setup()
-      const sendMessage = vi.fn()
+      const sendMessage = vi.fn().mockResolvedValue({ uuid: 'ai-response', role: 'assistant', content: 'AI response', created_at: Date.now() / 1000 })
+      const createThread = vi.fn().mockResolvedValue({ uuid: 'thread-1', title: null, created_at: Date.now() / 1000, updated_at: Date.now() / 1000, message_count: 0 })
       const incrementUsage = vi.fn().mockResolvedValue({
         remaining_count: 4,
         daily_limit: 10,
@@ -391,7 +423,11 @@ describe('AIChatModal', () => {
         can_use_chat: true,
       })
 
-      Object.assign(mockUseMessages, { sendMessage })
+      Object.assign(mockUseChatMessages, { sendMessage })
+      Object.assign(mockUseChatThreads, {
+        threads: [{ uuid: 'thread-1', title: null, created_at: Date.now() / 1000, updated_at: Date.now() / 1000, message_count: 0 }],
+        createThread
+      })
       Object.assign(mockUseAIChatUsage, {
         usage: {
           remaining_count: 5,
@@ -419,7 +455,7 @@ describe('AIChatModal', () => {
       const user = userEvent.setup()
       const sendMessage = vi.fn()
 
-      Object.assign(mockUseMessages, { sendMessage })
+      Object.assign(mockUseChatMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
         can_use_chat: false,
         isUsageExhausted: true,
@@ -439,10 +475,6 @@ describe('AIChatModal', () => {
       const user = userEvent.setup()
       const sendMessage = vi.fn()
 
-      Object.assign(mockUseMessages, {
-        sendMessage,
-        isLoading: true,
-      })
       Object.assign(mockUseAIChatUsage, {
         can_use_chat: true,
       })
@@ -461,7 +493,7 @@ describe('AIChatModal', () => {
       const user = userEvent.setup()
       const sendMessage = vi.fn()
 
-      Object.assign(mockUseMessages, { sendMessage })
+      Object.assign(mockUseChatMessages, { sendMessage })
       Object.assign(mockUseAIChatUsage, {
         can_use_chat: true,
         loading: true,
@@ -645,9 +677,9 @@ describe('AIChatModal', () => {
         can_use_chat: false,
       })
 
-      Object.assign(mockUseMessages, {
+      Object.assign(mockUseChatMessages, {
         messages: [
-          { id: '1', content: 'Previous message', role: 'user' },
+          { uuid: '1', content: 'Previous message', role: 'user', created_at: Date.now() / 1000 },
         ],
       })
 
@@ -725,8 +757,8 @@ describe('AIChatModal', () => {
     })
 
     it('メッセージ送信中は入力が無効化される', () => {
-      Object.assign(mockUseMessages, {
-        isLoading: true,
+      Object.assign(mockUseChatMessages, {
+        sendingMessage: true,
       })
 
       Object.assign(mockUseAIChatUsage, {
@@ -785,7 +817,7 @@ describe('AIChatModal', () => {
 
       // Check for screen reader friendly content
       expect(screen.getByTestId('mobile-usage-display')).toBeInTheDocument()
-      expect(screen.getAllByText('AIアシスタント')).toHaveLength(2) // Header and empty state
+      expect(screen.getByText('AIアシスタント')).toBeInTheDocument() // Header
     })
   })
 

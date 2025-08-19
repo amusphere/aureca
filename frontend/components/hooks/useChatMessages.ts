@@ -10,6 +10,7 @@ interface UseChatMessagesReturn {
   messages: ChatMessage[];
   pagination: PaginationInfo | null;
   loading: boolean;
+  loadingMore: boolean;
   sendingMessage: boolean;
   error: string | null;
   sendMessage: (content: string) => Promise<ChatMessage | null>;
@@ -24,6 +25,7 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,12 +66,16 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
 
       const data: ChatThreadWithMessages = await response.json();
 
+      // Sort messages by created_at to ensure chronological order (oldest first)
+      const sortedMessages = [...data.messages].sort((a, b) => a.created_at - b.created_at);
+
       if (page === 1) {
         // First page - replace all messages
-        setMessages(data.messages);
+        setMessages(sortedMessages);
       } else {
-        // Additional pages - append to existing messages
-        setMessages(prev => [...prev, ...data.messages]);
+        // Additional pages - prepend older messages to existing messages
+        // Since we're loading older messages, they should come before current messages
+        setMessages(prev => [...sortedMessages, ...prev]);
       }
 
       setPagination(data.pagination);
@@ -83,12 +89,50 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
   }, [threadUuid]);
 
   const loadMoreMessages = useCallback(async () => {
-    if (!pagination?.has_next || loading) {
+    if (!pagination?.has_prev || loading || loadingMore) {
       return;
     }
 
-    await loadMessages(pagination.page + 1);
-  }, [pagination, loading, loadMessages]);
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/chat/threads/${threadUuid}?page=${pagination.page + 1}&per_page=30`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('認証が必要です');
+        }
+        if (response.status === 403) {
+          throw new Error('アクセス権限がありません');
+        }
+        if (response.status === 404) {
+          throw new Error('スレッドが見つかりません');
+        }
+        throw new Error(`メッセージの取得に失敗しました: ${response.status}`);
+      }
+
+      const data: ChatThreadWithMessages = await response.json();
+
+      // Sort messages by created_at to ensure chronological order (oldest first)
+      const sortedMessages = [...data.messages].sort((a, b) => a.created_at - b.created_at);
+
+      // Prepend older messages to existing messages
+      setMessages(prev => [...sortedMessages, ...prev]);
+      setPagination(data.pagination);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '過去のメッセージの取得中にエラーが発生しました';
+      setError(errorMessage);
+      console.error('Failed to load more messages:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [pagination, loading, loadingMore, threadUuid]);
 
   const sendMessage = useCallback(async (content: string): Promise<ChatMessage | null> => {
     if (!threadUuid) {
@@ -223,6 +267,7 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
     messages,
     pagination,
     loading,
+    loadingMore,
     sendingMessage,
     error,
     sendMessage,

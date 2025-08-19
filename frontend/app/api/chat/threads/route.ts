@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://backend:8000/api';
 
 /**
  * GET /api/chat/threads
@@ -9,9 +9,10 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { getToken } = await auth();
+    const token = await getToken();
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -24,13 +25,13 @@ export async function GET(request: NextRequest) {
     const per_page = searchParams.get('per_page') || '30';
 
     // Forward request to backend
-    const backendUrl = `${BACKEND_URL}/api/chat/threads?page=${page}&per_page=${per_page}`;
+    const backendUrl = `${API_BASE_URL}/chat/threads?page=${page}&per_page=${per_page}`;
 
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': userId,
+        'Authorization': `Bearer ${token}`,
       },
     });
 
@@ -62,9 +63,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { getToken } = await auth();
+    const token = await getToken();
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -74,13 +76,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Forward request to backend
-    const backendUrl = `${BACKEND_URL}/api/chat/threads`;
+    const backendUrl = `${API_BASE_URL}/chat/threads`;
 
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': userId,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(body),
     });

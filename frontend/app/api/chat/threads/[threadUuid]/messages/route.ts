@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://backend:8000/api';
 
 interface RouteContext {
   params: Promise<{
@@ -15,9 +15,10 @@ interface RouteContext {
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const { userId } = await auth();
+    const { getToken } = await auth();
+    const token = await getToken();
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -36,13 +37,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     // Forward request to backend
-    const backendUrl = `${BACKEND_URL}/api/chat/threads/${threadUuid}/messages`;
+    const backendUrl = `${API_BASE_URL}/chat/threads/${threadUuid}/messages`;
 
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-ID': userId,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(body),
     });
