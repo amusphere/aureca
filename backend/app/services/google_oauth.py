@@ -1,5 +1,4 @@
 import base64
-import os
 from datetime import datetime
 
 import requests
@@ -9,15 +8,17 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from sqlmodel import Session
 
+# Import Google OAuth configuration
+from app.config.auth import GoogleOAuthConfig
 from app.models.google_oauth import GoogleCallbackRequest
 from app.repositories import google_oauth_token
 from app.schema import GoogleOAuthToken
 
 # Google OAuth設定
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/api/auth/google/callback")
-ENCRYPTION_KEY = os.getenv("GOOGLE_OAUTH_ENCRYPTION_KEY")
+GOOGLE_CLIENT_ID = GoogleOAuthConfig.CLIENT_ID
+GOOGLE_CLIENT_SECRET = GoogleOAuthConfig.CLIENT_SECRET
+GOOGLE_REDIRECT_URI = GoogleOAuthConfig.REDIRECT_URI
+ENCRYPTION_KEY = GoogleOAuthConfig.ENCRYPTION_KEY
 
 # Google Calendar API のスコープ
 SCOPES = [

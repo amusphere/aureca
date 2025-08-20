@@ -14,7 +14,6 @@ both context manager and direct access patterns.
 import base64
 import email.mime.text
 import logging
-import os
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -23,6 +22,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from sqlmodel import Session
 
+from app.config.auth import GoogleOAuthConfig
 from app.schema import User
 from app.services.google_oauth import GoogleOauthService
 
@@ -141,8 +141,8 @@ class GmailService:
                 token=credentials.token,
                 refresh_token=credentials.refresh_token,
                 token_uri=GmailConfig.OAUTH_TOKEN_URI,
-                client_id=os.getenv("GOOGLE_CLIENT_ID"),
-                client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+                client_id=GoogleOAuthConfig.CLIENT_ID,
+                client_secret=GoogleOAuthConfig.CLIENT_SECRET,
                 scopes=GmailConfig.SCOPES,
             )
 

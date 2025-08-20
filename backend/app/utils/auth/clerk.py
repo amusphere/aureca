@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 
 import httpx
@@ -15,10 +14,10 @@ from app.schema import User
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
-AUTHORIZED_PARTIES = [
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-]
+from app.config.auth import AuthConfig, ClerkConfig
+
+CLERK_SECRET_KEY = ClerkConfig.SECRET_KEY
+AUTHORIZED_PARTIES = AuthConfig.get_authorized_parties()
 
 security = HTTPBearer()
 

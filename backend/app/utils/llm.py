@@ -1,5 +1,3 @@
-import os
-
 import openai
 from pydantic import BaseModel
 
@@ -14,7 +12,9 @@ def get_openai_client():
     """
     global _openai_client
     if _openai_client is None:
-        api_key = os.getenv("OPENAI_API_KEY")
+        from app.config.app import OpenAIConfig
+
+        api_key = OpenAIConfig.API_KEY
         if not api_key:
             raise ValueError("OPENAI_API_KEY is not set in environment variables.")
         _openai_client = openai.OpenAI(api_key=api_key)

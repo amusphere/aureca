@@ -14,7 +14,6 @@ Key features:
 """
 
 import logging
-import os
 
 from clerk_backend_api import Clerk
 from clerk_backend_api import User as ClerkUser
@@ -27,7 +26,9 @@ class ClerkService:
 
     def __init__(self):
         """Initialize Clerk API client"""
-        clerk_secret_key = os.getenv("CLERK_SECRET_KEY")
+        from app.config.auth import ClerkConfig
+
+        clerk_secret_key = ClerkConfig.SECRET_KEY
         if not clerk_secret_key:
             logger.error("CLERK_SECRET_KEY environment variable is not set")
             raise ValueError("CLERK_SECRET_KEY environment variable is required")

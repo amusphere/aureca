@@ -12,7 +12,6 @@ both context manager and direct access patterns.
 """
 
 import logging
-import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Any
@@ -24,6 +23,7 @@ from googleapiclient.errors import HttpError
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from app.config.auth import GoogleOAuthConfig
 from app.schema import User
 from app.services.google_oauth import GoogleOauthService
 
@@ -157,8 +157,8 @@ class GoogleCalendarService:
                 token=credentials.token,
                 refresh_token=credentials.refresh_token,
                 token_uri=GoogleCalendarConfig.OAUTH_TOKEN_URI,
-                client_id=os.getenv("GOOGLE_CLIENT_ID"),
-                client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+                client_id=GoogleOAuthConfig.CLIENT_ID,
+                client_secret=GoogleOAuthConfig.CLIENT_SECRET,
                 scopes=GoogleCalendarConfig.SCOPES,
             )
 
@@ -592,26 +592,22 @@ class GoogleCalendarService:
 
                 # Check for free time before the event
                 if current_time < event_start:
-                    free_time_slots.append(
-                        {
-                            "start_time": current_time,
-                            "end_time": event_start,
-                            "duration_minutes": int((event_start - current_time).total_seconds() / 60),
-                        }
-                    )
+                    free_time_slots.append({
+                        "start_time": current_time,
+                        "end_time": event_start,
+                        "duration_minutes": int((event_start - current_time).total_seconds() / 60),
+                    })
 
                 # Move current time after the event
                 current_time = max(current_time, event_end)
 
             # Check for free time after the last event
             if current_time < end_date:
-                free_time_slots.append(
-                    {
-                        "start_time": current_time,
-                        "end_time": end_date,
-                        "duration_minutes": int((end_date - current_time).total_seconds() / 60),
-                    }
-                )
+                free_time_slots.append({
+                    "start_time": current_time,
+                    "end_time": end_date,
+                    "duration_minutes": int((end_date - current_time).total_seconds() / 60),
+                })
 
             logger.info(f"Calculated {len(free_time_slots)} free time slots in calendar {calendar_id}")
             return free_time_slots
