@@ -23,8 +23,9 @@ def test_user(session: Session) -> User:
 def large_chat_thread(session: Session, test_user: User) -> Generator[ChatThread, None, None]:
     """Create a chat thread with many messages for performance testing."""
     # Create thread
+    now = time.time()
     thread = ChatThread(
-        user_id=test_user.id, title="Performance Test Thread", created_at=time.time(), updated_at=time.time()
+        user_id=test_user.id, title="Performance Test Thread", created_at=now, updated_at=now
     )
     session.add(thread)
     session.commit()

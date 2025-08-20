@@ -33,7 +33,8 @@ async def create(session: Session, user_id: int, title: str | None = None) -> Ch
     """Create a new chat thread"""
     import time
 
-    thread = ChatThread(user_id=user_id, title=title, created_at=time.time(), updated_at=time.time())
+    now = time.time()
+    thread = ChatThread(user_id=user_id, title=title, created_at=now, updated_at=now)
 
     session.add(thread)
     session.commit()
