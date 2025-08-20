@@ -1,19 +1,19 @@
 "use client";
 
 import { getErrorMessage } from "@/constants/error_messages";
-import { AlertCircle, RefreshCw, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { AlertCircle, RefreshCw, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAIChatUsage } from "../../hooks/useAIChatUsage";
-import { useMessages } from "../../hooks/useMessages";
+import { useChatMessages } from "../../hooks/useChatMessages";
+import { useChatThreads } from "../../hooks/useChatThreads";
 import { cn } from "../../lib/utils";
 import { EmptyState } from "../commons/EmptyState";
 import { ErrorDisplay } from "../commons/ErrorDisplay";
 import { Button } from "../ui/button";
-import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 import { UsageDisplay } from "../ui/usage-display";
 import AIChatInput from "./ChatInput";
-import ChatMessage from "./ChatMessage";
+import { MessageHistoryDisplay } from "./MessageHistoryDisplay";
 
 interface AIChatModalProps {
   isOpen: boolean;
@@ -38,7 +38,31 @@ const EMPTY_STATE_MESSAGES = {
 } as const;
 
 export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
-  const { messages, isLoading, error, sendMessage } = useMessages();
+  const [defaultThreadUuid, setDefaultThreadUuid] = useState<string | null>(null);
+
+  // Chat threads management (for getting/creating default thread)
+  const {
+    threads,
+    loading: threadsLoading,
+    error: threadsError,
+    createThread,
+    refreshThreads
+  } = useChatThreads();
+
+  // Messages for default thread
+  const {
+    messages: chatMessages,
+    loading: messagesLoading,
+    loadingMore: loadingMoreMessages,
+    sendingMessage,
+    error: messagesError,
+    sendMessage: sendChatMessage,
+    loadMoreMessages,
+    clearMessages,
+    pagination
+  } = useChatMessages(defaultThreadUuid);
+
+  // Usage management
   const {
     usage,
     loading: usageLoading,
@@ -51,10 +75,48 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     incrementUsage,
     clearError: clearUsageError
   } = useAIChatUsage();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
+
+  // Get or create default thread
+  const ensureDefaultThread = async (): Promise<string | null> => {
+    if (defaultThreadUuid) {
+      return defaultThreadUuid;
+    }
+
+    // Check if there's an existing thread
+    if (threads.length > 0) {
+      const thread = threads[0]; // Use the first thread as default
+      setDefaultThreadUuid(thread.uuid);
+      return thread.uuid;
+    }
+
+    // Create a new thread
+    const newThread = await createThread();
+    if (newThread) {
+      setDefaultThreadUuid(newThread.uuid);
+      return newThread.uuid;
+    }
+
+    return null;
+  };
+
+  // Auto-select default thread
+  useEffect(() => {
+    if (isOpen && !defaultThreadUuid && threads.length > 0) {
+      setDefaultThreadUuid(threads[0].uuid);
+    }
+  }, [isOpen, defaultThreadUuid, threads]);
+
+  // Clear chat history with confirmation
+  const handleClearHistory = async () => {
+    if (confirm('チャット履歴をクリアしますか？この操作は取り消せません。')) {
+      const success = await clearMessages();
+      if (success) {
+        // After clearing, we need to create a new thread for future messages
+        setDefaultThreadUuid(null);
+      }
+    }
   };
 
   // Enhanced message sending with usage tracking
@@ -65,20 +127,22 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
     }
 
     try {
-      // Send the message
-      await sendMessage(message);
+      // Ensure we have a default thread
+      const threadUuid = await ensureDefaultThread();
+      if (!threadUuid) {
+        throw new Error('スレッドの作成に失敗しました');
+      }
+
+      // Send the message using the new chat system
+      await sendChatMessage(message);
 
       // Increment usage count after successful message
       await incrementUsage();
     } catch (error) {
-      // Error handling is managed by useMessages hook
+      // Error handling is managed by useChatMessages hook
       console.error('Failed to send message:', error);
     }
   };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -141,16 +205,16 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
               {EMPTY_STATE_MESSAGES.title}
             </h2>
 
-            {usageLoading && (
+            {(usageLoading || threadsLoading || messagesLoading || loadingMoreMessages) && (
               <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground ml-2" aria-label="読み込み中" />
             )}
 
             {/* Usage Display - Desktop Only (Compact). Hide when error exists to avoid duplicate titles */}
-    {!usageError && (
+            {!usageError && (
               <div className="hidden sm:flex items-center ml-auto mr-4">
                 <UsageDisplay
-      currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
-      dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
+                  currentUsage={usage ? Math.max(0, (usage.daily_limit ?? dailyLimit ?? 0) - (usage.remaining_count ?? 0)) : 0}
+                  dailyLimit={usage?.daily_limit ?? (dailyLimit ?? 0)}
                   planName={planName}
                   resetTime={usage?.reset_time}
                   variant="compact"
@@ -162,15 +226,31 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
             )}
           </div>
 
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
-            aria-label="チャットを閉じる"
-          >
-            <X size={18} />
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Clear History Button */}
+            {chatMessages.length > 0 && (
+              <Button
+                onClick={handleClearHistory}
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200"
+                aria-label="チャット履歴をクリア"
+                title="チャット履歴をクリア"
+              >
+                <Trash2 size={16} />
+              </Button>
+            )}
+
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
+              aria-label="チャットを閉じる"
+            >
+              <X size={18} />
+            </Button>
+          </div>
         </header>
 
         {/* Mobile Usage Display - Full Width */}
@@ -256,55 +336,53 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
           )}
 
           {/* System Error Display */}
-          {error && (
-            <div className="p-4">
+          {(threadsError || messagesError) && (
+            <div className="p-4" data-testid="error-display">
               <ErrorDisplay
-                error={error}
+                error={threadsError || messagesError || ''}
                 variant="compact"
-                onRetry={() => window.location.reload()}
+                onRetry={() => {
+                  if (threadsError) refreshThreads();
+                  if (messagesError) window.location.reload();
+                }}
               />
             </div>
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/50 to-background/80">
-            <ScrollArea className="h-full">
-              <div className="px-6 py-2">
-                {messages.length === 0 && !isLoading ? (
-                  <EmptyState
-                    type="no-data"
-                    title={EMPTY_STATE_MESSAGES.title}
-                    description={EMPTY_STATE_MESSAGES.description}
-                    size="sm"
-                    showIcon={false}
-                    className="min-h-[320px] flex items-center justify-center"
-                  />
-                ) : (
-                  <div className="space-y-6 py-6">
-                    {messages.map((message) => (
-                      <ChatMessage
-                        key={message.id}
-                        message={message}
-                      />
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+          {chatMessages.length === 0 && !messagesLoading ? (
+            <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/50 to-background/80 flex items-center justify-center">
+              <EmptyState
+                type="no-data"
+                title={EMPTY_STATE_MESSAGES.title}
+                description={EMPTY_STATE_MESSAGES.description}
+                size="sm"
+                showIcon={false}
+                className="min-h-[320px] flex items-center justify-center"
+              />
+            </div>
+          ) : (
+            <MessageHistoryDisplay
+              messages={chatMessages}
+              pagination={pagination}
+              loading={messagesLoading}
+              loadingMore={loadingMoreMessages}
+              onLoadMore={loadMoreMessages}
+              className="bg-gradient-to-b from-background/50 to-background/80"
+            />
+          )}
 
           <Separator className="bg-border/20" />
 
           {/* Input Area */}
           <div className="px-6 py-5 bg-background/90 backdrop-blur-sm border-t border-border/10">
-        {/* Usage Exhausted Message */}
-      {(isUsageExhausted || !!usageError) && (
+            {/* Usage Exhausted Message */}
+            {(isUsageExhausted || !!usageError) && (
               <div className="mb-4 p-3 bg-muted/50 border border-border/30 rounded-lg" data-testid="usage-exhausted-message">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground font-medium">
-          本日の利用回数上限に達しました
+                    本日の利用回数上限に達しました
                   </p>
                 </div>
                 {usage?.reset_time && (
@@ -322,7 +400,7 @@ export default function AIChatModal({ isOpen, onClose }: AIChatModalProps) {
 
             <AIChatInput
               onSendMessage={handleSendMessage}
-              isLoading={isLoading || usageLoading}
+              isLoading={sendingMessage || usageLoading}
               disabled={!canUseChat || isUsageExhausted}
               usage={usage}
               usageError={usageError}
