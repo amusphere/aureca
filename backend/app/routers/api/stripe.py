@@ -52,4 +52,4 @@ async def stripe_health_check() -> dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Error checking Stripe health: {e}")
-        raise HTTPException(status_code=500, detail="Failed to check Stripe service health")
+        raise HTTPException(status_code=500, detail="Failed to check Stripe service health") from e

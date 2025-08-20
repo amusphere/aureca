@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 from svix.webhooks import Webhook, WebhookVerificationError
 
+from app.config.auth import ClerkConfig
 from app.database import get_session
 from app.repositories.user import delete_user, get_user_br_column
 
 router = APIRouter(prefix="/webhooks")
-from app.config.auth import ClerkConfig
 
 CLERK_WEBHOOK_SECRET = ClerkConfig.WEBHOOK_SECRET
 

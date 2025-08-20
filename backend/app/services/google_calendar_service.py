@@ -592,22 +592,26 @@ class GoogleCalendarService:
 
                 # Check for free time before the event
                 if current_time < event_start:
-                    free_time_slots.append({
-                        "start_time": current_time,
-                        "end_time": event_start,
-                        "duration_minutes": int((event_start - current_time).total_seconds() / 60),
-                    })
+                    free_time_slots.append(
+                        {
+                            "start_time": current_time,
+                            "end_time": event_start,
+                            "duration_minutes": int((event_start - current_time).total_seconds() / 60),
+                        }
+                    )
 
                 # Move current time after the event
                 current_time = max(current_time, event_end)
 
             # Check for free time after the last event
             if current_time < end_date:
-                free_time_slots.append({
-                    "start_time": current_time,
-                    "end_time": end_date,
-                    "duration_minutes": int((end_date - current_time).total_seconds() / 60),
-                })
+                free_time_slots.append(
+                    {
+                        "start_time": current_time,
+                        "end_time": end_date,
+                        "duration_minutes": int((end_date - current_time).total_seconds() / 60),
+                    }
+                )
 
             logger.info(f"Calculated {len(free_time_slots)} free time slots in calendar {calendar_id}")
             return free_time_slots

@@ -8,13 +8,12 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
 from sqlmodel import Session
 
+from app.config.auth import AuthConfig, ClerkConfig
 from app.repositories.user import get_user_br_column
 from app.schema import User
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
-
-from app.config.auth import AuthConfig, ClerkConfig
 
 CLERK_SECRET_KEY = ClerkConfig.SECRET_KEY
 AUTHORIZED_PARTIES = AuthConfig.get_authorized_parties()

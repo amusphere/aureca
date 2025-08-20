@@ -20,12 +20,14 @@ class DatabaseConfig:
 
         # Add PostgreSQL specific settings if using PostgreSQL
         if cls.URL.startswith("postgresql"):
-            args.update({
-                "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
-                "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
-                "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
-                "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),
-            })
+            args.update(
+                {
+                    "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
+                    "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
+                    "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+                    "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),
+                }
+            )
 
         return args
 
