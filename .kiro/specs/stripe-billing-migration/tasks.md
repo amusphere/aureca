@@ -6,7 +6,7 @@
   - Alembicマイグレーションファイルを生成・実行
   - _要件: 要件2.1, 要件2.4_
 
-- [ ] 2. SQLModelスキーマ定義の更新
+- [x] 2. SQLModelスキーマ定義の更新
   - SubscriptionモデルをSQLModelで定義
   - UserモデルにStripe関連フィールドとリレーションシップを追加
   - schema.pyを更新
