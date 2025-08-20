@@ -30,6 +30,7 @@ dependencies = [
     "ruff>=0.12.7",
     "clerk-backend-api>=3.1.11",
     "fastapi[standard]>=0.116.1",
+    "stripe>=12.4.0",
 ]
 
 [tool.pytest.ini_options]
