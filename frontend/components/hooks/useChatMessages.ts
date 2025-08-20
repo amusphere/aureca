@@ -176,25 +176,9 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
 
       const aiResponse: ChatMessage = await response.json();
 
-      // Add both user message and AI response to the messages list
-      // The API should return the AI response, and we need to create the user message
-      const userMessage: ChatMessage = {
-        uuid: `temp-${Date.now()}`, // Temporary UUID for user message
-        role: 'user',
-        content,
-        created_at: Date.now() / 1000, // Convert to Unix timestamp
-      };
-
-      // Add messages in chronological order
-      setMessages(prev => [...prev, userMessage, aiResponse]);
-
-      // Update pagination info if available
-      if (pagination) {
-        setPagination(prev => prev ? {
-          ...prev,
-          total_messages: prev.total_messages + 2, // User + AI message
-        } : null);
-      }
+      // After sending message, refresh the messages to get both user and AI messages from DB
+      // This ensures we have the correct UUIDs and created_at timestamps from the database
+      await loadMessages(1);
 
       return aiResponse;
     } catch (err) {
@@ -205,7 +189,7 @@ export function useChatMessages(threadUuid: string | null): UseChatMessagesRetur
     } finally {
       setSendingMessage(false);
     }
-  }, [threadUuid, pagination]);
+  }, [threadUuid, loadMessages]);
 
   const refreshMessages = useCallback(async () => {
     await loadMessages(1);
