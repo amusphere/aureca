@@ -385,30 +385,40 @@ class TestChatAPIIntegration:
         """Test that all endpoints require authentication."""
         from fastapi.testclient import TestClient
 
-        # Create client without authentication override
-        client = TestClient(app)
+        from app.services.auth import auth_user
 
-        endpoints = [
-            ("GET", "/api/chat/threads"),
-            ("POST", "/api/chat/threads"),
-            ("GET", "/api/chat/threads/fake-uuid"),
-            ("POST", "/api/chat/threads/fake-uuid/messages"),
-            ("DELETE", "/api/chat/threads/fake-uuid"),
-            ("GET", "/api/chat/threads/fake-uuid/context"),
-        ]
+        # Temporarily remove auth override to test authentication requirement
+        auth_override = app.dependency_overrides.pop(auth_user, None)
 
-        for method, endpoint in endpoints:
-            if method == "GET":
-                response = client.get(endpoint)
-            elif method == "POST":
-                response = client.post(endpoint, json={})
-            elif method == "DELETE":
-                response = client.delete(endpoint)
+        try:
+            # Create client without authentication override
+            client = TestClient(app)
 
-            # Should return 401, 403, 422 (validation), or 500 (due to auth failure) for unauthenticated requests
-            assert response.status_code in [401, 403, 422, 500], (
-                f"Endpoint {method} {endpoint} should require authentication"
-            )
+            endpoints = [
+                ("GET", "/api/chat/threads"),
+                ("POST", "/api/chat/threads"),
+                ("GET", "/api/chat/threads/fake-uuid"),
+                ("POST", "/api/chat/threads/fake-uuid/messages"),
+                ("DELETE", "/api/chat/threads/fake-uuid"),
+                ("GET", "/api/chat/threads/fake-uuid/context"),
+            ]
+
+            for method, endpoint in endpoints:
+                if method == "GET":
+                    response = client.get(endpoint)
+                elif method == "POST":
+                    response = client.post(endpoint, json={})
+                elif method == "DELETE":
+                    response = client.delete(endpoint)
+
+                # Should return 401, 403, 422 (validation), or 500 (due to auth failure) for unauthenticated requests
+                assert response.status_code in [401, 403, 422, 500], (
+                    f"Endpoint {method} {endpoint} should require authentication"
+                )
+        finally:
+            # Restore auth override if it existed
+            if auth_override is not None:
+                app.dependency_overrides[auth_user] = auth_override
 
     def test_user_isolation(self, client: TestClient, session: Session, test_user: User):
         """Test that users can only access their own threads."""
