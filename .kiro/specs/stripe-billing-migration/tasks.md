@@ -12,7 +12,7 @@
   - schema.pyを更新
   - _要件: 要件2.1, 要件2.4_
 
-- [ ] 3. Stripe SDK設定とサービス基盤構築
+- [x] 3. Stripe SDK設定とサービス基盤構築
   - Stripe Python SDKをプロジェクトに追加
   - 環境変数設定（STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY）
   - Stripe APIキー設定とテストモード確認
