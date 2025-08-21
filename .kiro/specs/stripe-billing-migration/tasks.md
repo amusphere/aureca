@@ -18,7 +18,7 @@
   - Stripe APIキー設定とテストモード確認
   - _要件: 要件1.1_
 
-- [ ] 4. Stripe Serviceの実装
+- [x] 4. Stripe Serviceの実装
   - StripeServiceクラスの基本構造を作成
   - Customer作成・取得機能を実装
   - Checkout Session作成機能を実装（サブスクリプション購入用）
