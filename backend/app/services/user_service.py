@@ -116,8 +116,10 @@ class UserService:
         }
 
         if active_subscription:
+            # User is premium if they have an active subscription (active or trialing)
+            # The get_active_subscription already filters for valid subscriptions
             user_data["subscription"] = {
-                "isPremium": active_subscription.status == "active",
+                "isPremium": active_subscription.status in ["active", "trialing"],
                 "planName": active_subscription.plan_name,
                 "status": active_subscription.status,
                 "currentPeriodEnd": active_subscription.current_period_end,

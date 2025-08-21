@@ -178,6 +178,45 @@ class TestUserService:
             mock_update.assert_called_once_with(self.mock_session, 1, "cus_new123")
 
     @pytest.mark.asyncio
+    async def test_get_user_with_subscription_with_trialing_subscription(self):
+        """Test get_user_with_subscription with a trialing subscription."""
+        # Arrange
+        mock_subscription = Subscription(
+            id=1,
+            uuid=uuid4(),
+            user_id=1,
+            stripe_subscription_id="sub_trial123",
+            stripe_customer_id="cus_123",
+            stripe_price_id="price_123",
+            plan_name="Premium",
+            status="trialing",
+            current_period_start=time.time() - 86400,
+            current_period_end=time.time() + 86400 * 7,  # 7 days trial
+            trial_start=time.time() - 86400,
+            trial_end=time.time() + 86400 * 7,
+            cancel_at_period_end=False,
+            created_at=time.time(),
+            updated_at=time.time(),
+        )
+
+        with (
+            patch("app.repositories.user.get_user_by_id") as mock_get_user,
+            patch("app.repositories.subscription.get_active_subscription") as mock_get_subscription,
+        ):
+            mock_get_user.return_value = self.mock_user
+            mock_get_subscription.return_value = mock_subscription
+
+            # Act
+            result = await self.user_service.get_user_with_subscription(1, self.mock_session)
+
+            # Assert
+            assert result["id"] == 1
+            assert result["email"] == "test@example.com"
+            assert result["subscription"]["isPremium"] is True  # Trialing users should have premium access
+            assert result["subscription"]["planName"] == "Premium"
+            assert result["subscription"]["status"] == "trialing"
+
+    @pytest.mark.asyncio
     async def test_update_user_stripe_customer_id_user_not_found(self):
         """Test update_user_stripe_customer_id when user doesn't exist."""
         # Arrange
