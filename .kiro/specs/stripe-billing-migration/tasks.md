@@ -40,7 +40,7 @@
   - エラーハンドリングとロールバック処理を実装
   - _要件: 要件1.1, 要件7.1_
 
-- [ ] 7. Stripe Webhook Handlerの実装
+- [x] 7. Stripe Webhook Handlerの実装
   - WebhookHandlerクラスを作成
   - 署名検証機能を実装
   - customer.subscription.created イベント処理
