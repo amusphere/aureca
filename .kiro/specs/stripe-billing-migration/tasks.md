@@ -33,7 +33,7 @@
   - Stripe IDによるサブスクリプション検索機能
   - _要件: 要件2.1, 要件2.2, 要件2.3_
 
-- [ ] 6. ユーザーサービスの実装
+- [x] 6. ユーザーサービスの実装
   - UserServiceクラスを新規作成（backend/app/services/user_service.py）
   - ensure_stripe_customer機能を実装（初回アクセス時にStripe Customer作成）
   - stripe_customer_idをデータベースに保存する機能
