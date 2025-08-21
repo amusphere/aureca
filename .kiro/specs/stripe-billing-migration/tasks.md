@@ -50,7 +50,7 @@
   - invoice.payment_failed イベント処理
   - _要件: 要件6.1, 要件6.2, 要件6.3, 要件6.4_
 
-- [ ] 8. Stripe APIルーターの実装
+- [x] 8. Stripe APIルーターの実装
   - /api/stripe/create-checkout-session エンドポイント
   - /api/stripe/create-portal-session エンドポイント
   - /api/stripe/webhook エンドポイント

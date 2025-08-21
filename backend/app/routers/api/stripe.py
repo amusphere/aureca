@@ -1,8 +1,9 @@
 """
-Stripe API router for handling subscription and payment operations.
+Stripe API router for webhook handling and health monitoring.
 
-This router provides endpoints for Stripe operations including
-customer management, subscription handling, and webhook processing.
+This router provides minimal endpoints for Stripe webhook processing
+and service health monitoring. Payment and subscription management
+are handled directly through Stripe's hosted solutions.
 """
 
 import logging
