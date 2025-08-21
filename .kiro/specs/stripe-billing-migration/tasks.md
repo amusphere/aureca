@@ -26,7 +26,7 @@
   - Webhook署名検証機能を実装
   - _要件: 要件1.1, 要件3.1, 要件3.2, 要件3.4_
 
-- [ ] 5. Subscription Repositoryの実装
+- [x] 5. Subscription Repositoryの実装
   - SubscriptionRepositoryクラスを作成
   - CRUD操作（作成、取得、更新、削除）を実装
   - ユーザーIDによるアクティブサブスクリプション取得機能
