@@ -76,7 +76,7 @@
   - キャッシュとリフレッシュ機能を実装
   - _要件: 要件4.4, 要件5.2_
 
-- [ ] 12. useSubscriptionフックの実装
+- [x] 12. useSubscriptionフックの実装
   - Checkout Session作成機能
   - Customer Portal開く機能
   - エラーハンドリングとローディング状態管理
