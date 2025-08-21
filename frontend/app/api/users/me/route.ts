@@ -1,9 +1,9 @@
-import { User } from "@/types/User";
+import { UserWithSubscription } from "@/types/User";
 import { apiGet } from "@/utils/api";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const { data, error } = await apiGet<User>("/users/me");
+  const { data, error } = await apiGet<UserWithSubscription>("/users/me");
 
   if (error || !data) {
     return NextResponse.json(

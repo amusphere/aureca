@@ -10,3 +10,10 @@ export * from './AIChatUsage';
 export * from './Task';
 export * from './User';
 export * from './EmailDraft';
+export * from './Subscription';
+
+// API types
+export * from './api';
+
+// UI-specific types
+export * from './stripe-ui';
