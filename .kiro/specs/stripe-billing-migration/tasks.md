@@ -108,7 +108,7 @@
   - AIChatの表示制御を更新
   - _要件: 要件4.2, 要件4.3_
 
-- [ ] 17. 環境変数とデプロイ設定
+- [x] 17. 環境変数とデプロイ設定
   - フロントエンド環境変数を追加（NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY）
   - バックエンド環境変数を追加（STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET）
   - 本番環境とテスト環境の設定分離

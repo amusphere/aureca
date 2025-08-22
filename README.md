@@ -6,10 +6,15 @@ AIアシスタント機能を持つタスク管理アプリケーション。Nex
 
 ### 1. 環境変数設定
 ```bash
-# フロントエンドとバックエンドの両方で.envファイルを作成
+# 環境別設定スクリプトを使用（推奨）
+./scripts/setup-environment.sh development
+
+# または手動でコピー
 cp frontend/.env.example frontend/.env
 cp backend/.env.example backend/.env
 ```
+
+**重要**: `.env`ファイルを編集して実際のAPIキーを設定してください。
 
 ### 2. アプリケーション起動
 ```bash
@@ -43,6 +48,7 @@ docker compose run --rm backend alembic upgrade head
 - [アーキテクチャ](./docs/architecture.md)
 - [開発ガイド](./docs/development.md)
 - [デプロイメント](./docs/deployment.md)
+- [環境変数設定](./docs/environment-configuration.md)
 - [バックエンドテスト仕様](./docs/backend-testing.md)
 
 ## 🧪 テスト
