@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/components/ui/button";
 import { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types/Task";
-import { Protect } from "@clerk/nextjs";
 import { ArrowUp01, Calendar, CheckCheck, ClipboardList, PlusIcon, RefreshCwIcon, SparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccessibility } from "../../hooks/useAccessibility";
@@ -13,6 +12,7 @@ import { LoadingSpinner } from "../commons/LoadingSpinner";
 import { TaskCard } from "./TaskCard";
 import { formatTaskExpiry } from "@/utils/taskUtils";
 import { TaskForm } from "./TaskForm";
+import { InlinePremiumGuard } from "../commons/PremiumGuard";
 
 
 export function TaskList() {
@@ -197,7 +197,7 @@ export function TaskList() {
           </span>
         </Button>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
-        <Protect condition={(has) => !has({ plan: "free" })}>
+        <InlinePremiumGuard upgradeMessage="自動生成">
           <Button
             variant="ghost"
             size="sm"
@@ -244,7 +244,7 @@ export function TaskList() {
             <span className="hidden sm:inline relative z-10 text-gray-700 group-hover:text-gray-800">自動生成</span>
             <span className="sr-only sm:hidden">タスクを自動生成</span>
           </Button>
-        </Protect>
+        </InlinePremiumGuard>
         <div className="w-px h-4 bg-border/50" aria-hidden="true" />
         <Button
           onClick={() => setIsTaskFormOpen(true)}
