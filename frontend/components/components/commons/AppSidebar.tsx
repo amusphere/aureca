@@ -31,8 +31,8 @@ const items = [
     icon: Cable,
   },
   {
-    title: "Subscript",
-    url: "/subscript",
+    title: "Subscription",
+    url: "/subscription",
     icon: SparklesIcon,
   }
 ];

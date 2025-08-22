@@ -11,7 +11,7 @@ export function AIUpgradePrompt() {
   const [isVisible, setIsVisible] = useState(true);
 
   const handleUpgrade = () => {
-    router.push("/subscript");
+    router.push("/subscription");
   };
 
   const handleClose = () => {
