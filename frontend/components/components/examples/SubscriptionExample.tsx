@@ -1,185 +1,182 @@
 "use client";
 
 import React from 'react';
-;
-impUser';
+import { useUser } from '@/components/hooks/useUser';
+import { useSubscription } from '@/components/hooks/useSubscription';
+import { Button } from '@/components/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/components/ui/card';
+import { Badge } from '@/components/components/ui/badge';
+import { Crown, Settings } from 'lucide-react';
 
 /**
- *
- * This shows how to integrate Stripe cportal
- *
- * Note: This is a basic example without UI library dependencies.
-ents.
+ * Example component demonstrating subscription management
+ * This shows how to integrate Stripe checkout and customer portal
  */
-export function SubscriptionE
-  const { user, isPremium, refreshUse;
-  const { createCheckoutSession, opion();
+export function SubscriptionExample() {
+  const { user, isLoading, isPremium } = useUser();
+  const { createCheckoutSession, openCustomerPortal, loading, errors } = useSubscription();
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-  const EXAMPLE_PRICE_IDS = {
-    monthly: 'price_monthly_example',
-    e',
+  if (!user) {
+    return <div>Please log in to view subscription information.</div>;
+  }
+
+  const handleUpgrade = async () => {
+    // Replace with actual price ID from Stripe
+    await createCheckoutSession('price_1234567890');
   };
 
-  const handleUpgrade = async (
-    d);
- };
-
-  const handleManageSubs> {
-    ();
-};
-
-  const handleRefreshUser = async () => {
-    await re();
+  const handleManageSubscription = async () => {
+    await openCustomerPortal();
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px' }}>
-      <div style={{ border:
-        <h2 style={{
-          Subscription Management Example
-        </h2>
-        <p style={{ color: '#6b7280', marginBottom: '
-          Demonstrates the useSubscription hook for Stripe integran
+    <div className="space-y-6 p-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Subscription Management</h2>
+        <p className="text-muted-foreground">
+          Manage your subscription and billing information
         </p>
+      </div>
 
-        {/* User Status */}
-        <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius' }}>
-          <h3 style={{ fontWeight: '600s</h3>
-          {user ? (
-            <div style={{ fontSize: '14px' }}>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>Premium:</strong> {isPremium ? '✅ Yp>
-              {user.subscription && (
-                <>
-                  <p>/p>
-
-                  {u (
-                 g()}</p>
-                  )}
-                </>
+      {/* Current Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-5 w-5" />
+            Current Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant={isPremium ? "default" : "secondary"}>
+                  {user.subscription?.planName || "Free"}
+                </Badge>
+                {user.subscription?.status && (
+                  <Badge variant="outline">
+                    {user.subscription.status}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isPremium
+                  ? "You have access to all premium features"
+                  : "Upgrade to unlock premium features"
+                }
+              </p>
+              {user.subscription?.currentPeriodEnd && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {user.subscription.cancelAtPeriodEnd
+                    ? "Cancels on "
+                    : "Renews on "
+                  }
+                  {new Date(user.subscription.currentPeriodEnd * 1000).toLocaleDateString()}
+                </p>
               )}
-div>
-          ) : (
-            <p style={{ fontSiz>
-          )}
-        </div>
-
-        {/* Error Messas */}
-        {errors.checkout && (
-          <div style={{ pad' }}>
-            <p style={{ color: '#d}}>
-              Checkout Error: {errors.checkout}
-              <button
-                onClick={t')}
-                style={{ inter' }}
-              >
-                Dismiss
-
-p>
-          </div>
-        )}
-
-        {errors.portal && (
-          <div style={{' }}>
-            <p style={{ color: '#dc}}>
-              Portal Error:rtal}
-              <button
-                onClick={() => clearError('portal')}
-                s
-              >
-                Dismiss
-              </button>
-            </p>
-          </
-
-
-        {/* Actions */}
-        <div style={{ marginBottom: '16px' }}>
-</h3>
-
-          {!isPremium && (
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ fontSize: '14px', /p>
-              <div style=
-                <button
-                  onClick={() => handleUpgrade(EXAMPLE_
-                  dout}
-                  style={{
-                    padd
-                    backgroundColor: loading.creatingCheckout ? '#d1d5db'2f6',
-                    color: 'white',
-                    bordene',
-                    bordepx',
-                    cursor: loading.'
-                  }}
-                >
-                  {loadiny Plan'}
-                </button>
-                <button
-                  onClick={() => handleUpgrade(EXAMPLE_}
-                  d
-                  style={{
-                    paddx 16px',
-                    backgroundColor: loading.creatingCheckout ? '#d1d5db'
-                    color: loading.4151',
-                    borde5db',
-                    borde6px',
-                    cursor: loadingter'
-                  }}
-                >
-                  {loa'}
-                </buton>
-              /div>
-iv>
-          )}
-
-          {isPremium && (
-            <div style=px' }}>
-              <p style={{ fontSize: '14px', color: '>
-              <button
-                otion}
-                disabled={loading.openingPor}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColo6',
-                  colorte',
-                  borde,
-                  borderRadius: '6px',
-                  cur'
-                }}
-              >
-
-on>
             </div>
-          )}
 
-          <div style={{ paddingTop: '16px',}>
-            <button
-              ohUser}
-              disabled={loading.refreshingU
-              style={{
-                padding: '8px 16px',
-                backgroundColor: ,
-                color
-                bordedb',
-                borderRadius: '6px',
-                cur'
-              }}
-            >
-              {l'}
-
+            <div className="flex gap-2">
+              {!isPremium ? (
+                <Button
+                  onClick={handleUpgrade}
+                  disabled={loading.creatingCheckout}
+                >
+                  <Crown className="mr-2 h-4 w-4" />
+                  {loading.creatingCheckout ? "Loading..." : "Upgrade"}
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={handleManageSubscription}
+                  disabled={loading.openingPortal}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  {loading.openingPortal ? "Loading..." : "Manage"}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Loading States */}
-        <div style={{ fontSize: '12px', color: '#6b7280' }}>
-          <p><strong>Loading States:</strong></p>
-          <p>Crep>
-          <p>Opening P>
-          <p></p>
-        </iv>
-    >
- >
+      {/* Error Display */}
+      {(errors.checkout || errors.portal || errors.user) && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-900">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-700">
+              {errors.checkout || errors.portal || errors.user}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Feature Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Feature Comparison</CardTitle>
+          <CardDescription>
+            See what&apos;s included in each plan
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h4 className="font-semibold">Free Plan</h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                  Basic task management
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                  Manual task creation
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                  Limited storage
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-600" />
+                Premium Plan
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  AI-powered task generation
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  Smart scheduling suggestions
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  Email integration
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  Calendar sync
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  Unlimited storage
+                </li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
-} </div
+}
