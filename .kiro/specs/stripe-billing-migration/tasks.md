@@ -102,7 +102,7 @@
   - サブスクリプション状態に基づく機能制御
   - _要件: 要件4.1, 要件4.3_
 
-- [ ] 16. HomePageコンポーネントの更新
+- [x] 16. HomePageコンポーネントの更新
   - Clerkの<Protect>をPremiumGuardに置き換え
   - AIUpgradePromptの表示制御を更新
   - AIChatの表示制御を更新
