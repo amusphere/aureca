@@ -14,6 +14,7 @@ from app.repositories import subscription as subscription_repository
 from app.repositories import user as user_repository
 from app.schema import User
 from app.services.stripe_service import StripeService
+from app.utils.auth.clerk import create_user_by_clerk_sub
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,22 @@ class UserService:
             stripe_service: Optional StripeService instance for dependency injection
         """
         self.stripe_service = stripe_service or StripeService(raise_on_missing_config=False)
+
+    def create_new_user(sub: str, session: Session) -> User:
+        """
+        Create a new user with the given Clerk subject ID.
+
+        Args:
+            sub: The Clerk subject ID for the new user
+            session: Database session for transaction management
+
+        Returns:
+            User: The newly created user object
+
+        Raises:
+            Exception: If user creation fails
+        """
+        return create_user_by_clerk_sub
 
     async def ensure_stripe_customer(self, user: User, session: Session) -> str:
         """
@@ -69,6 +86,9 @@ class UserService:
             if not updated_user:
                 # This should not happen if user exists, but handle gracefully
                 raise Exception(f"Failed to update user {user.id} with Stripe customer ID")
+
+            # Update the user object in memory as well
+            user.stripe_customer_id = stripe_customer_id
 
             logger.info(f"Successfully created and linked Stripe customer {stripe_customer_id} for user {user.id}")
             return stripe_customer_id

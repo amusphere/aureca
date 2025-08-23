@@ -48,7 +48,7 @@ async def get_authed_user(sub: str, session: Session) -> User | None:
     return user
 
 
-def create_new_user(sub: str, session: Session) -> User:
+def create_user_by_clerk_sub(sub: str, session: Session) -> User:
     sdk = Clerk(bearer_auth=CLERK_SECRET_KEY)
     clerk_user: ClerkUser = sdk.users.get(user_id=sub)
 
