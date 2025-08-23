@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { UseSubscriptionReturn, SubscriptionLoadingStates, SubscriptionErrorStates } from '@/types/stripe-ui';
 import { CheckoutSessionRequest, CheckoutSessionResponse, CustomerPortalResponse } from '@/types/Subscription';
+import { formatErrorMessage, logError, isRetryableError, getSuggestedActions } from '@/utils/errorHandling';
 
 /**
  * Custom hook for managing Stripe subscription operations
@@ -56,7 +57,19 @@ export function useSubscription(): UseSubscriptionReturn {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+
+        // Log the error for debugging
+        logError(errorData, 'createCheckoutSession');
+
+        // Create a proper error object
+        const error = {
+          response: {
+            status: response.status,
+            data: errorData,
+          },
+        };
+
+        throw error;
       }
 
       const data: CheckoutSessionResponse = await response.json();
@@ -65,15 +78,32 @@ export function useSubscription(): UseSubscriptionReturn {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL received from server');
+        const error = {
+          error: {
+            code: 'CHECKOUT_URL_MISSING',
+            message: 'No checkout URL received from server',
+          },
+        };
+        logError(error, 'createCheckoutSession - missing URL');
+        throw error;
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create checkout session';
+      // Format the error message using our error handling utilities
+      const errorMessage = formatErrorMessage(err);
+      const retryable = isRetryableError(err);
+      const actions = getSuggestedActions(err);
+
       setErrors(prev => ({
         ...prev,
-        checkout: errorMessage,
+        checkout: {
+          message: errorMessage,
+          isRetryable: retryable,
+          suggestedActions: actions,
+        },
       }));
-      console.error('Error creating checkout session:', err);
+
+      // Log the error for debugging
+      logError(err, 'createCheckoutSession');
     } finally {
       setLoading(prev => ({ ...prev, creatingCheckout: false }));
     }
@@ -97,7 +127,19 @@ export function useSubscription(): UseSubscriptionReturn {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+
+        // Log the error for debugging
+        logError(errorData, 'openCustomerPortal');
+
+        // Create a proper error object
+        const error = {
+          response: {
+            status: response.status,
+            data: errorData,
+          },
+        };
+
+        throw error;
       }
 
       const data: CustomerPortalResponse = await response.json();
@@ -106,15 +148,32 @@ export function useSubscription(): UseSubscriptionReturn {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No portal URL received from server');
+        const error = {
+          error: {
+            code: 'PORTAL_URL_MISSING',
+            message: 'No portal URL received from server',
+          },
+        };
+        logError(error, 'openCustomerPortal - missing URL');
+        throw error;
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to open customer portal';
+      // Format the error message using our error handling utilities
+      const errorMessage = formatErrorMessage(err);
+      const retryable = isRetryableError(err);
+      const actions = getSuggestedActions(err);
+
       setErrors(prev => ({
         ...prev,
-        portal: errorMessage,
+        portal: {
+          message: errorMessage,
+          isRetryable: retryable,
+          suggestedActions: actions,
+        },
       }));
-      console.error('Error opening customer portal:', err);
+
+      // Log the error for debugging
+      logError(err, 'openCustomerPortal');
     } finally {
       setLoading(prev => ({ ...prev, openingPortal: false }));
     }

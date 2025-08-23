@@ -13,6 +13,12 @@ import stripe
 from app.database import get_session
 from app.repositories import subscription as subscription_repo
 from app.repositories import user as user_repo
+from app.utils.exceptions import (
+    DatabaseException,
+    StripeWebhookException,
+    UserNotFoundException,
+)
+from app.utils.retry import WEBHOOK_RETRY_CONFIG, retry_async
 
 logger = logging.getLogger(__name__)
 
@@ -26,36 +32,104 @@ class StripeWebhookHandler:
 
     async def handle_event(self, event: stripe.Event) -> bool:
         """
-        Handle a Stripe webhook event.
+        Handle a Stripe webhook event with retry logic.
 
         Args:
             event: The verified Stripe event
 
         Returns:
             bool: True if event was handled successfully, False otherwise
+
+        Raises:
+            StripeWebhookException: If event handling fails after retries
         """
+        event_id = event.get("id", "unknown")
+        event_type = event.get("type", "unknown")
+
         try:
-            event_type = event["type"]
-            logger.info(f"Processing webhook event {event['id']} of type {event_type}")
+            logger.info(
+                f"Processing webhook event {event_id} of type {event_type}",
+                extra={
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "operation": "handle_event",
+                },
+            )
 
             # Route to appropriate handler based on event type
             if event_type == "customer.subscription.created":
-                return await self.handle_customer_subscription_created(event)
+                return await self._handle_with_retry(self.handle_customer_subscription_created, event)
             elif event_type == "customer.subscription.updated":
-                return await self.handle_customer_subscription_updated(event)
+                return await self._handle_with_retry(self.handle_customer_subscription_updated, event)
             elif event_type == "customer.subscription.deleted":
-                return await self.handle_customer_subscription_deleted(event)
+                return await self._handle_with_retry(self.handle_customer_subscription_deleted, event)
             elif event_type == "invoice.payment_succeeded":
-                return await self.handle_invoice_payment_succeeded(event)
+                return await self._handle_with_retry(self.handle_invoice_payment_succeeded, event)
             elif event_type == "invoice.payment_failed":
-                return await self.handle_invoice_payment_failed(event)
+                return await self._handle_with_retry(self.handle_invoice_payment_failed, event)
             else:
                 logger.info(f"Unhandled event type: {event_type}")
                 return True  # Return True for unhandled events to avoid retries
 
+        except StripeWebhookException:
+            # Re-raise webhook exceptions
+            raise
         except Exception as e:
-            logger.error(f"Error handling webhook event {event.get('id', 'unknown')}: {e}")
-            return False
+            logger.error(
+                f"Unexpected error handling webhook event {event_id}: {e}",
+                extra={
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "exception_type": type(e).__name__,
+                    "exception_message": str(e),
+                },
+            )
+            raise StripeWebhookException(
+                f"Unexpected error handling webhook event: {e}",
+                event_id=event_id,
+                event_type=event_type,
+            ) from e
+
+    async def _handle_with_retry(self, handler_func, event: stripe.Event) -> bool:
+        """
+        Handle webhook event with retry logic.
+
+        Args:
+            handler_func: The handler function to call
+            event: The Stripe event
+
+        Returns:
+            bool: True if handled successfully
+
+        Raises:
+            StripeWebhookException: If handling fails after retries
+        """
+        event_id = event.get("id", "unknown")
+        event_type = event.get("type", "unknown")
+
+        @retry_async(WEBHOOK_RETRY_CONFIG)
+        async def _retry_wrapper():
+            return await handler_func(event)
+
+        try:
+            return await _retry_wrapper()
+        except Exception as e:
+            logger.error(
+                f"Webhook event {event_id} failed after all retry attempts: {e}",
+                extra={
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "max_attempts": WEBHOOK_RETRY_CONFIG.max_attempts,
+                    "exception_type": type(e).__name__,
+                    "exception_message": str(e),
+                },
+            )
+            raise StripeWebhookException(
+                f"Webhook event failed after {WEBHOOK_RETRY_CONFIG.max_attempts} attempts: {e}",
+                event_id=event_id,
+                event_type=event_type,
+                retry_count=WEBHOOK_RETRY_CONFIG.max_attempts,
+            ) from e
 
     async def handle_customer_subscription_created(self, event: stripe.Event) -> bool:
         """
@@ -67,82 +141,29 @@ class StripeWebhookHandler:
             event: The Stripe event
 
         Returns:
-            bool: True if handled successfully, False otherwise
+            bool: True if handled successfully
+
+        Raises:
+            UserNotFoundException: If user is not found
+            DatabaseException: If database operation fails
+            StripeWebhookException: If event processing fails
         """
         try:
             subscription_data = event["data"]["object"]
-            logger.info(f"Processing subscription created: {subscription_data['id']}")
-
-            # Extract subscription details
             stripe_subscription_id = subscription_data["id"]
             stripe_customer_id = subscription_data["customer"]
-            stripe_price_id = subscription_data["items"]["data"][0]["price"]["id"]
-            status = subscription_data["status"]
-            current_period_start = float(subscription_data["current_period_start"])
-            current_period_end = float(subscription_data["current_period_end"])
-            cancel_at_period_end = subscription_data.get("cancel_at_period_end", False)
-            canceled_at = float(subscription_data["canceled_at"]) if subscription_data.get("canceled_at") else None
-            trial_start = float(subscription_data["trial_start"]) if subscription_data.get("trial_start") else None
-            trial_end = float(subscription_data["trial_end"]) if subscription_data.get("trial_end") else None
 
-            # Get plan name from price metadata or use price nickname
-            plan_name = self._extract_plan_name(subscription_data)
-
-            with get_session() as session:
-                # Find the user by stripe_customer_id
-                user = user_repo.get_user_br_column(session, stripe_customer_id, "stripe_customer_id")
-                if not user:
-                    logger.error(f"User not found for Stripe customer {stripe_customer_id}")
-                    return False
-
-                # Check if subscription already exists (idempotency)
-                existing_subscription = subscription_repo.get_subscription_by_stripe_id(session, stripe_subscription_id)
-                if existing_subscription:
-                    logger.info(f"Subscription {stripe_subscription_id} already exists, skipping creation")
-                    return True
-
-                # Create the subscription
-                subscription_repo.create_subscription(
-                    session=session,
-                    user_id=user.id,
-                    stripe_subscription_id=stripe_subscription_id,
-                    stripe_customer_id=stripe_customer_id,
-                    stripe_price_id=stripe_price_id,
-                    plan_name=plan_name,
-                    status=status,
-                    current_period_start=current_period_start,
-                    current_period_end=current_period_end,
-                    cancel_at_period_end=cancel_at_period_end,
-                    canceled_at=canceled_at,
-                    trial_start=trial_start,
-                    trial_end=trial_end,
-                )
-
-                logger.info(f"Created subscription {stripe_subscription_id} for user {user.id}")
-                return True
-
-        except Exception as e:
-            logger.error(f"Error handling customer.subscription.created: {e}")
-            return False
-
-    async def handle_customer_subscription_updated(self, event: stripe.Event) -> bool:
-        """
-        Handle customer.subscription.updated event.
-
-        Updates an existing subscription record in the database.
-
-        Args:
-            event: The Stripe event
-
-        Returns:
-            bool: True if handled successfully, False otherwise
-        """
-        try:
-            subscription_data = event["data"]["object"]
-            logger.info(f"Processing subscription updated: {subscription_data['id']}")
+            logger.info(
+                f"Processing subscription created: {stripe_subscription_id}",
+                extra={
+                    "event_id": event.get("id"),
+                    "stripe_subscription_id": stripe_subscription_id,
+                    "stripe_customer_id": stripe_customer_id,
+                    "operation": "handle_customer_subscription_created",
+                },
+            )
 
             # Extract subscription details
-            stripe_subscription_id = subscription_data["id"]
             stripe_price_id = subscription_data["items"]["data"][0]["price"]["id"]
             status = subscription_data["status"]
             current_period_start = float(subscription_data["current_period_start"])
@@ -155,12 +176,33 @@ class StripeWebhookHandler:
             # Get plan name from price metadata or use price nickname
             plan_name = self._extract_plan_name(subscription_data)
 
-            with get_session() as session:
-                # Update the subscription
-                try:
-                    subscription_repo.update_subscription_by_stripe_id(
+            try:
+                with get_session() as session:
+                    # Find the user by stripe_customer_id
+                    user = user_repo.get_user_br_column(session, stripe_customer_id, "stripe_customer_id")
+                    if not user:
+                        raise UserNotFoundException(stripe_customer_id, "stripe_customer_id")
+
+                    # Check if subscription already exists (idempotency)
+                    existing_subscription = subscription_repo.get_subscription_by_stripe_id(
+                        session, stripe_subscription_id
+                    )
+                    if existing_subscription:
+                        logger.info(
+                            f"Subscription {stripe_subscription_id} already exists, skipping creation",
+                            extra={
+                                "stripe_subscription_id": stripe_subscription_id,
+                                "existing_subscription_id": existing_subscription.id,
+                            },
+                        )
+                        return True
+
+                    # Create the subscription
+                    subscription_repo.create_subscription(
                         session=session,
+                        user_id=user.id,
                         stripe_subscription_id=stripe_subscription_id,
+                        stripe_customer_id=stripe_customer_id,
                         stripe_price_id=stripe_price_id,
                         plan_name=plan_name,
                         status=status,
@@ -172,20 +214,142 @@ class StripeWebhookHandler:
                         trial_end=trial_end,
                     )
 
-                    logger.info(f"Updated subscription {stripe_subscription_id}")
+                    logger.info(
+                        f"Created subscription {stripe_subscription_id} for user {user.id}",
+                        extra={
+                            "user_id": user.id,
+                            "stripe_subscription_id": stripe_subscription_id,
+                            "plan_name": plan_name,
+                            "status": status,
+                        },
+                    )
                     return True
 
-                except ValueError as e:
-                    if "subscription not found" in str(e):
-                        logger.warning(f"Subscription {stripe_subscription_id} not found for update, creating new one")
-                        # If subscription doesn't exist, create it
-                        return await self._create_subscription_from_event(event, subscription_data)
-                    else:
-                        raise
+            except Exception as e:
+                logger.error(f"Database error creating subscription: {e}")
+                raise DatabaseException(
+                    f"Failed to create subscription in database: {e}",
+                    operation="create",
+                    table="subscriptions",
+                ) from e
 
+        except (UserNotFoundException, DatabaseException):
+            # Re-raise known exceptions
+            raise
+        except Exception as e:
+            logger.error(f"Error handling customer.subscription.created: {e}")
+            raise StripeWebhookException(
+                f"Error handling customer.subscription.created: {e}",
+                event_id=event.get("id"),
+                event_type="customer.subscription.created",
+            ) from e
+
+    async def handle_customer_subscription_updated(self, event: stripe.Event) -> bool:
+        """
+        Handle customer.subscription.updated event.
+
+        Updates an existing subscription record in the database.
+
+        Args:
+            event: The Stripe event
+
+        Returns:
+            bool: True if handled successfully
+
+        Raises:
+            DatabaseException: If database operation fails
+            StripeWebhookException: If event processing fails
+        """
+        try:
+            subscription_data = event["data"]["object"]
+            stripe_subscription_id = subscription_data["id"]
+
+            logger.info(
+                f"Processing subscription updated: {stripe_subscription_id}",
+                extra={
+                    "event_id": event.get("id"),
+                    "stripe_subscription_id": stripe_subscription_id,
+                    "operation": "handle_customer_subscription_updated",
+                },
+            )
+
+            # Extract subscription details
+            stripe_price_id = subscription_data["items"]["data"][0]["price"]["id"]
+            status = subscription_data["status"]
+            current_period_start = float(subscription_data["current_period_start"])
+            current_period_end = float(subscription_data["current_period_end"])
+            cancel_at_period_end = subscription_data.get("cancel_at_period_end", False)
+            canceled_at = float(subscription_data["canceled_at"]) if subscription_data.get("canceled_at") else None
+            trial_start = float(subscription_data["trial_start"]) if subscription_data.get("trial_start") else None
+            trial_end = float(subscription_data["trial_end"]) if subscription_data.get("trial_end") else None
+
+            # Get plan name from price metadata or use price nickname
+            plan_name = self._extract_plan_name(subscription_data)
+
+            try:
+                with get_session() as session:
+                    # Update the subscription
+                    try:
+                        subscription_repo.update_subscription_by_stripe_id(
+                            session=session,
+                            stripe_subscription_id=stripe_subscription_id,
+                            stripe_price_id=stripe_price_id,
+                            plan_name=plan_name,
+                            status=status,
+                            current_period_start=current_period_start,
+                            current_period_end=current_period_end,
+                            cancel_at_period_end=cancel_at_period_end,
+                            canceled_at=canceled_at,
+                            trial_start=trial_start,
+                            trial_end=trial_end,
+                        )
+
+                        logger.info(
+                            f"Updated subscription {stripe_subscription_id}",
+                            extra={
+                                "stripe_subscription_id": stripe_subscription_id,
+                                "status": status,
+                                "plan_name": plan_name,
+                            },
+                        )
+                        return True
+
+                    except ValueError as e:
+                        if "subscription not found" in str(e):
+                            logger.warning(
+                                f"Subscription {stripe_subscription_id} not found for update, creating new one",
+                                extra={"stripe_subscription_id": stripe_subscription_id},
+                            )
+                            # If subscription doesn't exist, create it
+                            return await self._create_subscription_from_event(event, subscription_data)
+                        else:
+                            raise DatabaseException(
+                                f"Failed to update subscription: {e}",
+                                operation="update",
+                                table="subscriptions",
+                            ) from e
+
+            except DatabaseException:
+                # Re-raise database exceptions
+                raise
+            except Exception as e:
+                logger.error(f"Database error updating subscription: {e}")
+                raise DatabaseException(
+                    f"Failed to update subscription in database: {e}",
+                    operation="update",
+                    table="subscriptions",
+                ) from e
+
+        except DatabaseException:
+            # Re-raise known exceptions
+            raise
         except Exception as e:
             logger.error(f"Error handling customer.subscription.updated: {e}")
-            return False
+            raise StripeWebhookException(
+                f"Error handling customer.subscription.updated: {e}",
+                event_id=event.get("id"),
+                event_type="customer.subscription.updated",
+            ) from e
 
     async def handle_customer_subscription_deleted(self, event: stripe.Event) -> bool:
         """

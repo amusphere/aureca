@@ -58,12 +58,21 @@ export interface SubscriptionLoadingStates {
 }
 
 /**
+ * Enhanced error information with user guidance
+ */
+export interface EnhancedError {
+  message: string;
+  isRetryable: boolean;
+  suggestedActions: string[];
+}
+
+/**
  * Error states for subscription operations
  */
 export interface SubscriptionErrorStates {
-  checkout: string | null;
-  portal: string | null;
-  user: string | null;
+  checkout: EnhancedError | null;
+  portal: EnhancedError | null;
+  user: EnhancedError | null;
 }
 
 /**

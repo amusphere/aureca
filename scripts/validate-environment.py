@@ -57,16 +57,6 @@ def validate_environment_variables(environment: str) -> Tuple[List[str], List[st
         "STRIPE_WEBHOOK_SECRET",
     ]
 
-    # Required frontend variables (these would be in Next.js environment)
-    frontend_required = [
-        "NEXT_PUBLIC_APP_NAME",
-        "API_BASE_URL",
-        "FRONTEND_URL",
-        "NEXT_PUBLIC_AUTH_SYSTEM",
-        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-    ]
-
     # Check backend variables
     for var in backend_required:
         if not os.getenv(var):
