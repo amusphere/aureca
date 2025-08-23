@@ -112,7 +112,7 @@ export function SubscriptionExample() {
           </CardHeader>
           <CardContent>
             <p className="text-red-700">
-              {errors.checkout || errors.portal || errors.user}
+              {errors.checkout?.message || errors.portal?.message || errors.user?.message}
             </p>
           </CardContent>
         </Card>

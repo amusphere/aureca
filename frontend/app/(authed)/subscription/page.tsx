@@ -200,7 +200,7 @@ export default function SubscriptionPage() {
 
                   {errors.portal && (
                     <Alert variant="destructive">
-                      <AlertDescription>{errors.portal}</AlertDescription>
+                      <AlertDescription>{errors.portal.message}</AlertDescription>
                     </Alert>
                   )}
                 </div>
