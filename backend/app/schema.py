@@ -46,7 +46,6 @@ class User(SQLModel, table=True):
     tasks: list["Tasks"] = Relationship(back_populates="user")
     ai_chat_usage: list["AIChatUsage"] = Relationship(back_populates="user")
     chat_threads: list["ChatThread"] = Relationship(back_populates="user")
-    subscriptions: list["Subscription"] = Relationship(back_populates="user")
 
 
 class GoogleOAuthToken(SQLModel, table=True):
@@ -177,37 +176,6 @@ class ChatMessage(SQLModel, table=True):
 
     # Relationship
     thread: ChatThread = Relationship(back_populates="messages")
-
-
-class Subscription(SQLModel, table=True):
-    __tablename__ = "subscriptions"
-    __table_args__ = (
-        Index("idx_subscriptions_user_id", "user_id"),
-        Index("idx_subscriptions_stripe_subscription_id", "stripe_subscription_id"),
-        Index("idx_subscriptions_status", "status"),
-        Index("idx_subscriptions_current_period_end", "current_period_end"),
-        {"extend_existing": True},
-    )
-
-    id: int | None = Field(default=None, primary_key=True)
-    uuid: UUID = Field(default_factory=uuid4, index=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
-    stripe_subscription_id: str = Field(unique=True, index=True)
-    stripe_customer_id: str = Field(index=True)
-    stripe_price_id: str = Field(index=True)
-    plan_name: str
-    status: str = Field(index=True)
-    current_period_start: float
-    current_period_end: float
-    cancel_at_period_end: bool = Field(default=False)
-    canceled_at: float | None = Field(default=None)
-    trial_start: float | None = Field(default=None)
-    trial_end: float | None = Field(default=None)
-    created_at: float = Field(default_factory=time.time)
-    updated_at: float = Field(default_factory=time.time)
-
-    # Relationships
-    user: User = Relationship(back_populates="subscriptions")
 
 
 metadata = SQLModel.metadata
