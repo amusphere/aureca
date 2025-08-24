@@ -19,8 +19,7 @@ graph TB
     subgraph "Backend (FastAPI)"
         Router[Stripe Router]
         Service[Stripe Service]
-        Repository[Subscription Repository]
-        Webhook[Webhook Handler]
+        UserService[User Service]
     end
 
     subgraph "External Services"
@@ -31,18 +30,14 @@ graph TB
 
     subgraph "Database"
         Users[Users Table]
-        Subscriptions[Subscriptions Table]
     end
 
     UI --> Hooks
     Hooks --> Router
     Router --> Service
-    Service --> Repository
-    Repository --> Users
-    Repository --> Subscriptions
     Service --> Stripe
-    Stripe --> Webhook
-    Webhook --> Service
+    UserService --> Users
+    UserService --> Stripe
     UI --> StripeCheckout
     UI --> StripePortal
 ```
@@ -51,12 +46,12 @@ graph TB
 
 1. **ユーザー登録時**: Clerk認証でUser作成（Clerk機能のみ使用）
 2. **初回サブスクリプション関連アクセス時**: UserService.ensure_stripe_customer → Stripe Customer作成 → stripe_customer_id保存
-3. **サブスクリプション購入**: Frontend → Stripe Checkout → 支払い完了 → Webhook → DB更新
-4. **サブスクリプション管理**: Frontend → Stripe Customer Portal → 変更・キャンセル → Webhook → DB更新
-5. **機能アクセス制御**: Frontend → `/api/users/me` → サブスクリプション情報付きユーザー情報返却
+3. **サブスクリプション購入**: Frontend → Stripe Checkout → 支払い完了
+4. **サブスクリプション管理**: Frontend → Stripe Customer Portal → 変更・キャンセル
+5. **機能アクセス制御**: Frontend → `/api/users/me` → Stripe APIから最新サブスクリプション情報取得 → 結果返却
 
-**重要**: サブスクリプションのライフサイクル管理（作成・更新・キャンセル）はすべてStripeの公式機能を使用し、
-アプリケーションはWebhookを通じてStripeの状態変更を受け取り、ローカルDBを同期する。
+**重要**: サブスクリプション情報はStripe APIから直接取得し、ローカルDBには保存しない。
+これにより、常に最新で正確な情報を保証し、データ同期の複雑さを回避する。
 
 ## コンポーネントとインターフェース
 
@@ -77,27 +72,18 @@ class UserService:
 class StripeService:
     async def create_customer(self, user: User) -> str
     async def get_customer(self, stripe_customer_id: str) -> stripe.Customer
+    async def get_customer_subscriptions(self, stripe_customer_id: str) -> list[stripe.Subscription]
+    async def get_active_subscription(self, stripe_customer_id: str) -> stripe.Subscription | None
     async def create_checkout_session(self, customer_id: str, price_id: str, success_url: str, cancel_url: str) -> stripe.checkout.Session
     async def create_customer_portal_session(self, customer_id: str, return_url: str) -> stripe.billing_portal.Session
-    async def verify_webhook_signature(self, payload: bytes, signature: str) -> stripe.Event
 
-    # Note: サブスクリプションの作成・更新・キャンセルはStripe CheckoutとCustomer Portalで処理
-    # WebhookでStripeからの変更通知を受け取り、ローカルDBを同期
+    # Note: キャッシュはエンドポイントレベルで実装
+    # Stripe APIを直接呼び出し、シンプルな実装を維持
 ```
 
-#### 3. Subscription Repository (`backend/app/repositories/subscription.py`)
 
-```python
-class SubscriptionRepository:
-    async def create_subscription(self, subscription_data: SubscriptionCreate) -> Subscription
-    async def get_subscription_by_user_id(self, user_id: int) -> Subscription | None
-    async def get_subscription_by_stripe_id(self, stripe_subscription_id: str) -> Subscription | None
-    async def update_subscription(self, subscription_id: int, update_data: SubscriptionUpdate) -> Subscription
-    async def get_active_subscription(self, user_id: int) -> Subscription | None
-    async def deactivate_subscription(self, subscription_id: int) -> Subscription
-```
 
-#### 4. Stripe Router (`backend/app/routers/api/stripe.py`)
+#### 3. Stripe Router (`backend/app/routers/api/stripe.py`)
 
 ```python
 @router.post("/create-checkout-session")
@@ -106,28 +92,20 @@ async def create_checkout_session(request: CheckoutSessionRequest, user: User = 
 @router.post("/create-portal-session")
 async def create_portal_session(user: User = Depends(auth_user))
 
-@router.post("/webhook")
-async def stripe_webhook(request: Request)
+
 ```
 
-#### 5. Users Router 拡張 (`backend/app/routers/api/users.py`)
+#### 4. Users Router 拡張 (`backend/app/routers/api/users.py`)
 
 ```python
+from fastapi_cache.decorator import cache
+
 @router.get("/me")
+@cache(expire=300)  # 5分間のエンドポイントレベルキャッシュ
 async def get_current_user(user: User = Depends(auth_user)) -> UserWithSubscription:
-    # サブスクリプション情報を含むユーザー情報を返却
+    # Stripe APIからサブスクリプション情報を取得
     # isPremium, planName, expiresAt などの情報を含む
-```
-
-#### 6. Webhook Handler (`backend/app/services/stripe_webhook_handler.py`)
-
-```python
-class StripeWebhookHandler:
-    async def handle_customer_subscription_created(self, event: stripe.Event) -> None
-    async def handle_customer_subscription_updated(self, event: stripe.Event) -> None
-    async def handle_customer_subscription_deleted(self, event: stripe.Event) -> None
-    async def handle_invoice_payment_succeeded(self, event: stripe.Event) -> None
-    async def handle_invoice_payment_failed(self, event: stripe.Event) -> None
+    # エンドポイントレベルで5分間キャッシュしてパフォーマンスを最適化
 ```
 
 ### Frontend Components
@@ -196,67 +174,35 @@ ALTER TABLE users ADD COLUMN stripe_customer_id VARCHAR(255) UNIQUE;
 CREATE INDEX idx_users_stripe_customer_id ON users(stripe_customer_id);
 ```
 
-### 2. Subscriptions Table (新規)
-
-```sql
-CREATE TABLE subscriptions (
-    id SERIAL PRIMARY KEY,
-    uuid UUID DEFAULT gen_random_uuid() NOT NULL,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    stripe_subscription_id VARCHAR(255) UNIQUE NOT NULL,
-    stripe_customer_id VARCHAR(255) NOT NULL,
-    stripe_price_id VARCHAR(255) NOT NULL,
-    plan_name VARCHAR(100) NOT NULL,
-    status VARCHAR(50) NOT NULL, -- active, canceled, incomplete, past_due, etc.
-    current_period_start BIGINT NOT NULL,
-    current_period_end BIGINT NOT NULL,
-    cancel_at_period_end BOOLEAN DEFAULT FALSE,
-    canceled_at BIGINT NULL,
-    trial_start BIGINT NULL,
-    trial_end BIGINT NULL,
-    created_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW()),
-    updated_at BIGINT NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())
-);
-
-CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX idx_subscriptions_stripe_subscription_id ON subscriptions(stripe_subscription_id);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_subscriptions_current_period_end ON subscriptions(current_period_end);
-```
-
-### 3. SQLModel定義
+### 2. User モデル拡張のみ
 
 ```python
-class Subscription(SQLModel, table=True):
-    __tablename__ = "subscriptions"
-
-    id: int | None = Field(default=None, primary_key=True)
-    uuid: UUID = Field(default_factory=uuid4, index=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
-    stripe_subscription_id: str = Field(unique=True, index=True)
-    stripe_customer_id: str = Field(index=True)
-    stripe_price_id: str = Field(index=True)
-    plan_name: str
-    status: str = Field(index=True)
-    current_period_start: float
-    current_period_end: float
-    cancel_at_period_end: bool = Field(default=False)
-    canceled_at: float | None = Field(default=None)
-    trial_start: float | None = Field(default=None)
-    trial_end: float | None = Field(default=None)
-    created_at: float = Field(default_factory=time.time)
-    updated_at: float = Field(default_factory=time.time)
-
-    # Relationships
-    user: User = Relationship(back_populates="subscriptions")
-
-# User モデルにも関係を追加
+# User モデルにStripe Customer IDのみ追加
 class User(SQLModel, table=True):
     # ... 既存のフィールド ...
     stripe_customer_id: str | None = Field(default=None, unique=True, index=True)
 
-    # Relationships
-    subscriptions: list["Subscription"] = Relationship(back_populates="user")
+# サブスクリプション情報はStripe APIから直接取得するため、
+# ローカルDBにSubscriptionsテーブルは作成しない
+```
+
+### 3. レスポンス型定義
+
+```python
+# API レスポンス用の型定義
+class SubscriptionInfo(BaseModel):
+    isPremium: bool
+    planName: str | None
+    status: str | None
+    currentPeriodEnd: int | None
+    cancelAtPeriodEnd: bool
+
+class UserWithSubscription(BaseModel):
+    id: int
+    uuid: str
+    email: str
+    name: str
+    subscription: SubscriptionInfo | None
 ```
 
 ## エラーハンドリング
@@ -349,18 +295,19 @@ class User(SQLModel, table=True):
 
 1. **Database Optimization**
    - 適切なインデックス設計
-   - サブスクリプション状態のキャッシュ
    - Connection pooling
 
-2. **API Optimization**
+2. **API Optimization & Caching**
+   - **エンドポイントレベルキャッシュ**: `@cache`デコレータで5分間のレスポンスキャッシュ
+   - ユーザー単位での適切なキャッシュ分離
    - Stripe API呼び出しの最小化
-   - バッチ処理での効率化
 
 ### Frontend Optimization
 
 1. **State Management**
-   - サブスクリプション状態のキャッシュ
+   - React Queryによるクライアントサイドキャッシュ
    - 不要な再レンダリングの防止
+   - 適切なstaleTime設定（5分）
 
 2. **Loading States**
    - Stripe Checkout読み込み中の適切なUI表示
