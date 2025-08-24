@@ -2,17 +2,9 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.models.subscription import SubscriptionInfo
 
-class SubscriptionInfo(BaseModel):
-    """Subscription information for a user."""
-
-    isPremium: bool
-    planName: str | None = None
-    status: str | None = None
-    currentPeriodEnd: float | None = None
-    cancelAtPeriodEnd: bool = False
-    stripeSubscriptionId: str | None = None
-    stripePriceId: str | None = None
+# SubscriptionInfo moved to models/subscription.py to avoid duplication
 
 
 class UserModel(BaseModel):
@@ -31,4 +23,4 @@ class UserWithSubscriptionModel(BaseModel):
     clerk_sub: str | None
     stripe_customer_id: str | None
     created_at: float
-    subscription: SubscriptionInfo | None
+    subscription: SubscriptionInfo | None = None

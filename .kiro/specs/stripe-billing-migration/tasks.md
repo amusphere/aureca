@@ -1,12 +1,12 @@
 # 実装計画
 
-- [ ] 1. データベーススキーマ更新とマイグレーション
+- [x] 1. データベーススキーマ更新とマイグレーション
   - Usersテーブルにstripe_customer_idカラムを追加
   - 既存のSubscriptionsテーブルを削除（不要になったため）
   - Alembicマイグレーションファイルを生成・実行
   - _要件: 要件2.1, 要件2.4_
 
-- [ ] 2. SQLModelスキーマ定義の更新
+- [x] 2. SQLModelスキーマ定義の更新
   - 既存のSubscriptionモデルを削除
   - UserモデルにStripe Customer IDフィールドのみ追加
   - schema.pyを更新
