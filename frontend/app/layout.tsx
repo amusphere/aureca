@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import "./globals.css";
 
 
@@ -24,11 +25,13 @@ export default function RootLayout({
       <body className="antialiased">
 
         <ClerkProvider>
-          <div className="bg-gray-100 min-h-screen" id="app-root">
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-          </div>
+          <QueryProvider>
+            <div className="bg-gray-100 min-h-screen" id="app-root">
+              <main id="main-content" tabIndex={-1}>
+                {children}
+              </main>
+            </div>
+          </QueryProvider>
         </ClerkProvider>
 
         {/* Screen reader live region for announcements */}

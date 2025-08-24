@@ -109,8 +109,12 @@ app.include_router(api_router)
 # アプリケーション起動時のログ
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Log application startup and initialize cache."""
     logger.info("Application starting up")
+
+    # Initialize in-memory cache
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+    logger.info("In-memory cache initialized")
 
 
 @app.on_event("shutdown")

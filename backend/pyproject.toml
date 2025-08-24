@@ -31,6 +31,7 @@ dependencies = [
     "clerk-backend-api>=3.1.11",
     "fastapi[standard]>=0.116.1",
     "stripe>=12.4.0",
+    "fastapi-cache2[redis]>=0.2.2",
 ]
 
 [tool.pytest.ini_options]

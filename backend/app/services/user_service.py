@@ -10,7 +10,8 @@ import logging
 from sqlmodel import Session
 from stripe import error as stripe_error
 
-from app.repositories import subscription as subscription_repository
+# Note: subscription repository import removed as part of Stripe migration
+# Subscription data will be fetched directly from Stripe API
 from app.repositories import user as user_repository
 from app.schema import User
 from app.services.stripe_service import StripeService
@@ -120,10 +121,8 @@ class UserService:
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
 
-        # Get active subscription
-        active_subscription = subscription_repository.get_active_subscription(session, user_id)
-
-        # Build response with subscription information
+        # TODO: Get subscription information from Stripe API (will be implemented in later tasks)
+        # For now, return basic user data with no subscription
         user_data = {
             "id": user.id,
             "uuid": str(user.uuid),
@@ -132,23 +131,7 @@ class UserService:
             "clerk_sub": user.clerk_sub,
             "stripe_customer_id": user.stripe_customer_id,
             "created_at": user.created_at,
-            "subscription": None,
-        }
-
-        if active_subscription:
-            # User is premium if they have an active subscription (active or trialing)
-            # The get_active_subscription already filters for valid subscriptions
-            user_data["subscription"] = {
-                "isPremium": active_subscription.status in ["active", "trialing"],
-                "planName": active_subscription.plan_name,
-                "status": active_subscription.status,
-                "currentPeriodEnd": active_subscription.current_period_end,
-                "cancelAtPeriodEnd": active_subscription.cancel_at_period_end,
-                "stripeSubscriptionId": active_subscription.stripe_subscription_id,
-                "stripePriceId": active_subscription.stripe_price_id,
-            }
-        else:
-            user_data["subscription"] = {
+            "subscription": {
                 "isPremium": False,
                 "planName": None,
                 "status": None,
@@ -156,7 +139,8 @@ class UserService:
                 "cancelAtPeriodEnd": False,
                 "stripeSubscriptionId": None,
                 "stripePriceId": None,
-            }
+            },
+        }
 
         return user_data
 
