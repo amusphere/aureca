@@ -28,9 +28,8 @@
   - StripeServiceクラスの基本構造を作成
   - Customer作成・取得機能を実装
   - サブスクリプション情報取得機能を実装（Stripe APIから直接）
-  - Checkout Session作成機能を実装（サブスクリプション購入用）
   - Customer Portal Session作成機能を実装（管理・キャンセル用）
-  - _要件: 要件1.1, 要件2.1, 要件3.1, 要件3.2, 要件3.4_
+  - _要件: 要件1.1, 要件2.1, 要件3.4_
 
 - [x] 5. ユーザーサービスの実装
   - UserServiceクラスを新規作成（backend/app/services/user_service.py）
@@ -40,11 +39,10 @@
   - エラーハンドリングとロールバック処理を実装
   - _要件: 要件1.1, 要件2.1, 要件7.1_
 
-- [ ] 6. Stripe APIルーターの実装
-  - /api/stripe/create-checkout-session エンドポイント
-  - /api/stripe/create-portal-session エンドポイント
+- [x] 6. Stripe APIルーターの実装
+  - /api/stripe/create-portal-session エンドポイント（Customer Portal用）
   - 認証とエラーハンドリングを実装
-  - _要件: 要件3.1, 要件3.2, 要件3.4_
+  - _要件: 要件3.4_
 
 - [ ] 7. Users APIの拡張
   - /api/users/me エンドポイントを拡張
@@ -69,10 +67,9 @@
   - _要件: 要件4.4, 要件5.2, 要件6.1_
 
 - [ ] 10. useSubscriptionフックの実装
-  - Checkout Session作成機能
   - Customer Portal開く機能
   - エラーハンドリングとローディング状態管理
-  - _要件: 要件3.1, 要件3.2, 要件3.4_
+  - _要件: 要件3.4_
 
 - [ ] 11. PremiumGuardコンポーネントの実装
   - Clerkの<Protect>コンポーネントを置き換え
