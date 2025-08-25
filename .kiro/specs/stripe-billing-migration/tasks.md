@@ -71,27 +71,27 @@
   - エラーハンドリングとローディング状態管理
   - _要件: 要件3.4_
 
-- [ ] 11. PremiumGuardコンポーネントの実装
+- [x] 11. PremiumGuardコンポーネントの実装
   - Clerkの<Protect>コンポーネントを置き換え
   - useUserフックからサブスクリプション状態を取得
   - 条件付きレンダリングとフォールバック表示
   - アップグレードプロンプト機能
   - _要件: 要件4.1, 要件4.2, 要件4.3_
 
-- [ ] 12. サブスクリプションページの実装
+- [x] 12. サブスクリプションページの実装
   - Stripe Pricing Tableコンポーネントの統合
   - 現在のプラン状態表示
   - Customer Portalへのリンク
   - レスポンシブデザイン対応
   - _要件: 要件3.1, 要件3.2, 要件3.4_
 
-- [ ] 13. TaskListコンポーネントの更新
+- [x] 13. TaskListコンポーネントの更新
   - Clerkの<Protect>をPremiumGuardに置き換え
   - 自動生成ボタンの表示制御をPremiumGuardで実装
   - サブスクリプション状態に基づく機能制御
   - _要件: 要件4.1, 要件4.3_
 
-- [ ] 14. HomePageコンポーネントの更新
+- [x] 14. HomePageコンポーネントの更新
   - Clerkの<Protect>をPremiumGuardに置き換え
   - AIUpgradePromptの表示制御を更新
   - AIChatの表示制御を更新

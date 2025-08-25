@@ -3,6 +3,7 @@ import { EmailDraft } from "@/types/EmailDraft";
 import { TaskSource } from "@/types/Task";
 import { PenTool, Trash2 } from "lucide-react";
 import { MarkdownContent } from "../chat/MarkdownContent";
+import { InlinePremiumGuard } from "../commons/PremiumGuard";
 
 interface EmailDraftInfo {
   draft: EmailDraft;
@@ -36,16 +37,18 @@ export function EmailSourceComponent({
       const isGenerating = isGeneratingDraft;
 
       return (
-        <Button
-          onClick={() => onGenerateDraft(source)}
-          disabled={isGenerating || isCheckingDraft}
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs px-2"
-        >
-          <PenTool className="w-3 h-3 mr-1" />
-          {isGenerating ? "生成中..." : isCheckingDraft ? "確認中..." : "返信下書き生成"}
-        </Button>
+        <InlinePremiumGuard upgradeMessage="返信下書き生成">
+          <Button
+            onClick={() => onGenerateDraft(source)}
+            disabled={isGenerating || isCheckingDraft}
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs px-2"
+          >
+            <PenTool className="w-3 h-3 mr-1" />
+            {isGenerating ? "生成中..." : isCheckingDraft ? "確認中..." : "返信下書き生成"}
+          </Button>
+        </InlinePremiumGuard>
       );
     }
 
@@ -65,16 +68,18 @@ export function EmailSourceComponent({
 
     return (
       <div className="flex gap-1">
-        <Button
-          onClick={handleDeleteAndRegenerate}
-          disabled={isProcessing}
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs px-2"
-        >
-          <PenTool className="w-3 h-3 mr-1" />
-          {isProcessing ? "処理中..." : "再生成"}
-        </Button>
+        <InlinePremiumGuard upgradeMessage="返信下書き再生成">
+          <Button
+            onClick={handleDeleteAndRegenerate}
+            disabled={isProcessing}
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs px-2"
+          >
+            <PenTool className="w-3 h-3 mr-1" />
+            {isProcessing ? "処理中..." : "再生成"}
+          </Button>
+        </InlinePremiumGuard>
         <Button
           onClick={() => onDeleteDraft(source)}
           disabled={isProcessing}

@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { useUser } from '@/components/hooks/useUser';
-import { useSubscription } from '@/components/hooks/useSubscription';
+import { Alert, AlertDescription } from '@/components/components/ui/alert';
+import { Badge } from '@/components/components/ui/badge';
 import { Button } from '@/components/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/components/ui/card';
-import { Badge } from '@/components/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/components/ui/alert';
-import { Skeleton } from '@/components/components/ui/skeleton';
 import { Separator } from '@/components/components/ui/separator';
+import { Skeleton } from '@/components/components/ui/skeleton';
+import { useSubscription } from '@/components/hooks/useSubscription';
+import { useUser } from '@/components/hooks/useUser';
+import React, { useEffect, useState } from 'react';
 
 // Stripe Pricing Table component type declaration
 interface StripePricingTableProps {
@@ -239,16 +239,21 @@ export default function SubscriptionPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    {!stripeLoaded
-                      ? '料金表を読み込み中...'
-                      : !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-                      ? 'Stripe Publishable Keyが設定されていません'
-                      : !process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID
-                      ? 'Stripe Pricing Table IDが設定されていません'
-                      : 'Stripe設定が必要です'
-                    }
-                  </p>
+                  {!stripeLoaded ? (
+                    <div className="space-y-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                      <p className="text-muted-foreground">料金表を読み込み中...</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      {!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+                        ? 'Stripe Publishable Keyが設定されていません'
+                        : !process.env.NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID
+                          ? 'Stripe Pricing Table IDが設定されていません'
+                          : 'Stripe設定が必要です'
+                      }
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
