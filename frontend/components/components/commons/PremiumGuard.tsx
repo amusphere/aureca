@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@/components/hooks/useUser";
-import { PremiumGuardProps } from "@/types/stripe-ui";
+import { PremiumGuardProps } from "@/types/StripeUi";
 import { Button } from "@/components/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { Crown, Sparkles } from "lucide-react";

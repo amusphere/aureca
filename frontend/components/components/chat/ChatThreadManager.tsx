@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ChatThread, CreateChatThreadRequest } from "../../../types/chat";
+import type { ChatThread, CreateChatThreadRequest } from "../../../types/Chat";
 import { useChatThreads } from "../../hooks/useChatThreads";
 import { cn } from "../../lib/utils";
 import { ChatThreadActions } from "./ChatThreadActions";

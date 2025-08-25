@@ -1,5 +1,5 @@
 import 'github-markdown-css/github-markdown-light.css';
-import type { Message } from "../../../types/chat";
+import type { Message } from "../../../types/Chat";
 import { cn } from "../../lib/utils";
 import { MarkdownContent } from "./MarkdownContent";
 import { MessageAvatar } from "./MessageAvatar";

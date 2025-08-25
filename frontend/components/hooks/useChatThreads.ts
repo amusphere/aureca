@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ChatThread, CreateChatThreadRequest } from '../../types/chat';
+import type { ChatThread, CreateChatThreadRequest } from '../../types/Chat';
 
 interface UseChatThreadsReturn {
   threads: ChatThread[];

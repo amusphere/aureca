@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import { useCallback } from "react";
-import type { ChatThread } from "../../../types/chat";
+import type { ChatThread } from "../../../types/Chat";
 import { cn } from "../../lib/utils";
 import { EmptyState } from "../commons/EmptyState";
 import { ErrorDisplay } from "../commons/ErrorDisplay";

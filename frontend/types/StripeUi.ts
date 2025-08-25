@@ -2,7 +2,7 @@
  * UI-specific types for Stripe integration components
  */
 
-import { SubscriptionStatus, UserSubscription } from './Subscription';
+import { SubscriptionStatus, SubscriptionInfo, UserSubscription } from './Subscription';
 
 /**
  * Props for PremiumGuard component
@@ -18,6 +18,16 @@ export interface PremiumGuardProps {
  * Props for subscription status display components
  */
 export interface SubscriptionStatusProps {
+  subscription: SubscriptionInfo | null;
+  showDetails?: boolean;
+  className?: string;
+}
+
+/**
+ * Legacy subscription status props
+ * @deprecated Use SubscriptionStatusProps with SubscriptionInfo instead
+ */
+export interface LegacySubscriptionStatusProps {
   subscription: UserSubscription | null;
   showDetails?: boolean;
   className?: string;
@@ -95,6 +105,16 @@ export interface UseSubscriptionReturn {
   loading: SubscriptionLoadingStates;
   errors: SubscriptionErrorStates;
   clearError: (type: keyof SubscriptionErrorStates) => void;
+}
+
+/**
+ * Simplified hook return type for subscription management (future migration)
+ */
+export interface SimplifiedUseSubscriptionReturn {
+  createCheckoutSession: (priceId: string) => Promise<void>;
+  openCustomerPortal: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 }
 
 /**

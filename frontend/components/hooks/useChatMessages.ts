@@ -4,7 +4,7 @@ import type {
   ChatThreadWithMessages,
   PaginationInfo,
   SendMessageRequest
-} from '../../types/chat';
+} from '../../types/Chat';
 
 interface UseChatMessagesReturn {
   messages: ChatMessage[];

@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import type { ChatThread, CreateChatThreadRequest } from "../../../types/chat";
+import type { ChatThread, CreateChatThreadRequest } from "../../../types/Chat";
 import { Button } from "../ui/button";
 import {
   Dialog,

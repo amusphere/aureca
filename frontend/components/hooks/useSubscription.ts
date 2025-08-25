@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { UseSubscriptionReturn, SubscriptionLoadingStates, SubscriptionErrorStates } from '@/types/stripe-ui';
+import { UseSubscriptionReturn, SubscriptionLoadingStates, SubscriptionErrorStates } from '@/types/StripeUi';
 import { CheckoutSessionRequest, CheckoutSessionResponse, CustomerPortalResponse } from '@/types/Subscription';
 import { formatErrorMessage, logError, isRetryableError, getSuggestedActions } from '@/utils/errorHandling';
 

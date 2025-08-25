@@ -3,7 +3,7 @@
  */
 
 // Chat related types
-export * from './chat';
+export * from './Chat';
 export * from './AIChatUsage';
 
 // Core entity types
@@ -13,7 +13,7 @@ export * from './EmailDraft';
 export * from './Subscription';
 
 // API types
-export * from './api';
+export * from './Api';
 
 // UI-specific types
-export * from './stripe-ui';
+export * from './StripeUi';

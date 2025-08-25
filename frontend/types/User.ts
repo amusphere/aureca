@@ -1,4 +1,4 @@
-import { UserSubscription } from './Subscription';
+import { SubscriptionInfo, UserSubscription } from './Subscription';
 
 /**
  * Base user information
@@ -14,9 +14,17 @@ export interface User {
 }
 
 /**
- * User information with subscription details
- * This matches the response from /api/users/me endpoint
+ * User information with subscription details from Stripe API
+ * This matches the response from /api/users/me endpoint after Stripe migration
  */
 export interface UserWithSubscription extends User {
+  subscription: SubscriptionInfo | null;
+}
+
+/**
+ * Legacy user with subscription interface
+ * @deprecated Use UserWithSubscription instead
+ */
+export interface LegacyUserWithSubscription extends User {
   subscription: UserSubscription | null;
 }

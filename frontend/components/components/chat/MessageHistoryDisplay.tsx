@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ChatMessage as ChatMessageType, PaginationInfo } from "../../../types/chat";
+import type { ChatMessage as ChatMessageType, PaginationInfo } from "../../../types/Chat";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
 import ChatMessage from "./ChatMessage";

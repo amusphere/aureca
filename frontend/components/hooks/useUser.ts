@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { UserWithSubscription } from '@/types/User';
-import { UseUserReturn } from '@/types/stripe-ui';
+import { UseUserReturn } from '@/types/StripeUi';
 
 /**
  * Custom hook for managing user data with subscription information

@@ -37,7 +37,23 @@ export interface Subscription {
 }
 
 /**
+ * Subscription information retrieved from Stripe API
+ * This matches the backend SubscriptionInfo model
+ */
+export interface SubscriptionInfo {
+  isPremium: boolean;
+  planName: string | null;
+  status: string | null;
+  currentPeriodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  // Legacy fields for backward compatibility during migration
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
+}
+
+/**
  * Simplified subscription information for user context
+ * @deprecated Use SubscriptionInfo instead
  */
 export interface UserSubscription {
   isPremium: boolean;
