@@ -314,6 +314,361 @@ class StripeService:
 
         return await _get_customer()
 
+    # Subscription Management Methods
+
+    async def get_customer_subscriptions(self, stripe_customer_id: str) -> list[stripe.Subscription]:
+        """
+        Retrieve all subscriptions for a Stripe customer.
+
+        Args:
+            stripe_customer_id: The Stripe customer ID
+
+        Returns:
+            list[stripe.Subscription]: List of customer subscriptions
+
+        Raises:
+            StripeConfigurationException: If Stripe is not configured
+            StripeServiceException: If subscription retrieval fails
+        """
+        if not self._configured:
+            raise StripeConfigurationException("Stripe is not configured")
+
+        # Create local retry config with Stripe-specific exceptions
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay=1.0,
+            max_delay=10.0,
+            exponential_base=2.0,
+            jitter=True,
+            retryable_exceptions=[
+                stripe_error.RateLimitError,
+                stripe_error.APIConnectionError,
+                stripe_error.APIError,
+                ConnectionError,
+                TimeoutError,
+            ],
+        )
+
+        @retry_async(retry_config)
+        async def _get_subscriptions():
+            try:
+                subscriptions = stripe.Subscription.list(
+                    customer=stripe_customer_id,
+                    limit=100,  # Get all subscriptions for the customer
+                    expand=["data.default_payment_method"],
+                )
+
+                logger.debug(
+                    f"Retrieved {len(subscriptions.data)} subscriptions for customer {stripe_customer_id}",
+                    extra={
+                        "stripe_customer_id": stripe_customer_id,
+                        "subscription_count": len(subscriptions.data),
+                        "operation": "get_customer_subscriptions",
+                    },
+                )
+                return subscriptions.data
+
+            except stripe_error.InvalidRequestError as e:
+                logger.error(f"Invalid request retrieving subscriptions for customer {stripe_customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Invalid request retrieving subscriptions: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_INVALID_REQUEST",
+                ) from e
+            except stripe_error.StripeError as e:
+                logger.error(f"Failed to retrieve subscriptions for customer {stripe_customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Failed to retrieve subscriptions: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_SUBSCRIPTION_RETRIEVE_ERROR",
+                ) from e
+            except Exception as e:
+                logger.error(f"Unexpected error retrieving subscriptions for customer {stripe_customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Unexpected error retrieving subscriptions: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_SUBSCRIPTION_RETRIEVE_UNEXPECTED",
+                ) from e
+
+        return await _get_subscriptions()
+
+    async def get_active_subscription(self, stripe_customer_id: str) -> stripe.Subscription | None:
+        """
+        Get the active subscription for a customer (if any).
+
+        Args:
+            stripe_customer_id: The Stripe customer ID
+
+        Returns:
+            stripe.Subscription | None: The active subscription or None if no active subscription
+
+        Raises:
+            StripeConfigurationException: If Stripe is not configured
+            StripeServiceException: If subscription retrieval fails
+        """
+        subscriptions = await self.get_customer_subscriptions(stripe_customer_id)
+
+        # Find the first active subscription
+        for subscription in subscriptions:
+            if subscription.status in ["active", "trialing"]:
+                logger.debug(
+                    f"Found active subscription {subscription.id} for customer {stripe_customer_id}",
+                    extra={
+                        "stripe_customer_id": stripe_customer_id,
+                        "subscription_id": subscription.id,
+                        "subscription_status": subscription.status,
+                        "operation": "get_active_subscription",
+                    },
+                )
+                return subscription
+
+        logger.debug(
+            f"No active subscription found for customer {stripe_customer_id}",
+            extra={
+                "stripe_customer_id": stripe_customer_id,
+                "operation": "get_active_subscription",
+            },
+        )
+        return None
+
+    # Checkout and Portal Session Methods
+
+    async def create_checkout_session(
+        self, customer_id: str, price_id: str, success_url: str, cancel_url: str, mode: str = "subscription"
+    ) -> stripe.checkout.Session:
+        """
+        Create a Stripe Checkout session for subscription purchase.
+
+        Args:
+            customer_id: The Stripe customer ID
+            price_id: The Stripe price ID for the subscription
+            success_url: URL to redirect to after successful payment
+            cancel_url: URL to redirect to if payment is cancelled
+            mode: Checkout mode (default: "subscription")
+
+        Returns:
+            stripe.checkout.Session: The created checkout session
+
+        Raises:
+            StripeConfigurationException: If Stripe is not configured
+            StripeServiceException: If checkout session creation fails
+        """
+        if not self._configured:
+            raise StripeConfigurationException("Stripe is not configured")
+
+        # Create local retry config with Stripe-specific exceptions
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay=1.0,
+            max_delay=10.0,
+            exponential_base=2.0,
+            jitter=True,
+            retryable_exceptions=[
+                stripe_error.RateLimitError,
+                stripe_error.APIConnectionError,
+                stripe_error.APIError,
+                ConnectionError,
+                TimeoutError,
+            ],
+        )
+
+        @retry_async(retry_config)
+        async def _create_checkout_session():
+            try:
+                session_data = {
+                    "customer": customer_id,
+                    "line_items": [
+                        {
+                            "price": price_id,
+                            "quantity": 1,
+                        }
+                    ],
+                    "mode": mode,
+                    "success_url": success_url,
+                    "cancel_url": cancel_url,
+                    "allow_promotion_codes": True,
+                    "billing_address_collection": "auto",
+                }
+
+                # Add subscription-specific settings
+                if mode == "subscription":
+                    session_data.update({
+                        "subscription_data": {
+                            "metadata": {
+                                "customer_id": customer_id,
+                            }
+                        }
+                    })
+
+                session = stripe.checkout.Session.create(**session_data)
+
+                logger.info(
+                    f"Created checkout session {session.id} for customer {customer_id}",
+                    extra={
+                        "stripe_customer_id": customer_id,
+                        "checkout_session_id": session.id,
+                        "price_id": price_id,
+                        "mode": mode,
+                        "operation": "create_checkout_session",
+                    },
+                )
+                return session
+
+            except stripe_error.InvalidRequestError as e:
+                logger.error(f"Invalid request creating checkout session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Invalid request creating checkout session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_INVALID_REQUEST",
+                    user_message="Invalid checkout configuration. Please try again or contact support.",
+                ) from e
+            except stripe_error.StripeError as e:
+                logger.error(f"Failed to create checkout session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Failed to create checkout session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_CHECKOUT_CREATE_ERROR",
+                ) from e
+            except Exception as e:
+                logger.error(f"Unexpected error creating checkout session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Unexpected error creating checkout session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_CHECKOUT_CREATE_UNEXPECTED",
+                ) from e
+
+        return await _create_checkout_session()
+
+    async def create_customer_portal_session(self, customer_id: str, return_url: str) -> stripe.billing_portal.Session:
+        """
+        Create a Stripe Customer Portal session for subscription management.
+
+        Args:
+            customer_id: The Stripe customer ID
+            return_url: URL to redirect to when the customer leaves the portal
+
+        Returns:
+            stripe.billing_portal.Session: The created portal session
+
+        Raises:
+            StripeConfigurationException: If Stripe is not configured
+            StripeServiceException: If portal session creation fails
+        """
+        if not self._configured:
+            raise StripeConfigurationException("Stripe is not configured")
+
+        # Create local retry config with Stripe-specific exceptions
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay=1.0,
+            max_delay=10.0,
+            exponential_base=2.0,
+            jitter=True,
+            retryable_exceptions=[
+                stripe_error.RateLimitError,
+                stripe_error.APIConnectionError,
+                stripe_error.APIError,
+                ConnectionError,
+                TimeoutError,
+            ],
+        )
+
+        @retry_async(retry_config)
+        async def _create_portal_session():
+            try:
+                session = stripe.billing_portal.Session.create(
+                    customer=customer_id,
+                    return_url=return_url,
+                )
+
+                logger.info(
+                    f"Created customer portal session {session.id} for customer {customer_id}",
+                    extra={
+                        "stripe_customer_id": customer_id,
+                        "portal_session_id": session.id,
+                        "operation": "create_customer_portal_session",
+                    },
+                )
+                return session
+
+            except stripe_error.InvalidRequestError as e:
+                logger.error(f"Invalid request creating portal session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Invalid request creating portal session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_INVALID_REQUEST",
+                    user_message="Unable to access customer portal. Please contact support.",
+                ) from e
+            except stripe_error.StripeError as e:
+                logger.error(f"Failed to create portal session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Failed to create portal session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_PORTAL_CREATE_ERROR",
+                ) from e
+            except Exception as e:
+                logger.error(f"Unexpected error creating portal session for customer {customer_id}: {e}")
+                raise StripeServiceException(
+                    f"Unexpected error creating portal session: {e}",
+                    stripe_error=e,
+                    error_code="STRIPE_PORTAL_CREATE_UNEXPECTED",
+                ) from e
+
+        return await _create_portal_session()
+
+    # Utility Methods
+
+    def is_subscription_active(self, subscription: stripe.Subscription) -> bool:
+        """
+        Check if a subscription is considered active.
+
+        Args:
+            subscription: The Stripe subscription object
+
+        Returns:
+            bool: True if subscription is active, False otherwise
+        """
+        return subscription.status in ["active", "trialing"]
+
+    def is_subscription_premium(self, subscription: stripe.Subscription | None) -> bool:
+        """
+        Check if a subscription provides premium access.
+
+        Args:
+            subscription: The Stripe subscription object or None
+
+        Returns:
+            bool: True if subscription provides premium access, False otherwise
+        """
+        if not subscription:
+            return False
+
+        return self.is_subscription_active(subscription)
+
+    def get_subscription_plan_name(self, subscription: stripe.Subscription | None) -> str | None:
+        """
+        Get the plan name from a subscription.
+
+        Args:
+            subscription: The Stripe subscription object or None
+
+        Returns:
+            str | None: The plan name or None if no subscription
+        """
+        if not subscription or not subscription.items.data:
+            return None
+
+        # Get the first item's price nickname or product name
+        item = subscription.items.data[0]
+        if item.price.nickname:
+            return item.price.nickname
+
+        # Fallback to product name if available
+        if hasattr(item.price, "product") and hasattr(item.price.product, "name"):
+            return item.price.product.name
+
+        return f"Plan {item.price.id}"
+
     # Webhook Methods
 
     async def verify_webhook_signature(self, payload: bytes, signature: str) -> stripe.Event:

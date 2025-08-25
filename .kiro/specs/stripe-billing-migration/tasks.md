@@ -24,7 +24,7 @@
   - メモリベースキャッシュの設定
   - _要件: 要件6.1_
 
-- [ ] 4. Stripe Serviceの実装
+- [x] 4. Stripe Serviceの実装
   - StripeServiceクラスの基本構造を作成
   - Customer作成・取得機能を実装
   - サブスクリプション情報取得機能を実装（Stripe APIから直接）
