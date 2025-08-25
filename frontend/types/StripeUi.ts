@@ -101,7 +101,7 @@ export type StatusDisplayConfig = {
  */
 export interface UseSubscriptionReturn {
   createCheckoutSession: (priceId: string) => Promise<void>;
-  openCustomerPortal: () => Promise<void>;
+  openCustomerPortal: (returnUrl?: string) => Promise<void>;
   loading: SubscriptionLoadingStates;
   errors: SubscriptionErrorStates;
   clearError: (type: keyof SubscriptionErrorStates) => void;
@@ -112,7 +112,7 @@ export interface UseSubscriptionReturn {
  */
 export interface SimplifiedUseSubscriptionReturn {
   createCheckoutSession: (priceId: string) => Promise<void>;
-  openCustomerPortal: () => Promise<void>;
+  openCustomerPortal: (returnUrl?: string) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }

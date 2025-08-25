@@ -69,7 +69,7 @@ describe('useSubscription', () => {
         ok: false,
         status: 400,
         statusText: 'Bad Request',
-        json: async () => ({ message: errorMessage }),
+        json: async () => ({ error: { code: 'STRIPE_INVALID_REQUEST', message: errorMessage } }),
       });
 
       const { result } = renderHook(() => useSubscription());
@@ -79,7 +79,7 @@ describe('useSubscription', () => {
       });
 
       // Verify error state
-      expect(result.current.errors.checkout).toBe(errorMessage);
+      expect(result.current.errors.checkout?.message).toBe(errorMessage);
       expect(result.current.loading.creatingCheckout).toBe(false);
 
       // Verify no redirect occurred
@@ -96,7 +96,7 @@ describe('useSubscription', () => {
       });
 
       // Verify error state
-      expect(result.current.errors.checkout).toBe('Network error');
+      expect(result.current.errors.checkout?.message).toBe('Network error');
       expect(result.current.loading.creatingCheckout).toBe(false);
     });
 
@@ -113,7 +113,7 @@ describe('useSubscription', () => {
       });
 
       // Verify error state
-      expect(result.current.errors.checkout).toBe('No checkout URL received from server');
+      expect(result.current.errors.checkout?.message).toBe('No checkout URL received from server');
       expect(result.current.loading.creatingCheckout).toBe(false);
     });
 
@@ -172,6 +172,9 @@ describe('useSubscription', () => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify({
+          return_url: 'http://localhost:3000/subscription',
+        }),
       });
 
       // Verify redirect
@@ -188,7 +191,7 @@ describe('useSubscription', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        json: async () => ({ message: errorMessage }),
+        json: async () => ({ error: { code: 'SUBSCRIPTION_NOT_FOUND', message: errorMessage } }),
       });
 
       const { result } = renderHook(() => useSubscription());
@@ -198,7 +201,7 @@ describe('useSubscription', () => {
       });
 
       // Verify error state
-      expect(result.current.errors.portal).toBe(errorMessage);
+      expect(result.current.errors.portal?.message).toBe(errorMessage);
       expect(result.current.loading.openingPortal).toBe(false);
 
       // Verify no redirect occurred
@@ -218,7 +221,7 @@ describe('useSubscription', () => {
       });
 
       // Verify error state
-      expect(result.current.errors.portal).toBe('No portal URL received from server');
+      expect(result.current.errors.portal?.message).toBe('No portal URL received from server');
       expect(result.current.loading.openingPortal).toBe(false);
     });
 
@@ -259,7 +262,7 @@ describe('useSubscription', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: async () => ({ message: 'Checkout error' }),
+        json: async () => ({ error: { code: 'STRIPE_INVALID_REQUEST', message: 'Checkout error' } }),
       });
 
       const { result } = renderHook(() => useSubscription());
@@ -269,7 +272,7 @@ describe('useSubscription', () => {
         await result.current.createCheckoutSession('invalid_price');
       });
 
-      expect(result.current.errors.checkout).toBe('Checkout error');
+      expect(result.current.errors.checkout?.message).toBe('Checkout error');
 
       // Clear the error
       act(() => {
@@ -291,7 +294,7 @@ describe('useSubscription', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: async () => ({ message: 'Checkout error' }),
+        json: async () => ({ error: { code: 'STRIPE_INVALID_REQUEST', message: 'Checkout error' } }),
       });
 
       await act(async () => {
@@ -301,15 +304,15 @@ describe('useSubscription', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: async () => ({ message: 'Portal error' }),
+        json: async () => ({ error: { code: 'SUBSCRIPTION_NOT_FOUND', message: 'Portal error' } }),
       });
 
       await act(async () => {
         await result.current.openCustomerPortal();
       });
 
-      expect(result.current.errors.checkout).toBe('Checkout error');
-      expect(result.current.errors.portal).toBe('Portal error');
+      expect(result.current.errors.checkout?.message).toBe('Checkout error');
+      expect(result.current.errors.portal?.message).toBe('Portal error');
 
       // Clear only checkout error
       act(() => {
@@ -317,7 +320,7 @@ describe('useSubscription', () => {
       });
 
       expect(result.current.errors.checkout).toBeNull();
-      expect(result.current.errors.portal).toBe('Portal error');
+      expect(result.current.errors.portal?.message).toBe('Portal error');
     });
   });
 

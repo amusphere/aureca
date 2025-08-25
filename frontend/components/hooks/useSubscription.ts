@@ -112,10 +112,14 @@ export function useSubscription(): UseSubscriptionReturn {
   /**
    * Open Stripe Customer Portal for subscription management
    */
-  const openCustomerPortal = useCallback(async () => {
+  const openCustomerPortal = useCallback(async (returnUrl?: string) => {
     try {
       setLoading(prev => ({ ...prev, openingPortal: true }));
       clearError('portal');
+
+      const requestData = {
+        return_url: returnUrl || `${window.location.origin}/subscription`,
+      };
 
       const response = await fetch('/api/stripe/create-portal-session', {
         method: 'POST',
@@ -123,6 +127,7 @@ export function useSubscription(): UseSubscriptionReturn {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
