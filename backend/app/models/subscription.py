@@ -11,6 +11,8 @@ class SubscriptionInfo(BaseModel):
     status: str | None = None
     currentPeriodEnd: int | None = None
     cancelAtPeriodEnd: bool = False
+    stripeSubscriptionId: str | None = None
+    stripePriceId: str | None = None
 
 
 class UserWithSubscription(BaseModel):

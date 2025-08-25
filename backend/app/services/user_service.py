@@ -32,7 +32,7 @@ class UserService:
         """
         self.stripe_service = stripe_service or StripeService(raise_on_missing_config=False)
 
-    def create_new_user(sub: str, session: Session) -> User:
+    def create_new_user(self, sub: str, session: Session) -> User:
         """
         Create a new user with the given Clerk subject ID.
 
@@ -46,7 +46,7 @@ class UserService:
         Raises:
             Exception: If user creation fails
         """
-        return create_user_by_clerk_sub
+        return create_user_by_clerk_sub(sub, session)
 
     async def ensure_stripe_customer(self, user: User, session: Session) -> str:
         """
@@ -105,7 +105,11 @@ class UserService:
 
     async def get_user_with_subscription(self, user_id: int, session: Session) -> dict:
         """
-        Get user information with subscription details.
+        Get user information with subscription details from Stripe API.
+
+        This method fetches the user from the database and then retrieves
+        their subscription information directly from Stripe API to ensure
+        data accuracy and real-time status.
 
         Args:
             user_id: The user ID to retrieve
@@ -116,13 +120,62 @@ class UserService:
 
         Raises:
             ValueError: If user is not found
+            StripeServiceException: If Stripe API call fails
         """
         user = user_repository.get_user_by_id(session, user_id)
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
 
-        # TODO: Get subscription information from Stripe API (will be implemented in later tasks)
-        # For now, return basic user data with no subscription
+        # Initialize default subscription data
+        subscription_data = {
+            "isPremium": False,
+            "planName": None,
+            "status": None,
+            "currentPeriodEnd": None,
+            "cancelAtPeriodEnd": False,
+            "stripeSubscriptionId": None,
+            "stripePriceId": None,
+        }
+
+        # If user has a Stripe customer ID and Stripe is configured, fetch subscription info
+        if user.stripe_customer_id and self.stripe_service.is_configured():
+            try:
+                logger.debug(
+                    f"Fetching subscription info for user {user_id} with Stripe customer {user.stripe_customer_id}"
+                )
+
+                # Get active subscription from Stripe
+                active_subscription = await self.stripe_service.get_active_subscription(user.stripe_customer_id)
+
+                if active_subscription:
+                    # Extract subscription details
+                    subscription_data.update(
+                        {
+                            "isPremium": self.stripe_service.is_subscription_premium(active_subscription),
+                            "planName": self.stripe_service.get_subscription_plan_name(active_subscription),
+                            "status": active_subscription.status,
+                            "currentPeriodEnd": active_subscription.current_period_end,
+                            "cancelAtPeriodEnd": active_subscription.cancel_at_period_end,
+                            "stripeSubscriptionId": active_subscription.id,
+                            "stripePriceId": active_subscription.items.data[0].price.id
+                            if active_subscription.items.data
+                            else None,
+                        }
+                    )
+
+                    logger.info(
+                        f"Retrieved subscription info for user {user_id}: premium={subscription_data['isPremium']}, "
+                        f"plan={subscription_data['planName']}, status={subscription_data['status']}"
+                    )
+                else:
+                    logger.debug(f"No active subscription found for user {user_id}")
+
+            except Exception as e:
+                # Log the error but don't fail the request - return user data with default subscription
+                logger.error(f"Failed to fetch subscription info for user {user_id}: {e}")
+                # Keep default subscription_data (no premium access)
+
+        # Prepare user data response
         user_data = {
             "id": user.id,
             "uuid": str(user.uuid),
@@ -131,15 +184,7 @@ class UserService:
             "clerk_sub": user.clerk_sub,
             "stripe_customer_id": user.stripe_customer_id,
             "created_at": user.created_at,
-            "subscription": {
-                "isPremium": False,
-                "planName": None,
-                "status": None,
-                "currentPeriodEnd": None,
-                "cancelAtPeriodEnd": False,
-                "stripeSubscriptionId": None,
-                "stripePriceId": None,
-            },
+            "subscription": subscription_data,
         }
 
         return user_data
@@ -165,6 +210,97 @@ class UserService:
 
         logger.info(f"Updated user {user_id} with Stripe customer ID {stripe_customer_id}")
         return updated_user
+
+    async def get_subscription_info(self, user: User) -> dict:
+        """
+        Get subscription information for a user from Stripe API.
+
+        This method specifically focuses on retrieving subscription data
+        and can be used when only subscription info is needed.
+
+        Args:
+            user: The user to get subscription info for
+
+        Returns:
+            dict: Subscription information
+
+        Raises:
+            StripeServiceException: If Stripe API call fails
+        """
+        # Initialize default subscription data
+        subscription_data = {
+            "isPremium": False,
+            "planName": None,
+            "status": None,
+            "currentPeriodEnd": None,
+            "cancelAtPeriodEnd": False,
+            "stripeSubscriptionId": None,
+            "stripePriceId": None,
+        }
+
+        # If user has a Stripe customer ID and Stripe is configured, fetch subscription info
+        if user.stripe_customer_id and self.stripe_service.is_configured():
+            try:
+                logger.debug(
+                    f"Fetching subscription info for user {user.id} with Stripe customer {user.stripe_customer_id}"
+                )
+
+                # Get active subscription from Stripe
+                active_subscription = await self.stripe_service.get_active_subscription(user.stripe_customer_id)
+
+                if active_subscription:
+                    # Extract subscription details
+                    subscription_data.update(
+                        {
+                            "isPremium": self.stripe_service.is_subscription_premium(active_subscription),
+                            "planName": self.stripe_service.get_subscription_plan_name(active_subscription),
+                            "status": active_subscription.status,
+                            "currentPeriodEnd": active_subscription.current_period_end,
+                            "cancelAtPeriodEnd": active_subscription.cancel_at_period_end,
+                            "stripeSubscriptionId": active_subscription.id,
+                            "stripePriceId": active_subscription.items.data[0].price.id
+                            if active_subscription.items.data
+                            else None,
+                        }
+                    )
+
+                    logger.info(
+                        f"Retrieved subscription info for user {user.id}: premium={subscription_data['isPremium']}, "
+                        f"plan={subscription_data['planName']}, status={subscription_data['status']}"
+                    )
+                else:
+                    logger.debug(f"No active subscription found for user {user.id}")
+
+            except Exception as e:
+                # Log the error but don't fail the request - return default subscription data
+                logger.error(f"Failed to fetch subscription info for user {user.id}: {e}")
+                # Keep default subscription_data (no premium access)
+
+        return subscription_data
+
+    async def ensure_user_has_stripe_customer(self, user_id: int, session: Session) -> str:
+        """
+        Ensure a user has a Stripe customer, creating one if necessary.
+
+        This is a convenience method that combines user lookup with
+        Stripe customer creation.
+
+        Args:
+            user_id: The user ID to ensure has a Stripe customer
+            session: Database session for transaction management
+
+        Returns:
+            str: The Stripe customer ID
+
+        Raises:
+            ValueError: If user is not found
+            StripeServiceException: If Stripe customer creation fails
+        """
+        user = user_repository.get_user_by_id(session, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} not found")
+
+        return await self.ensure_stripe_customer(user, session)
 
 
 # Global instance for dependency injection

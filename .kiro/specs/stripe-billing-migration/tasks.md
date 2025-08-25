@@ -32,7 +32,7 @@
   - Customer Portal Session作成機能を実装（管理・キャンセル用）
   - _要件: 要件1.1, 要件2.1, 要件3.1, 要件3.2, 要件3.4_
 
-- [ ] 5. ユーザーサービスの実装
+- [x] 5. ユーザーサービスの実装
   - UserServiceクラスを新規作成（backend/app/services/user_service.py）
   - ensure_stripe_customer機能を実装（初回アクセス時にStripe Customer作成）
   - stripe_customer_idをデータベースに保存する機能

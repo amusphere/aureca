@@ -492,13 +492,15 @@ class StripeService:
 
                 # Add subscription-specific settings
                 if mode == "subscription":
-                    session_data.update({
-                        "subscription_data": {
-                            "metadata": {
-                                "customer_id": customer_id,
+                    session_data.update(
+                        {
+                            "subscription_data": {
+                                "metadata": {
+                                    "customer_id": customer_id,
+                                }
                             }
                         }
-                    })
+                    )
 
                 session = stripe.checkout.Session.create(**session_data)
 

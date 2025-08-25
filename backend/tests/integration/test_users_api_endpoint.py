@@ -2,17 +2,18 @@
 Integration tests for users API endpoints via HTTP.
 
 Tests the actual HTTP endpoints for users API including the extended /me endpoint
-with subscription information.
+with subscription information fetched from Stripe API.
 """
 
 import time
 from collections.abc import Generator
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.schema import Subscription, User
+from app.schema import User
 from app.services.auth import auth_user
 from main import app
 
@@ -32,7 +33,12 @@ class TestUsersAPIEndpoint:
     def test_get_current_user_no_subscription(
         self, client: TestClient, session: Session, test_user: User, auth_override
     ):
-        """Test GET /api/users/me with no subscription."""
+        """Test GET /api/users/me with no subscription (no Stripe customer)."""
+        # Ensure user has no Stripe customer ID
+        test_user.stripe_customer_id = None
+        session.add(test_user)
+        session.commit()
+
         response = client.get("/api/users/me")
 
         # Verify response
@@ -49,27 +55,43 @@ class TestUsersAPIEndpoint:
         assert data["subscription"]["currentPeriodEnd"] is None
         assert data["subscription"]["cancelAtPeriodEnd"] is False
 
+    @patch("app.services.stripe_service.StripeService.get_active_subscription")
+    @patch("app.services.stripe_service.StripeService.is_subscription_premium")
+    @patch("app.services.stripe_service.StripeService.get_subscription_plan_name")
+    @patch("app.services.stripe_service.StripeService.is_configured")
     def test_get_current_user_with_active_subscription(
-        self, client: TestClient, session: Session, test_user: User, auth_override
+        self,
+        mock_is_configured,
+        mock_get_plan_name,
+        mock_is_premium,
+        mock_get_subscription,
+        client: TestClient,
+        session: Session,
+        test_user: User,
+        auth_override,
     ):
-        """Test GET /api/users/me with active subscription."""
-        # Create an active subscription
-        future_time = time.time() + 86400 * 30  # 30 days from now
-        subscription = Subscription(
-            user_id=test_user.id,
-            stripe_subscription_id="sub_test123",
-            stripe_customer_id="cus_test123",
-            stripe_price_id="price_test123",
-            plan_name="Pro Plan",
-            status="active",
-            current_period_start=time.time() - 86400,
-            current_period_end=future_time,
-            cancel_at_period_end=False,
-            created_at=time.time(),
-            updated_at=time.time(),
-        )
-        session.add(subscription)
+        """Test GET /api/users/me with active subscription from Stripe."""
+        # Set up user with Stripe customer ID
+        test_user.stripe_customer_id = "cus_test123"
+        session.add(test_user)
         session.commit()
+
+        # Mock Stripe service responses
+        mock_is_configured.return_value = True
+
+        # Create mock subscription object
+        future_time = int(time.time() + 86400 * 30)  # 30 days from now
+        mock_subscription = Mock()
+        mock_subscription.id = "sub_test123"
+        mock_subscription.status = "active"
+        mock_subscription.current_period_end = future_time
+        mock_subscription.cancel_at_period_end = False
+        mock_subscription.items.data = [Mock()]
+        mock_subscription.items.data[0].price.id = "price_test123"
+
+        mock_get_subscription.return_value = mock_subscription
+        mock_is_premium.return_value = True
+        mock_get_plan_name.return_value = "Pro Plan"
 
         response = client.get("/api/users/me")
 
@@ -111,29 +133,43 @@ class TestUsersAPIEndpoint:
         # Should return 401 or 403 depending on auth implementation
         assert response.status_code in [401, 403]
 
+    @patch("app.services.stripe_service.StripeService.get_active_subscription")
+    @patch("app.services.stripe_service.StripeService.is_subscription_premium")
+    @patch("app.services.stripe_service.StripeService.get_subscription_plan_name")
+    @patch("app.services.stripe_service.StripeService.is_configured")
     def test_get_current_user_with_trial_subscription(
-        self, client: TestClient, session: Session, test_user: User, auth_override
+        self,
+        mock_is_configured,
+        mock_get_plan_name,
+        mock_is_premium,
+        mock_get_subscription,
+        client: TestClient,
+        session: Session,
+        test_user: User,
+        auth_override,
     ):
-        """Test GET /api/users/me with trial subscription."""
-        # Create a trial subscription
-        trial_end = time.time() + 86400 * 7  # 7 days from now
-        subscription = Subscription(
-            user_id=test_user.id,
-            stripe_subscription_id="sub_trial123",
-            stripe_customer_id="cus_test123",
-            stripe_price_id="price_test123",
-            plan_name="Pro Plan",
-            status="trialing",
-            current_period_start=time.time(),
-            current_period_end=trial_end,
-            trial_start=time.time(),
-            trial_end=trial_end,
-            cancel_at_period_end=False,
-            created_at=time.time(),
-            updated_at=time.time(),
-        )
-        session.add(subscription)
+        """Test GET /api/users/me with trial subscription from Stripe."""
+        # Set up user with Stripe customer ID
+        test_user.stripe_customer_id = "cus_test123"
+        session.add(test_user)
         session.commit()
+
+        # Mock Stripe service responses
+        mock_is_configured.return_value = True
+
+        # Create mock trial subscription object
+        trial_end = int(time.time() + 86400 * 7)  # 7 days from now
+        mock_subscription = Mock()
+        mock_subscription.id = "sub_trial123"
+        mock_subscription.status = "trialing"
+        mock_subscription.current_period_end = trial_end
+        mock_subscription.cancel_at_period_end = False
+        mock_subscription.items.data = [Mock()]
+        mock_subscription.items.data[0].price.id = "price_test123"
+
+        mock_get_subscription.return_value = mock_subscription
+        mock_is_premium.return_value = True  # trialing users should have premium access
+        mock_get_plan_name.return_value = "Pro Plan"
 
         response = client.get("/api/users/me")
 
@@ -147,61 +183,59 @@ class TestUsersAPIEndpoint:
         assert data["subscription"]["status"] == "trialing"
         assert data["subscription"]["currentPeriodEnd"] == trial_end
 
+    @patch("app.services.stripe_service.StripeService.get_active_subscription")
+    @patch("app.services.stripe_service.StripeService.is_configured")
     def test_get_current_user_with_expired_subscription(
-        self, client: TestClient, session: Session, test_user: User, auth_override
+        self,
+        mock_is_configured,
+        mock_get_subscription,
+        client: TestClient,
+        session: Session,
+        test_user: User,
+        auth_override,
     ):
-        """Test GET /api/users/me with expired subscription."""
-        # Create an expired subscription
-        past_time = time.time() - 86400 * 7  # 7 days ago
-        subscription = Subscription(
-            user_id=test_user.id,
-            stripe_subscription_id="sub_expired123",
-            stripe_customer_id="cus_test123",
-            stripe_price_id="price_test123",
-            plan_name="Pro Plan",
-            status="active",  # Status is active but period has ended
-            current_period_start=time.time() - 86400 * 30,
-            current_period_end=past_time,
-            cancel_at_period_end=False,
-            created_at=time.time(),
-            updated_at=time.time(),
-        )
-        session.add(subscription)
+        """Test GET /api/users/me with no active subscription (expired handled by Stripe)."""
+        # Set up user with Stripe customer ID
+        test_user.stripe_customer_id = "cus_test123"
+        session.add(test_user)
         session.commit()
+
+        # Mock Stripe service responses - no active subscription returned
+        mock_is_configured.return_value = True
+        mock_get_subscription.return_value = None  # No active subscription
 
         response = client.get("/api/users/me")
 
-        # Verify response - expired subscription should not be considered active
+        # Verify response - no active subscription should not provide premium access
         assert response.status_code == 200
         data = response.json()
 
         assert data["id"] == test_user.id
-        # Should not have premium access since subscription is expired
+        # Should not have premium access since no active subscription
         assert data["subscription"]["isPremium"] is False
         assert data["subscription"]["planName"] is None
         assert data["subscription"]["status"] is None
 
+    @patch("app.services.stripe_service.StripeService.get_active_subscription")
+    @patch("app.services.stripe_service.StripeService.is_configured")
     def test_get_current_user_with_canceled_subscription(
-        self, client: TestClient, session: Session, test_user: User, auth_override
+        self,
+        mock_is_configured,
+        mock_get_subscription,
+        client: TestClient,
+        session: Session,
+        test_user: User,
+        auth_override,
     ):
-        """Test GET /api/users/me with canceled subscription."""
-        # Create a canceled subscription
-        subscription = Subscription(
-            user_id=test_user.id,
-            stripe_subscription_id="sub_canceled123",
-            stripe_customer_id="cus_test123",
-            stripe_price_id="price_test123",
-            plan_name="Pro Plan",
-            status="canceled",
-            current_period_start=time.time() - 86400,
-            current_period_end=time.time() + 86400 * 30,  # Future end date but canceled
-            cancel_at_period_end=False,
-            canceled_at=time.time() - 3600,  # Canceled 1 hour ago
-            created_at=time.time(),
-            updated_at=time.time(),
-        )
-        session.add(subscription)
+        """Test GET /api/users/me with canceled subscription (handled by Stripe)."""
+        # Set up user with Stripe customer ID
+        test_user.stripe_customer_id = "cus_test123"
+        session.add(test_user)
         session.commit()
+
+        # Mock Stripe service responses - no active subscription returned (canceled subscriptions are not active)
+        mock_is_configured.return_value = True
+        mock_get_subscription.return_value = None  # Canceled subscriptions are not returned as active
 
         response = client.get("/api/users/me")
 
@@ -215,24 +249,43 @@ class TestUsersAPIEndpoint:
         assert data["subscription"]["planName"] is None
         assert data["subscription"]["status"] is None
 
-    def test_response_model_validation(self, client: TestClient, session: Session, test_user: User, auth_override):
+    @patch("app.services.stripe_service.StripeService.get_active_subscription")
+    @patch("app.services.stripe_service.StripeService.is_subscription_premium")
+    @patch("app.services.stripe_service.StripeService.get_subscription_plan_name")
+    @patch("app.services.stripe_service.StripeService.is_configured")
+    def test_response_model_validation(
+        self,
+        mock_is_configured,
+        mock_get_plan_name,
+        mock_is_premium,
+        mock_get_subscription,
+        client: TestClient,
+        session: Session,
+        test_user: User,
+        auth_override,
+    ):
         """Test that the response matches the expected Pydantic model structure."""
-        # Create subscription
-        subscription = Subscription(
-            user_id=test_user.id,
-            stripe_subscription_id="sub_test123",
-            stripe_customer_id="cus_test123",
-            stripe_price_id="price_test123",
-            plan_name="Premium",
-            status="active",
-            current_period_start=time.time() - 86400,
-            current_period_end=time.time() + 86400 * 30,
-            cancel_at_period_end=True,
-            created_at=time.time(),
-            updated_at=time.time(),
-        )
-        session.add(subscription)
+        # Set up user with Stripe customer ID
+        test_user.stripe_customer_id = "cus_test123"
+        session.add(test_user)
         session.commit()
+
+        # Mock Stripe service responses
+        mock_is_configured.return_value = True
+
+        # Create mock subscription object
+        future_time = int(time.time() + 86400 * 30)  # 30 days from now
+        mock_subscription = Mock()
+        mock_subscription.id = "sub_test123"
+        mock_subscription.status = "active"
+        mock_subscription.current_period_end = future_time
+        mock_subscription.cancel_at_period_end = True
+        mock_subscription.items.data = [Mock()]
+        mock_subscription.items.data[0].price.id = "price_test123"
+
+        mock_get_subscription.return_value = mock_subscription
+        mock_is_premium.return_value = True
+        mock_get_plan_name.return_value = "Premium"
 
         response = client.get("/api/users/me")
 
